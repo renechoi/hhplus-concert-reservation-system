@@ -1,0 +1,35 @@
+version: "3.8"
+services:
+  dev-database:
+    container_name: hhplus-reservation-dev-database
+    build:
+      context: ./database
+    image: mysql:8.0.33
+    env_file:
+      - .env
+    environment:
+      - MYSQL_DATABASE=hhplus-reservation-dev-database
+      - MYSQL_ROOT_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
+      - TZ=Asia/Seoul
+    volumes:
+      - ./database/config:/etc/mysql/conf.d
+      - ./database/config/init-dev.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "3302:3306"
+
+  stage-database:
+    container_name: hhplus-reservation-stage-database
+    build:
+      context: ./database
+    image: mysql:8.0.33
+    env_file:
+      - .env
+    environment:
+      - MYSQL_DATABASE=hhplus-reservation-stage-database
+      - MYSQL_ROOT_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
+      - TZ=Asia/Seoul
+    volumes:
+      - ./database/config:/etc/mysql/conf.d
+      - ./database/config/init-stage.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "3301:3306"

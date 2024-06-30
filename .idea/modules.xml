@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/concert-reservation/concert-reservation.iml" filepath="$PROJECT_DIR$/concert-reservation/concert-reservation.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/hhplus-concert-reservation-system.iml" filepath="$PROJECT_DIR$/.idea/hhplus-concert-reservation-system.iml" />
+    </modules>
+  </component>
+</project>
