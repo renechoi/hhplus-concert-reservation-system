@@ -2,8 +2,9 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/concert-reservation/concert-reservation.iml" filepath="$PROJECT_DIR$/concert-reservation/concert-reservation.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/hhplus-concert-reservation-system.iml" filepath="$PROJECT_DIR$/.idea/hhplus-concert-reservation-system.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/queue-management-service.main.iml" filepath="$PROJECT_DIR$/.idea/modules/queue-management-service.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/queue-management-service.test.iml" filepath="$PROJECT_DIR$/.idea/modules/queue-management-service.test.iml" />
     </modules>
   </component>
 </project>
