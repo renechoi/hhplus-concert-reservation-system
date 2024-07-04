@@ -1,0 +1,54 @@
+
+
+### 유저 토큰 발급 API
+POST http://localhost:24000/queue-management/api/token
+Content-Type: application/json
+
+{
+  "userId": "spring123",
+  "requestedTime": "2024-07-03T10:00:00",
+  "priority": 2
+}
+
+
+
+### 예약 가능한 날짜 목록 조회 API
+GET http://localhost:24000/api-orchestration/api/reservations/available-dates/1
+
+
+### 특정 날짜의 예약 가능한 좌석 목록 조회 API
+GET http://localhost:24000/api-orchestration/api/reservations/available-seats?concertId=1&date=2024-07-10
+
+
+### 좌석 예약 요청 API
+POST http://localhost:24000/api-orchestration/api/reservations/reserve-seat
+Content-Type: application/json
+
+{
+  "userId": 1,
+  "concertOptionId": 1,
+  "seatId": 1,
+  "date": "2024-07-10"
+}
+
+
+
+### 잔액 충전 API
+POST http://localhost:24000/api-orchestration/api/balance/charge
+Content-Type: application/json
+
+{
+  "userId": 1,
+  "amount": 100.00
+}
+
+
+### 잔액 조회 API
+POST http://localhost:24000/api-orchestration/api/balance/payment
+Content-Type: application/json
+
+{
+  "userId": 1,
+  "reservationId": 1,
+  "amount": 100.00
+}
