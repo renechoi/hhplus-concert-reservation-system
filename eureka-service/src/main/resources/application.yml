@@ -1,0 +1,20 @@
+# eureka-server application.yml
+server:
+  port: 24010
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+
+eureka:
+  client:
+    registerWithEureka: false
+    fetchRegistry: false
+    serviceUrl:
+      defaultZone: http://localhost:24010/eureka/
+  server:
+    enableSelfPreservation: false # 개발 환경에서는 비활성화하는 것이 일반적
+
+
