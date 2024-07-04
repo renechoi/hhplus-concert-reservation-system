@@ -1,0 +1,35 @@
+spring:
+  config:
+    activate:
+      on-profile: stage
+
+  datasource:
+    url: jdbc:mysql://localhost:3301/hhplus-reservation-stage-database
+    username: ${SPRING_DATASOURCE_USERNAME:root}  # 기본값 설정
+    password: ${SPRING_DATASOURCE_PASSWORD:1234}  # 기본값 설정
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 50
+      minimum-idle: 50
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        show-sql: true
+        generate-ddl: true
+  task:
+    execution:
+      pool:
+        core-size: 12
+        max-size: 20
+        queue-capacity: 100
+
+
+
+logging:
+  level:
+    root: info
+  config: classpath:log/logback-spring.xml
+
+

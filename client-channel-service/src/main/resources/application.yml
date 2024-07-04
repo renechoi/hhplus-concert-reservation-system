@@ -1,0 +1,21 @@
+spring:
+  profiles:
+    active: stage
+  application:
+    name: client-channel-service
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:24010/eureka/
+  instance:
+    preferIpAddress: true
+
+server:
+  port: 24101
+  servlet:
+    context-path: /client-channel
+
+custom:
+  feign:
+    direct:
+      host:
