@@ -23,6 +23,16 @@ public class GatewayConfig {
 			.route("api-orchestration-service", r -> r.path("/api-orchestration/**")
 				.filters(this::commonFilters)
 				.uri("lb://API-ORCHESTRATION-SERVICE"))
+			.route("reservation-service", r -> r.path("/reservation/**")
+				.filters(this::commonFilters)
+				.uri("lb://RESERVATION-SERVICE"))
+			.route("payment-service", r -> r.path("/payment/**")
+				.filters(this::commonFilters)
+				.uri("lb://PAYMENT-SERVICE"))
+			.route("balance-service", r -> r.path("/balance/**")
+				.filters(this::commonFilters)
+				.uri("lb://BALANCE-SERVICE"))
+
 			.build();
 	}
 
