@@ -308,14 +308,212 @@ gantt
 
 
 
+
 <details>
 <summary><b>API Spec & Mock API</b></summary>
 
+## 유저 토큰 발급 API
 
-### mock api
+### Endpoint
+```http request
+POST http://localhost:24000/queue-management/api/token
+Content-Type: application/json
+```
 
+### Request Body
+```json
+{
+  "userId": "spring123",
+  "requestedTime": "2024-07-03T10:00:00",
+  "priority": 2
+}
+```
+
+### Response
+- **Status Code: 201 Created**
+- **Headers:**
+  - `Content-Type: application/json`
+  - `Date: Thu, 04 Jul 2024 14:52:58 GMT`
+- **Body:**
+  ```json
+  {
+    "userId": "spring123",
+    "tokenValue": "ce586fe5-78fb-4124-8e83-7cb164fbf58b",
+    "remainingTime": "2024-07-05T00:22:58.008573",
+    "position": 1,
+    "validUntil": "2024-07-05T00:52:58.008641",
+    "status": "WAITING"
+  }
+  ```
+![token-issue.png](documents%2Fmock-api%2Ftoken-issue.png)
+
+---
+
+## 예약 가능한 날짜 목록 조회 API
+
+### Endpoint
+```http request
+GET http://localhost:24000/api-orchestration/api/reservations/available-dates/1
+```
+
+### Response
+- **Status Code: 200 OK**
+- **Headers:**
+  - `Content-Type: application/json`
+  - `Date: Thu, 04 Jul 2024 14:55:57 GMT`
+- **Body:**
+  ```json
+  {
+    "concertId": 1,
+    "availableDates": [
+      "2024-07-10",
+      "2024-07-11",
+      "2024-07-12"
+    ]
+  }
+  ```
+![available-dates.png](documents%2Fmock-api%2Favailable-dates.png)
+
+---
+
+## 특정 날짜의 예약 가능한 좌석 목록 조회 API
+
+### Endpoint
+```http request
+GET http://localhost:24000/api-orchestration/api/reservations/available-seats?concertId=1&date=2024-07-10
+```
+
+### Response
+- **Status Code: 200 OK**
+- **Headers:**
+  - `Content-Type: application/json`
+  - `Date: Thu, 04 Jul 2024 14:56:00 GMT`
+- **Body:**
+  ```json
+  {
+    "concertId": 1,
+    "date": "2024-07-10",
+    "availableSeats": [
+      {"seatId": 1, "seatNumber": "A1"},
+      {"seatId": 2, "seatNumber": "A2"},
+      ...
+    ]
+  }
+  ```
+![retrieve-seats-by-date-params.png](documents%2Fmock-api%2Fretrieve-seats-by-date-params.png)
+
+---
+
+## 좌석 예약 요청 API
+
+### Endpoint
+```http request
+POST http://localhost:24000/api-orchestration/api/reservations/reserve-seat
+Content-Type: application/json
+```
+
+### Request Body
+```json
+{
+  "userId": 1,
+  "concertOptionId": 1,
+  "seatId": 1,
+  "date": "2024-07-10"
+}
+```
+
+### Response
+- **Status Code: 200 OK**
+- **Headers:**
+  - `Content-Type: application/json`
+  - `Date: Thu, 04 Jul 2024 14:45:42 GMT`
+- **Body:**
+  ```json
+  {
+    "reservationId": 1,
+    "userId": 1,
+    "concertOptionId": 1,
+    "seatId": 1,
+    "status": "TEMPORARY_RESERVED",
+    "message": "2024-07-04T23:50:42.733509분간 예약되었습니다."
+  }
+  ```
+![reserve-seat.png](documents%2Fmock-api%2Freserve-seat.png)
+
+---
+
+## 잔액 충전 API
+
+### Endpoint
+```http request
+POST http://localhost:24000/api-orchestration/api/balance/charge
+Content-Type: application/json
+```
+
+### Request Body
+```json
+{
+  "userId": 1,
+  "amount": 100.00
+}
+```
+
+### Response
+- **Status Code: 200 OK**
+- **Headers:**
+  - `Content-Type: application/json`
+  - `Date: Thu, 04 Jul 2024 14:45:45 GMT`
+- **Body:**
+  ```json
+  {
+    "userId": 1,
+    "amount": 100.00
+  }
+  ```
+![charge-balance.png](documents%2Fmock-api%2Fcharge-balance.png)
+
+---
+
+## 잔액 조회 API
+
+### Endpoint
+```http request
+POST http://localhost:24000/api-orchestration/api/balance/payment
+Content-Type: application/json
+```
+
+### Request Body
+```json
+{
+  "userId": 1,
+  "reservationId": 1,
+  "amount": 100.00
+}
+```
+
+### Response
+- **Status Code: 200 OK**
+- **Headers:**
+  - `Content-Type: application/json`
+  - `Date: Thu, 04 Jul 2024 14:45:46 GMT`
+- **Body:**
+  ```json
+  {
+    "paymentId": 1,
+    "userId": 1,
+    "reservationId": 1,
+    "amount": 100.00,
+    "status": "CONFIRMED",
+    "message": "결제가 정상 처리되었고, 좌석도 예약 완료"
+  }
+  ```
+![retrieve-balance.png](documents%2Fmock-api%2Fretrieve-balance.png)
 
 </details>
+
+
+
+
 
 
 
