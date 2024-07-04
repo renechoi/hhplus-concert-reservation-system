@@ -2,8 +2,7 @@ spring:
   config:
     activate:
       on-profile: stage
-  application:
-    name: concert-reservation
+
   datasource:
     url: jdbc:mysql://localhost:3301/hhplus-reservation-stage-database
     username: ${SPRING_DATASOURCE_USERNAME:root}  # 기본값 설정
@@ -26,10 +25,11 @@ spring:
         max-size: 20
         queue-capacity: 100
 
-server:
-  port: 24031 #24년 2주차 과제 stage
+
 
 logging:
   level:
     root: info
   config: classpath:log/logback-spring.xml
+
+
