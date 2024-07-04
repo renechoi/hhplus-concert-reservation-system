@@ -2,7 +2,14 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/api-orchestration-service.main.iml" filepath="$PROJECT_DIR$/.idea/modules/api-orchestration-service.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/api-orchestration-service.test.iml" filepath="$PROJECT_DIR$/.idea/modules/api-orchestration-service.test.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/balance-service.test.iml" filepath="$PROJECT_DIR$/.idea/modules/balance-service.test.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/client-channel-service.main.iml" filepath="$PROJECT_DIR$/.idea/modules/client-channel-service.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/client-channel-service.test.iml" filepath="$PROJECT_DIR$/.idea/modules/client-channel-service.test.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/hhplus-concert-reservation-system.iml" filepath="$PROJECT_DIR$/.idea/hhplus-concert-reservation-system.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/payment-service.main.iml" filepath="$PROJECT_DIR$/.idea/modules/payment-service.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/payment-service.test.iml" filepath="$PROJECT_DIR$/.idea/modules/payment-service.test.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/queue-management-service.main.iml" filepath="$PROJECT_DIR$/.idea/modules/queue-management-service.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/queue-management-service.test.iml" filepath="$PROJECT_DIR$/.idea/modules/queue-management-service.test.iml" />
     </modules>

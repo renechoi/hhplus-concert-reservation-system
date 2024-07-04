@@ -12,6 +12,22 @@
         </option>
       </GradleProjectSettings>
       <GradleProjectSettings>
+        <option name="externalProjectPath" value="$PROJECT_DIR$/balance-service" />
+        <option name="modules">
+          <set>
+            <option value="$PROJECT_DIR$/balance-service" />
+          </set>
+        </option>
+      </GradleProjectSettings>
+      <GradleProjectSettings>
+        <option name="externalProjectPath" value="$PROJECT_DIR$/client-channel-service" />
+        <option name="modules">
+          <set>
+            <option value="$PROJECT_DIR$/client-channel-service" />
+          </set>
+        </option>
+      </GradleProjectSettings>
+      <GradleProjectSettings>
         <option name="externalProjectPath" value="$PROJECT_DIR$/eureka-service" />
         <option name="modules">
           <set>
@@ -28,10 +44,26 @@
         </option>
       </GradleProjectSettings>
       <GradleProjectSettings>
+        <option name="externalProjectPath" value="$PROJECT_DIR$/payment-service" />
+        <option name="modules">
+          <set>
+            <option value="$PROJECT_DIR$/payment-service" />
+          </set>
+        </option>
+      </GradleProjectSettings>
+      <GradleProjectSettings>
         <option name="externalProjectPath" value="$PROJECT_DIR$/queue-management-service" />
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$/queue-management-service" />
+          </set>
+        </option>
+      </GradleProjectSettings>
+      <GradleProjectSettings>
+        <option name="externalProjectPath" value="$PROJECT_DIR$/reservation-service" />
+        <option name="modules">
+          <set>
+            <option value="$PROJECT_DIR$/reservation-service" />
           </set>
         </option>
       </GradleProjectSettings>

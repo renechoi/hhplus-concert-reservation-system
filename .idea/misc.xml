@@ -7,9 +7,13 @@
   <component name="ExternalStorageConfigurationManager" enabled="true" />
   <component name="FrameworkDetectionExcludesConfiguration">
     <file type="web" url="file://$PROJECT_DIR$/api-orchestration-service" />
+    <file type="web" url="file://$PROJECT_DIR$/balance-service" />
+    <file type="web" url="file://$PROJECT_DIR$/client-channel-service" />
     <file type="web" url="file://$PROJECT_DIR$/eureka-service" />
     <file type="web" url="file://$PROJECT_DIR$/gateway-service" />
+    <file type="web" url="file://$PROJECT_DIR$/payment-service" />
     <file type="web" url="file://$PROJECT_DIR$/queue-management-service" />
+    <file type="web" url="file://$PROJECT_DIR$/reservation-service" />
   </component>
   <component name="ProjectRootManager" version="2" languageLevel="JDK_17" default="true" project-jdk-name="11" project-jdk-type="JavaSDK">
     <output url="file://$PROJECT_DIR$/out" />
