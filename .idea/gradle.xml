@@ -12,14 +12,6 @@
         </option>
       </GradleProjectSettings>
       <GradleProjectSettings>
-        <option name="externalProjectPath" value="$PROJECT_DIR$/balance-service" />
-        <option name="modules">
-          <set>
-            <option value="$PROJECT_DIR$/balance-service" />
-          </set>
-        </option>
-      </GradleProjectSettings>
-      <GradleProjectSettings>
         <option name="externalProjectPath" value="$PROJECT_DIR$/client-channel-service" />
         <option name="modules">
           <set>
