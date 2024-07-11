@@ -3,6 +3,25 @@ spring:
     active: stage
   application:
     name: queue-management-service
+  cloud:
+    function:
+      definition: concertReservationPaymentConsumer;
+    stream:
+      kafka:
+        default:
+          consumer:
+            autoCommitOffset: false
+        binder:
+          brokers:
+            - localhost:9092
+      bindings:
+        concertReservationPaymentConsumer-in-0:
+          destination: concert-reservation-payment
+          group: concert-reservation-payment-group
+
+
+
+
 eureka:
   client:
     serviceUrl:
@@ -15,3 +34,10 @@ server:
   servlet:
     context-path: /queue-management
 
+waiting-queue:
+  policy:
+    max-limit: 10000
+
+processing-queue:
+  policy:
+    max-limit: 100

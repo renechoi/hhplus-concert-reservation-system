@@ -33,6 +33,10 @@ public enum GlobalResponseCode implements ResponseCapable{
 
 	// domain
 
+	RESERVATION_UNAVAILABLE("24000", "reservation unavailable", HttpStatus.BAD_REQUEST),
+	SEAT_ALREADY_RESERVED("24001", "seat already reserved", HttpStatus.BAD_REQUEST),
+	SEAT_NOT_FOUND("24002", "seat not found", HttpStatus.BAD_REQUEST),
+	RESERVATION_RETRIEVAL_NO_CONTENT("24003", "reservation not found", HttpStatus.NO_CONTENT),
 
 	;
 

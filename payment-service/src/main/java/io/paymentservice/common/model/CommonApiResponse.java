@@ -1,6 +1,5 @@
 package io.paymentservice.common.model;
 
-
 import static io.paymentservice.common.model.GlobalResponseCode.*;
 import static io.paymentservice.util.UrlEncodingHelper.*;
 
@@ -29,6 +28,7 @@ public class CommonApiResponse<T> extends ResponseEntity<Object> {
 	private final String resultMessage;
 	private final T data;
 
+
 	public CommonApiResponse(String resultCode, String resultMessage, HttpStatus status, T data) {
 		super(data, createHeaders(resultCode, resultMessage), status);
 		this.resultCode = resultCode;
@@ -47,6 +47,10 @@ public class CommonApiResponse<T> extends ResponseEntity<Object> {
 
 	public CommonApiResponse(GlobalResponseCode responseCode) {
 		this(responseCode.getResultCode(), responseCode.getResultMessage(), responseCode.getHttpStatus(), null);
+	}
+
+	public CommonApiResponse(GlobalResponseCode responseCode, T data) {
+		this(responseCode.getResultCode(), responseCode.getResultMessage(), responseCode.getHttpStatus(), data);
 	}
 
 	public CommonApiResponse(GlobalResponseCode responseCode, String customMessage, T data) {

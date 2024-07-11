@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
+import io.paymentservice.common.exception.PaymentProcessUnAvailableException;
 import io.paymentservice.common.exception.ServerException;
 import io.paymentservice.common.model.CommonApiResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -45,6 +46,15 @@ class ApiControllerAdvice extends ResponseEntityExceptionHandler {
             errors.put(error.getField(), error.getDefaultMessage());
         }
         return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
+    }
+
+
+    @ExceptionHandler(PaymentProcessUnAvailableException.class)
+    public ResponseEntity<CommonApiResponse<Object>> handleCustomPaymentException(PaymentProcessUnAvailableException ex) {
+        log.error("PaymentProcessUnAvailableException: {}", ex.getMessage());
+        return new ResponseEntity<>(
+            new CommonApiResponse<>(ex.getCode(), ex.getAdditionalInfo()), ex.getCode().getHttpStatus()
+        );
     }
 
 }

@@ -9,6 +9,24 @@ eureka:
       defaultZone: http://localhost:24010/eureka/
   instance:
     preferIpAddress: true
+  cloud:
+    stream:
+      default-binder: kafka
+      kafka:
+        binder:
+          brokers:
+            - localhost:9092
+          zkNodes: localhost:2181
+      function:
+        definition:
+      bindings:
+        concertReservationPaymentProducer-out-0:
+          producer:
+            destination: concert-reservation-payment
+            contentType: application/json
+
+
+
 
 server:
   port: 24051
@@ -19,3 +37,19 @@ custom:
   feign:
     direct:
       host:
+
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    disable-swagger-default-url: true
+
+
+
+feign:
+  httpclient:
+    enabled: false
+  okhttp:
+    enabled: true

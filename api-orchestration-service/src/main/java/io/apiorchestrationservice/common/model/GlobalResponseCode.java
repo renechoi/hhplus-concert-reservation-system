@@ -29,6 +29,8 @@ public enum GlobalResponseCode implements ResponseCapable{
 
 	// 실패 응답
 	UNKNOWN_ERROR("9000", "unknown error", HttpStatus.INTERNAL_SERVER_ERROR),
+	FEIGN_EXCHANGE_EXCEPTION("9001","feign exchange exception", HttpStatus.BAD_REQUEST),
+
 
 
 	// domain

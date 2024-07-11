@@ -1,6 +1,8 @@
 package io.paymentservice.util;
 
 import java.lang.reflect.Field;
+import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -17,7 +19,7 @@ public class FieldMapper {
 	public static <T> T updateFields(T targetObject, Map<String, String> fieldValues) {
 		for (Map.Entry<String, String> entry : fieldValues.entrySet()) {
 			try {
-				Field field = targetObject.getClass().getDeclaredField(entry.getKey());
+				Field field = getField(targetObject.getClass(), entry.getKey());
 				field.setAccessible(true);
 				field.set(targetObject, convertValueForField(field.getType(), entry.getValue()));
 			} catch (Exception e) {
@@ -28,9 +30,20 @@ public class FieldMapper {
 		return targetObject;
 	}
 
+	private static Field getField(Class<?> clazz, String fieldName) {
+		while (clazz != null) {
+			try {
+				return clazz.getDeclaredField(fieldName);
+			} catch (NoSuchFieldException e) {
+				clazz = clazz.getSuperclass();
+			}
+		}
+		return null;
+	}
+
 
 	private static Object convertValueForField(Class<?> fieldType, String value) {
-		if(List.of("random","same", "monthly").contains(value)) {
+		if (List.of("random", "same", "monthly").contains(value)) {
 			return null;
 		}
 		if (fieldType.equals(Long.class) || fieldType.equals(long.class)) {
@@ -39,6 +52,10 @@ public class FieldMapper {
 			return Integer.parseInt(value);
 		} else if (fieldType.equals(LocalDateTime.class)) {
 			return "now".equalsIgnoreCase(value) ? LocalDateTime.now() : LocalDateTime.parse(value);
+		} else if (fieldType.equals(BigDecimal.class)) {
+			return new BigDecimal(value);
+		} else if (fieldType.equals(Duration.class)) {
+			return Duration.parse(value);
 		} else if (fieldType.isEnum()) {
 			return Enum.valueOf((Class<Enum>) fieldType, value.toUpperCase());
 		} else if (fieldType.equals(Boolean.class) || fieldType.equals(boolean.class)) {

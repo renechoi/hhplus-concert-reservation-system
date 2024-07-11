@@ -1,4 +1,4 @@
-package io.balanceservice.common.annotation;
+package io.queuemanagement.common.annotation;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -18,5 +18,5 @@ import org.springframework.stereotype.Component;
 @Documented
 @Inherited
 @Component
-public @interface FeignAdapter {
+public @interface KafkaConsumer {
 }

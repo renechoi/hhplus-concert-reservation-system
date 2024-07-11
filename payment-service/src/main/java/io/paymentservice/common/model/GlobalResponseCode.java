@@ -33,6 +33,13 @@ public enum GlobalResponseCode implements ResponseCapable{
 
 	// domain
 
+	USER_BALANCE_CHARGE_UNAVAILABLE("24081", "charge unavailable", HttpStatus.BAD_REQUEST),
+	USER_BALANCE_USE_UNAVAILABLE("24082", "use unavailable", HttpStatus.BAD_REQUEST),
+
+
+
+	PAYMENT_PROCESSING_FAILED("24090", "payment processing failed", HttpStatus.BAD_REQUEST),
+	PAYMENT_ALREADY_CANCELED("24091", "payment alread cancelled", HttpStatus.BAD_REQUEST);
 
 	;
 
