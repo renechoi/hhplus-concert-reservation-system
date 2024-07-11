@@ -1,7 +1,7 @@
 package io.apiorchestrationservice.api.application.dto.request;
 
-import java.time.LocalDate;
-
+import io.apiorchestrationservice.api.business.dto.inport.AvailableSeatsRetrievalCommand;
+import io.apiorchestrationservice.common.mapper.ObjectMapperBasedVoMapper;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -14,6 +14,10 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AvailableSeatsRetrievalRequest {
-	private Long concertId;
-	private LocalDate date;
+	private Long concertOptionId;
+	private Long requestAt;
+
+	public AvailableSeatsRetrievalCommand toCommand() {
+		return ObjectMapperBasedVoMapper.convert(this, AvailableSeatsRetrievalCommand.class);
+	}
 }
