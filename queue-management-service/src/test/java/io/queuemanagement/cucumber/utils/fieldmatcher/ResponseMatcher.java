@@ -29,9 +29,7 @@ public class ResponseMatcher {
 
 			if (actualValue instanceof LocalDateTime) {
 				if ("notNull".equalsIgnoreCase(expectedValue)) {
-					if (actualValue == null) {
-						return false;
-					}
+					return true;
 				} else {
 					actualValue = ((LocalDateTime) actualValue).truncatedTo(java.time.temporal.ChronoUnit.SECONDS);
 					if ("now".equalsIgnoreCase(expectedValue)) {
@@ -42,6 +40,9 @@ public class ResponseMatcher {
 					}
 				}
 			} else {
+				if ("notNull".equalsIgnoreCase(expectedValue) && actualValue !=null) {
+					return true;
+				}
 				if (!expectedValue.equals(actualValue != null ? actualValue.toString() : null)) {
 					return false;
 				}
@@ -49,6 +50,29 @@ public class ResponseMatcher {
 		}
 		return true;
 	}
+
+
+	@SneakyThrows
+	public static boolean assertFieldsEqual(Object expected, Object actual) {
+		for (Field field : expected.getClass().getDeclaredFields()) {
+			field.setAccessible(true);
+			Object expectedValue = field.get(expected);
+
+			try {
+				Field actualField = actual.getClass().getDeclaredField(field.getName());
+				actualField.setAccessible(true);
+				Object actualValue = actualField.get(actual);
+
+				if (!expectedValue.equals(actualValue)) {
+					return false;
+				}
+			} catch (NoSuchFieldException e) {
+				return false;
+			}
+		}
+		return true;
+	}
+
 
 	@SneakyThrows
 	private static Field getField(Class<?> clazz, String fieldName) {

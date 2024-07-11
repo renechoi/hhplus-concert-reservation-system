@@ -1,5 +1,6 @@
 package io.apiorchestrationservice.api.presentation.controller;
 
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -19,7 +20,7 @@ import lombok.RequiredArgsConstructor;
 public class TestController {
 	private final KafkaMessageProducingInternalEventHandler kafkaMessageProducingInternalEventHandler;
 
-	@RequestMapping("/send")
+	@GetMapping("/send")
 	public void send(){
 		kafkaMessageProducingInternalEventHandler.handlePaymentInternalEvent(PaymentInternalEvent.builder().paymentType("COMPLETED").userId("1").paymentTransactionId("ss").build());
 	}
