@@ -1,10 +1,8 @@
 spring:
-  config:
-    activate:
-      on-profile: stage
-
+  application:
+    name: hhplus-reservation-application-system
   datasource:
-    url: jdbc:mysql://localhost:3301/hhplus-reservation-stage-database
+    url: jdbc:mysql://localhost:3302/hhplus-reservation-dev-database
     username: ${SPRING_DATASOURCE_USERNAME:root}  # 기본값 설정
     password: ${SPRING_DATASOURCE_PASSWORD:1234}  # 기본값 설정
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -17,7 +15,14 @@ spring:
     properties:
       hibernate:
         show-sql: true
+        format-sql: true
+        use_sql_comments: true
         generate-ddl: true
+        highlight_sql: true
+        jdbc:
+          batch_size: 20
+        order_updates: true
+    open-in-view: false
   task:
     execution:
       pool:
@@ -25,11 +30,10 @@ spring:
         max-size: 20
         queue-capacity: 100
 
-
-
 logging:
   level:
     root: info
+    org.hibernate.SQL: debug
+    org.hibernate.type.descriptor.sql.BasicBinder: trace
   config: classpath:log/logback-spring.xml
-
 

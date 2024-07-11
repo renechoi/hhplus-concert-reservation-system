@@ -1,4 +1,4 @@
-package io.queuemanagement.testhelpers.apiexecutor;
+package io.apiorchestrationservice.testhelpers.apiexecutor;
 
 import java.lang.reflect.Field;
 import java.util.HashMap;
@@ -31,8 +31,20 @@ public abstract class AbstractRequestExecutor {
 			.extract();
 	}
 
+
+
 	protected static <T> ExtractableResponse<Response> doPostWithOk(RequestSpecification requestSpecification, String urlPath, T requestBody) {
 		return requestSpecification
+			.body(requestBody)
+			.when().post(urlPath)
+			.then().log().all()
+			.statusCode(HttpStatus.OK.value())
+			.extract();
+	}
+
+	protected static <T> ExtractableResponse<Response> doPostWithToken(RequestSpecification requestSpecification, String urlPath, T requestBody, String token) {
+		return requestSpecification
+			.header("X-Queue-Token", token)
 			.body(requestBody)
 			.when().post(urlPath)
 			.then().log().all()
@@ -49,6 +61,16 @@ public abstract class AbstractRequestExecutor {
 			.extract();
 	}
 
+
+	protected static <T> ExtractableResponse<Response> doPostWithOkWithToken(RequestSpecification requestSpecification, String urlPath, T requestBody, String token) {
+		return requestSpecification
+			.header("X-Queue-Token", token)
+			.body(requestBody)
+			.when().post(urlPath)
+			.then().log().all()
+			.statusCode(HttpStatus.OK.value())
+			.extract();
+	}
 	protected static ExtractableResponse<Response> doGet(RequestSpecification requestSpecification, String urlPath) {
 		return requestSpecification
 			.when().get(urlPath)
@@ -60,6 +82,15 @@ public abstract class AbstractRequestExecutor {
 
 	protected static ExtractableResponse<Response> doGetWithOk(RequestSpecification requestSpecification, String urlPath) {
 		return requestSpecification
+			.when().get(urlPath)
+			.then().log().all()
+			.statusCode(HttpStatus.OK.value())
+			.extract();
+	}
+
+	protected static ExtractableResponse<Response> doGetWithOkWithToken(RequestSpecification requestSpecification, String urlPath, String token) {
+		return requestSpecification
+			.header("X-Queue-Token", token)
 			.when().get(urlPath)
 			.then().log().all()
 			.statusCode(HttpStatus.OK.value())
