@@ -49,6 +49,10 @@ dependencies {
 
     implementation 'org.springframework.retry:spring-retry:1.3.4'
 
+    // swagger
+    implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0"
+
+
     implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
 
 
