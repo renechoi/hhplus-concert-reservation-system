@@ -1,10 +1,18 @@
 package io.queuemanagement.api.infrastructure.entity;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
-import io.queuemanagement.api.business.domainmodel.WaitingQueueStatus;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
+import io.queuemanagement.api.business.domainmodel.QueueStatus;
+import io.queuemanagement.api.business.domainmodel.WaitingQueueToken;
+import io.queuemanagement.common.mapper.ObjectMapperBasedVoMapper;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -12,6 +20,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /**
  * @author : Rene Choi
@@ -24,28 +33,46 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
-public class WaitingQueueTokenEntity {
+@EntityListeners({AuditingEntityListener.class})
+public class WaitingQueueTokenEntity implements EntityRecordable {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long waitingQueueTokenId;
 	private String userId;
 	private String tokenValue;
-	private LocalDateTime remainingTime;
-	private int position;
+	private Long position;
 	private LocalDateTime validUntil;
-	private WaitingQueueStatus status;
+	@Enumerated(EnumType.STRING)
+	private QueueStatus status;
+
+	@CreatedDate
+	@Column(updatable = false)
+	@Setter
+	private LocalDateTime createdAt;
+
+	@Setter
+	private LocalDateTime requestAt;
 
 
-	public static WaitingQueueTokenEntity createMockData(String userId) {
-		return WaitingQueueTokenEntity.builder()
-			.waitingQueueTokenId(1L) // 임의의 ID, 실제로는 DB에서 생성됨
-			.userId(userId)
-			.tokenValue(UUID.randomUUID().toString())
-			.remainingTime(LocalDateTime.now().plusMinutes(30)) // 30분 대기 시간 설정
-			.position(1) // 임의의 대기 순서
-			.validUntil(LocalDateTime.now().plusHours(1)) // 1시간 유효 기간 설정
-			.status(WaitingQueueStatus.WAITING) // 초기 상태는 '대기'
-			.build();
+
+
+	public static WaitingQueueTokenEntity from(WaitingQueueToken waitingQueueToken) {
+		return ObjectMapperBasedVoMapper.convert(waitingQueueToken, WaitingQueueTokenEntity.class);
+	}
+
+	public WaitingQueueToken toDomain() {
+		return ObjectMapperBasedVoMapper.convert(this, WaitingQueueToken.class);
+	}
+
+
+	public WaitingQueueTokenEntity updateStatus(QueueStatus status) {
+		this.status = status;
+		return this;
+	}
+
+	public WaitingQueueTokenEntity updatePosition(Long position) {
+		this.position = position;
+		return this;
 	}
 }
