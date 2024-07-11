@@ -319,12 +319,38 @@ gantt
 
 > http://localhost:24031/queue-management/swagger-ui/index.html#/
 
+![queue-management.png](documents%2Fswagger-screenshot%2Fqueue-management.png)
+
 
 
 ### api-orchestration
 
 > http://localhost:24051/api-orchestration/swagger-ui/index.html#/
 
+![api-orchestration.png](documents%2Fswagger-screenshot%2Fapi-orchestration.png)
+
+
+### client-channel-service
+
+> http://localhost:24101/client-channel/swagger-ui/index.html#/
+
+![client-channel.png](documents%2Fswagger-screenshot%2Fclient-channel.png)
+
+
+
+### payment-service 
+
+> http://localhost:24081/payment/swagger-ui/index.html#/
+
+![payment.png](documents%2Fswagger-screenshot%2Fpayment.png)
+
+
+
+### reservation-service
+
+> http://localhost:24071/reservation/swagger-ui/index.html#/
+
+![reservation-service.png](documents%2Fswagger-screenshot%2Freservation-service.png)
 
 
 
