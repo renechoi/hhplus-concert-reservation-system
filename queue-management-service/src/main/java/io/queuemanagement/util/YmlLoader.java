@@ -56,6 +56,11 @@ public class YmlLoader {
 		return loader.configMap.getOrDefault(key, null);
 	}
 
+	public static Map<String, String>  getConfigMap() {
+		YmlLoader loader = YmlLoader.ymlLoader();
+		return loader.configMap;
+	}
+
 
 	/**
 	 * application.yml 파일에서 설정을 로드합니다.
@@ -124,5 +129,16 @@ public class YmlLoader {
 	 */
 	public String getContextPath() {
 		return this.contextPath;
+	}
+
+
+	public static int getMaxWaitingTokens() {
+		YmlLoader loader = YmlLoader.ymlLoader();
+		return Integer.parseInt(loader.configMap.getOrDefault("waiting-queue.policy.max-limit", "10000"));
+	}
+
+	public static int getMaxProcessingTokens() {
+		YmlLoader loader = YmlLoader.ymlLoader();
+		return Integer.parseInt(loader.configMap.getOrDefault("processing-queue.policy.max-limit", "10000"));
 	}
 }

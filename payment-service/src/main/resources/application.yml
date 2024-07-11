@@ -3,6 +3,9 @@ spring:
     active: stage
   application:
     name: payment-service
+
+
+
 eureka:
   client:
     serviceUrl:
@@ -19,3 +22,7 @@ custom:
   feign:
     direct:
       host:
+
+
+
+

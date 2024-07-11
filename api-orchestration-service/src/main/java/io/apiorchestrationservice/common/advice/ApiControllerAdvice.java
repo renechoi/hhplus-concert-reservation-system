@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
+import io.apiorchestrationservice.common.exception.ItemNotFoundException;
 import io.apiorchestrationservice.common.exception.ServerException;
 import io.apiorchestrationservice.common.model.CommonApiResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +36,12 @@ class ApiControllerAdvice extends ResponseEntityExceptionHandler {
     public Object processServerException(ServerException serverException) {
         log.error("ServerException: {}", serverException.getMessage());
         return new CommonApiResponse<>(serverException.getCode());
+    }
+
+    @ExceptionHandler(ItemNotFoundException.class)
+    public Object processNotFoundException(ItemNotFoundException itemNotFoundException) {
+        log.error("ItemNotFoundException: {}", itemNotFoundException.getMessage());
+        return new CommonApiResponse<>(NO_CONTENT);
     }
 
     @Override

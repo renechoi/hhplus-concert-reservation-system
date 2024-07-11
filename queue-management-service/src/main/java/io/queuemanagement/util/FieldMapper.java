@@ -17,7 +17,7 @@ public class FieldMapper {
 	public static <T> T updateFields(T targetObject, Map<String, String> fieldValues) {
 		for (Map.Entry<String, String> entry : fieldValues.entrySet()) {
 			try {
-				Field field = targetObject.getClass().getDeclaredField(entry.getKey());
+				Field field = getField(targetObject.getClass(), entry.getKey());
 				field.setAccessible(true);
 				field.set(targetObject, convertValueForField(field.getType(), entry.getValue()));
 			} catch (Exception e) {
@@ -26,6 +26,17 @@ public class FieldMapper {
 			}
 		}
 		return targetObject;
+	}
+
+	private static Field getField(Class<?> clazz, String fieldName) {
+		while (clazz != null) {
+			try {
+				return clazz.getDeclaredField(fieldName);
+			} catch (NoSuchFieldException e) {
+				clazz = clazz.getSuperclass();
+			}
+		}
+		return null;
 	}
 
 

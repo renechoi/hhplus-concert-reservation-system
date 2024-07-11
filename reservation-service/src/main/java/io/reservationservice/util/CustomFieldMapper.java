@@ -17,8 +17,8 @@ public class CustomFieldMapper {
 		for (Map.Entry<String, String> entry : fieldValues.entrySet()) {
 			if ("now".equalsIgnoreCase(entry.getValue())) {
 				try {
-					Field field = targetObject.getClass().getDeclaredField(entry.getKey());
-					if (field.getType().equals(LocalDateTime.class)) {
+					Field field = getField(targetObject.getClass(), entry.getKey());
+					if (field != null && field.getType().equals(LocalDateTime.class)) {
 						field.setAccessible(true);
 						field.set(targetObject, LocalDateTime.now());
 					}
@@ -28,5 +28,16 @@ public class CustomFieldMapper {
 			}
 		}
 		return targetObject;
+	}
+
+	private static Field getField(Class<?> clazz, String fieldName) {
+		while (clazz != null) {
+			try {
+				return clazz.getDeclaredField(fieldName);
+			} catch (NoSuchFieldException e) {
+				clazz = clazz.getSuperclass();
+			}
+		}
+		return null;
 	}
 }

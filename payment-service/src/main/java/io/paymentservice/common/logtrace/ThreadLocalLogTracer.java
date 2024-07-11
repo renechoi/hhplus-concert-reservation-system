@@ -46,7 +46,7 @@ public class ThreadLocalLogTracer implements LogTracer {
 			isExceptionLogged.set(true);
 		}
 		releaseTraceId();
-		//		complete(result, status, exception);
+		//		complete(result, paymentStatus, exception);
 	}
 
 	private void complete(Object result, TraceStatus status, Exception exception) {

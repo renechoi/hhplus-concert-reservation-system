@@ -90,7 +90,7 @@ public class GlobalTraceHandler {
 		}
 	}
 
-	@Pointcut("execution(* io.hhpluslectureapplicationsystem.api..*(..)) ")
+	@Pointcut("execution(* io.queuemanagement.api..*(..)) ")
 	public void all() {
 	}
 
