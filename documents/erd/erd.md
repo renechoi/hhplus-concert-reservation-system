@@ -22,13 +22,12 @@ Table ProcessingQueue {
     position Integer
 }
 
-
 Table Concert {
   concert_id bigint [pk]
   title String 
 }
 
-Table ConcertOption{
+Table ConcertOption {
   concert_option_id bigint [pk]
   concert_id bigint
   concert_date datetime
@@ -38,34 +37,29 @@ Table ConcertOption{
   price decimal
 }
 
+Table Seat {
+    seat_id bigint [pk]
+    concert_option_id bigint
+    section String
+    row String
+    seat_number String
+    available Boolean
+    reserved_until DateTime
+}
 
-Table TemporalReservaltion { 
+Table TemporalReservation {
   temporal_reservation_id bigint [pk]
   user_id bigint
   concert_option_id bigint
   seat_id bigint
 }
 
-
 Table Reservation {
     reservation_id bigint [pk]
     user_id bigint 
     concert_option_id bigint
-    seat_id bigint 
+    seat_id bigint
     reservation_date datetime
-}
-
-
-
-
-Table Seat {
-    seat_id bigint [pk]
-    concert_id bigint
-    section String
-    row String
-    seat_number String
-    available Boolean
-    reserved_until DateTime
 }
 
 Table Balance {
@@ -82,23 +76,24 @@ Table Payment {
     status payment_status
 }
 
-
 Enum payment_status {
     CONFIRMED 
     CANCELLED
 }
-
 
 Ref: WaitingQueue.queue_token_id < QueueToken.queue_token_id
 Ref: ProcessingQueue.queue_token_id < QueueToken.queue_token_id
 
 Ref: Concert.concert_id < ConcertOption.concert_id 
 
+Ref: ConcertOption.concert_option_id < Seat.concert_option_id
 
-Ref: ConcertOption.concert_option_id < TemporalReservaltion.concert_option_id
+Ref: Seat.seat_id < TemporalReservation.seat_id
+Ref: ConcertOption.concert_option_id < TemporalReservation.concert_option_id
+
+Ref: Seat.seat_id < Reservation.seat_id
 Ref: ConcertOption.concert_option_id < Reservation.concert_option_id
 
-Ref: Concert.concert_id < Seat.concert_id
-
 Ref: Reservation.reservation_id < Payment.reservation_id
+
 ```
