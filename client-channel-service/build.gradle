@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '3.3.1'
     id 'io.spring.dependency-management' version '1.1.5'
+    id 'java-test-fixtures' // test fixture 플러그인 추가
 }
 
 group = 'io'
@@ -51,6 +52,10 @@ dependencies {
 
     implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
 
+    // swagger
+    implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0"
+
+
 
     // cloud
 //    implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
@@ -60,6 +65,9 @@ dependencies {
     annotationProcessor "com.querydsl:querydsl-apt:${dependencyManagement.importedProperties['querydsl.version']}:jakarta"
     annotationProcessor "jakarta.annotation:jakarta.annotation-api"
     annotationProcessor "jakarta.persistence:jakarta.persistence-api"
+
+    testImplementation 'org.springframework.cloud:spring-cloud-contract-wiremock'
+
 
     testImplementation("io.rest-assured:rest-assured:5.3.2")
     testImplementation("io.rest-assured:json-path:5.3.2")
