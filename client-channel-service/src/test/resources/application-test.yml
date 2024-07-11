@@ -30,6 +30,16 @@ spring:
         max-size: 20
         queue-capacity: 100
 
+  cloud:
+    feign:
+      client:
+        config:
+          default:
+            connectTimeout: 5000
+            readTimeout: 5000
+
+
+
 logging:
   level:
     root: info
@@ -45,3 +55,10 @@ waiting-queue:
 processing-queue:
   policy:
     max-limit: 100
+
+
+
+custom:
+  feign:
+    direct:
+      host: http://localhost:${wiremock.server.port}

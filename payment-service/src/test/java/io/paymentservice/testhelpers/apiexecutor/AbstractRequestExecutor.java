@@ -1,4 +1,4 @@
-package io.queuemanagement.testhelpers.apiexecutor;
+package io.paymentservice.testhelpers.apiexecutor;
 
 import java.lang.reflect.Field;
 import java.util.HashMap;
@@ -66,10 +66,39 @@ public abstract class AbstractRequestExecutor {
 			.extract();
 	}
 
+
+
 	protected static ExtractableResponse<Response> doPut(RequestSpecification requestSpecification, String urlPath) {
 		return requestSpecification
 			.when().put(urlPath)
 			.then().log().all()
+			.extract();
+	}
+
+
+	protected static <T> ExtractableResponse<Response> doPut(RequestSpecification requestSpecification, String urlPath, T requestBody) {
+		return requestSpecification
+			.body(requestBody)
+			.when().put(urlPath)
+			.then().log().all()
+			.extract();
+	}
+
+	protected static ExtractableResponse<Response> doPutWithOk(RequestSpecification requestSpecification, String urlPath) {
+		return requestSpecification
+			.when().put(urlPath)
+			.then().log().all()
+			.statusCode(HttpStatus.OK.value())
+			.extract();
+	}
+
+
+	protected static <T> ExtractableResponse<Response> doPutWithOk(RequestSpecification requestSpecification, String urlPath, T requestBody) {
+		return requestSpecification
+			.body(requestBody)
+			.when().put(urlPath)
+			.then().log().all()
+			.statusCode(HttpStatus.OK.value())
 			.extract();
 	}
 

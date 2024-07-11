@@ -1,6 +1,7 @@
-package io.queuemanagement.cucumber.utils.fieldmatcher;
+package io.apiorchestrationservice.testhelpers.fieldmatcher;
 
 import java.lang.reflect.Field;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Map;
 
@@ -27,6 +28,10 @@ public class ResponseMatcher {
 			String expectedValue = expectedResponse.get(fieldName);
 			Object actualValue = field.get(actualResponse);
 
+			if (expectedValue.contains("random")) {
+				continue;
+			}
+
 			if (actualValue instanceof LocalDateTime) {
 				if ("notNull".equalsIgnoreCase(expectedValue)) {
 					return true;
@@ -39,7 +44,12 @@ public class ResponseMatcher {
 						return false;
 					}
 				}
-			} else {
+			} else if (actualValue instanceof BigDecimal) {
+				BigDecimal expectedBigDecimalValue = new BigDecimal(expectedValue);
+				if (((BigDecimal) actualValue).compareTo(expectedBigDecimalValue) != 0) {
+					return false;
+				}
+			}else {
 				if ("notNull".equalsIgnoreCase(expectedValue) && actualValue !=null) {
 					return true;
 				}

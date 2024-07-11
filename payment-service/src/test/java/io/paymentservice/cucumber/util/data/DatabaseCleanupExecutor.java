@@ -1,4 +1,4 @@
-package io.queuemanagement.cucumber.utils.data;
+package io.paymentservice.cucumber.util.data;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -72,11 +72,6 @@ public class DatabaseCleanupExecutor implements InitializingBean {
 	}
 
 	private String convertToSnakeCase(String tableName) {
-
-		if (tableName.equals("ShedLock")){
-			return "shedlock";
-		}
-
 		return IntStream.range(0, tableName.length())
 			.mapToObj(i -> {
 				char c = tableName.charAt(i);

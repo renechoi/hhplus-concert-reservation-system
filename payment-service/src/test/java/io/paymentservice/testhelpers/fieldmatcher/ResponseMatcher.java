@@ -1,6 +1,7 @@
-package io.queuemanagement.cucumber.utils.fieldmatcher;
+package io.paymentservice.testhelpers.fieldmatcher;
 
 import java.lang.reflect.Field;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Map;
 
@@ -39,7 +40,12 @@ public class ResponseMatcher {
 						return false;
 					}
 				}
-			} else {
+			} else if (actualValue instanceof BigDecimal) {
+				BigDecimal expectedBigDecimalValue = new BigDecimal(expectedValue);
+				if (((BigDecimal) actualValue).compareTo(expectedBigDecimalValue) != 0) {
+					return false;
+				}
+			}else {
 				if ("notNull".equalsIgnoreCase(expectedValue) && actualValue !=null) {
 					return true;
 				}

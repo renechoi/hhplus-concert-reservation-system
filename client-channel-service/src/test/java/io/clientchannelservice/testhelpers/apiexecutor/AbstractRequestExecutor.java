@@ -1,4 +1,4 @@
-package io.queuemanagement.testhelpers.apiexecutor;
+package io.clientchannelservice.testhelpers.apiexecutor;
 
 import java.lang.reflect.Field;
 import java.util.HashMap;
