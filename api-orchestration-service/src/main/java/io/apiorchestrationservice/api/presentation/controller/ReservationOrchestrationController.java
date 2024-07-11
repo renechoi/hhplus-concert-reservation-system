@@ -1,11 +1,8 @@
 package io.apiorchestrationservice.api.presentation.controller;
 
-import static io.apiorchestrationservice.api.application.dto.response.SeatReservationResponse.*;
+import static io.apiorchestrationservice.common.model.CommonApiResponse.*;
 
-import java.time.LocalDate;
-import java.util.Arrays;
-import java.util.List;
-
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -15,12 +12,22 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.apiorchestrationservice.api.application.dto.request.AvailableSeatsRetrievalRequest;
-import io.apiorchestrationservice.api.application.dto.request.SeatReservationRequest;
-import io.apiorchestrationservice.api.application.dto.response.AvailableDatesResponse;
-import io.apiorchestrationservice.api.application.dto.response.AvailableSeatsResponse;
-import io.apiorchestrationservice.api.application.dto.response.SeatReservationResponse;
+import io.apiorchestrationservice.api.application.dto.request.ConcertCreateRequest;
+import io.apiorchestrationservice.api.application.dto.request.ConcertOptionCreateRequest;
+import io.apiorchestrationservice.api.application.dto.request.ReservationConfirmRequest;
+import io.apiorchestrationservice.api.application.dto.request.ReservationCreateRequest;
+import io.apiorchestrationservice.api.application.dto.response.AvailableDatesResponses;
+import io.apiorchestrationservice.api.application.dto.response.AvailableSeatsResponses;
+import io.apiorchestrationservice.api.application.dto.response.ConcertCreateResponse;
+import io.apiorchestrationservice.api.application.dto.response.ConcertOptionCreateResponse;
+import io.apiorchestrationservice.api.application.dto.response.ReservationConfirmResponse;
+import io.apiorchestrationservice.api.application.dto.response.ReservationCreateResponse;
+import io.apiorchestrationservice.api.application.dto.response.ReservationStatusResponses;
+import io.apiorchestrationservice.api.application.facade.ConcertFacade;
 import io.apiorchestrationservice.api.application.facade.ReservationCrudFacade;
-import io.apiorchestrationservice.api.business.dto.outport.SeatInfo;
+import io.apiorchestrationservice.common.annotation.ValidatedToken;
+import io.apiorchestrationservice.common.model.CommonApiResponse;
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 
 /**
@@ -33,44 +40,65 @@ import lombok.RequiredArgsConstructor;
 public class ReservationOrchestrationController {
 
 	private final ReservationCrudFacade reservationCrudFacade;
+	private final ConcertFacade concertFacade;
 
-	// 예약 가능한 날짜 목록을 조회
+
+	@PostMapping("/concerts")
+	@Operation(summary = "콘서트 생성")
+	public CommonApiResponse<ConcertCreateResponse> createConcert(@RequestBody ConcertCreateRequest request) {
+		return created(concertFacade.createConcert(request));
+	}
+
+	@PostMapping("/concerts/{concertId}/options")
+	@Operation(summary = "콘서트 옵션 생성")
+	public CommonApiResponse<ConcertOptionCreateResponse> createConcertOption(@PathVariable Long concertId, @RequestBody @Validated ConcertOptionCreateRequest request) {
+		return created(concertFacade.createConcertOption(concertId, request));
+	}
+
+
+
+
+	@ValidatedToken
 	@GetMapping("/available-dates/{concertOptionId}")
-	public AvailableDatesResponse getAvailableDates(@PathVariable Long concertOptionId) {
-		List<LocalDate> availableDates = Arrays.asList(
-			LocalDate.of(2024, 7, 10),
-			LocalDate.of(2024, 7, 11),
-			LocalDate.of(2024, 7, 12)
-		);
-		return new AvailableDatesResponse(concertOptionId, availableDates);
+	@Operation(summary = "예약 가능한 날짜 목록을 조회")
+	public CommonApiResponse<AvailableDatesResponses> getAvailableDates(  @PathVariable Long concertOptionId) {
+		return OK(concertFacade.getAvailableDates(concertOptionId));
 	}
 
-	// 특정 날짜의 예약 가능한 좌석 목록을 조회
+
+	@ValidatedToken
 	@GetMapping("/available-seats")
-	public AvailableSeatsResponse getAvailableSeats(@ModelAttribute AvailableSeatsRetrievalRequest request) {
-		List<SeatInfo> availableSeats = Arrays.asList(
-			new SeatInfo(1L, "A", "1", "1", true),
-			new SeatInfo(2L, "A", "1", "2", true),
-			new SeatInfo(3L, "A", "1", "3", false)
-		);
-		return new AvailableSeatsResponse(request.getConcertId(), request.getDate(), availableSeats);
+	@Operation(summary = "특정 날짜의 예약 가능한 좌석 목록을 조회")
+	public CommonApiResponse<AvailableSeatsResponses> getAvailableSeats(  @ModelAttribute AvailableSeatsRetrievalRequest request) {
+		return OK(concertFacade.getAvailableSeats(request));
 	}
 
 
-	// 좌석 예약 요청
-	// 실제로는 좌석의 사용 가능 여부를 확인하고, 임시 예약을 처리했음을 가정하고 mock response를 응답합니다.
-	@PostMapping("/reserve-seat")
-	public SeatReservationResponse reserveSeat(@RequestBody SeatReservationRequest request) {
 
-		if (checkSeatAvailability(request.getSeatId())) {
-			return createMockSuccessTemporaryReservedResponse();
-		} else {
-			return createMockFailTemporaryReservedResponse();
-		}
+
+
+
+	@ValidatedToken
+	@PostMapping
+	@Operation(summary = "콘서트 좌석 예약 - 임시 예약")
+	public CommonApiResponse<ReservationCreateResponse> reserveSeat(@RequestBody ReservationCreateRequest request) {
+		return OK(reservationCrudFacade.createTemporaryReservation(request));
 	}
 
-	private boolean checkSeatAvailability(Long seatId) {
-		return seatId != 3L; // 예시로 seatId가 3인 좌석은 예약 불가능한 것으로 가정
+
+
+	@PostMapping("/confirm")
+	@Operation(summary = "임시 예약 확정")
+	public CommonApiResponse<ReservationConfirmResponse> confirmReservation(@RequestBody ReservationConfirmRequest request) {
+		return OK(reservationCrudFacade.confirmReservation(request));
 	}
+
+	@GetMapping("/status/{userId}/{concertOptionId}")
+	@Operation(summary = "예약 상태 조회")
+	public CommonApiResponse<ReservationStatusResponses> getReservationStatus(@PathVariable Long userId, @PathVariable Long concertOptionId) {
+		return OK(reservationCrudFacade.getReservationStatus(userId, concertOptionId));
+	}
+
+
 
 }
