@@ -1,4 +1,4 @@
-package io.queuemanagement.cucumber.steps;
+package io.paymentservice.cucumber.steps;
 
 import io.cucumber.java8.En;
 

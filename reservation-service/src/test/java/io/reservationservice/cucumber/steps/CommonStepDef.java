@@ -1,4 +1,4 @@
-package io.queuemanagement.cucumber.steps;
+package io.reservationservice.cucumber.steps;
 
 import io.cucumber.java8.En;
 

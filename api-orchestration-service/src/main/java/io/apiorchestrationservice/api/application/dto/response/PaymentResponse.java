@@ -2,42 +2,32 @@ package io.apiorchestrationservice.api.application.dto.response;
 
 import java.math.BigDecimal;
 
-import io.apiorchestrationservice.api.business.domainmodel.PaymentStatus;
+import io.apiorchestrationservice.api.business.dto.event.PaymentInternalEvent;
+import io.apiorchestrationservice.api.business.dto.outport.PaymentInfo;
+import io.apiorchestrationservice.common.mapper.ObjectMapperBasedVoMapper;
 
 /**
  * @author : Rene Choi
  * @since : 2024/07/04
  */
 public record PaymentResponse(
-	Long paymentId,
+	Long transactionId,
 	Long userId,
-	Long reservationId,
 	BigDecimal amount,
-	PaymentStatus status,
-	String message
+	String paymentStatus
 ) {
 
-	// Mock 성공 응답 생성 메서드
-	public static PaymentResponse createMockSuccessPaymentResponse() {
-		return new PaymentResponse(
-			1L,
-			1L,
-			1L,
-			new BigDecimal("100.00"),
-			PaymentStatus.CONFIRMED,
-			"결제가 정상 처리되었고, 좌석도 예약 완료"
-		);
+
+
+	public static PaymentResponse from(PaymentInfo paymentInfo) {
+		return ObjectMapperBasedVoMapper.convert(paymentInfo, PaymentResponse.class);
 	}
 
-	// Mock 실패 응답 생성 메서드
-	public static PaymentResponse createMockFailPaymentResponse() {
-		return new PaymentResponse(
-			null,
-			1L,
-			1L,
-			new BigDecimal("100.00"),
-			PaymentStatus.CANCELLED,
-			"잔액이 충분하지 않습니다."
-		);
+	public static PaymentResponse createRolledBackResponse(PaymentResponse paymentResponse) {
+		return new PaymentResponse(null, paymentResponse.userId(), null, null);
+	}
+
+	public PaymentInternalEvent toPaymentInternalEventAsComplete() {
+		return PaymentInternalEvent.builder().paymentTransactionId(this.transactionId().toString()).userId(this.userId().toString()).paymentType("COMPLETED").build();
 	}
 }
