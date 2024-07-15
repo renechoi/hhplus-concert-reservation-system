@@ -1,4 +1,4 @@
-package io.apiorchestrationservice.api.presentation.interceptor;
+package io.apiorchestrationservice.api.interfaces.presentation.interceptor;
 
 import org.apache.commons.lang.StringUtils;
 import org.springframework.stereotype.Component;

@@ -1,4 +1,4 @@
-package io.apiorchestrationservice.api.presentation.controller;
+package io.apiorchestrationservice.api.interfaces.presentation.controller;
 
 import static io.apiorchestrationservice.common.model.CommonApiResponse.*;
 

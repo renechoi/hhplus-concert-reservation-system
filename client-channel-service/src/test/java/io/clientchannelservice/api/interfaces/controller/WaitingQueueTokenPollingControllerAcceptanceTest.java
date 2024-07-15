@@ -1,4 +1,4 @@
-package io.clientchannelservice.api.presentation.controller;
+package io.clientchannelservice.api.interfaces.controller;
 
 import static io.clientchannelservice.fixture.WaitingQueueTokenFixture.*;
 import static io.clientchannelservice.testhelpers.apiexecutor.WaitingQueueTokenPollingApiExecutor.*;
