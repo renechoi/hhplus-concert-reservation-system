@@ -130,4 +130,7 @@ public class SimpleReservationCrudService implements ReservationCrudService {
 
 
 
+	// todo -> 임시 예약에서 실제 예약으로 넘어가지 않은 경우 좌석을 해제해주어야 함
+
+
 }

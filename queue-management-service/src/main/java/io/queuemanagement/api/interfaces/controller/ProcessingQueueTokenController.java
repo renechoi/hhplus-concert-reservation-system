@@ -1,4 +1,4 @@
-package io.queuemanagement.api.presentation.controller;
+package io.queuemanagement.api.interfaces.controller;
 
 import static io.queuemanagement.common.model.CommonApiResponse.*;
 

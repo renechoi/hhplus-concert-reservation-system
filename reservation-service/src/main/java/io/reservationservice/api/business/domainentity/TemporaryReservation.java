@@ -49,7 +49,7 @@ public class TemporaryReservation {
 
 	private Boolean isConfirmed;
 
-	private LocalDateTime reserveAt;
+	private LocalDateTime reserveAt; // todo -> 별도의 expireAt이 필요한가?
 
 	@CreatedDate
 	@Column(updatable = false)
@@ -58,6 +58,8 @@ public class TemporaryReservation {
 
 	@Setter
 	private LocalDateTime requestAt;
+
+	private Boolean isCanceled;
 
 	public static TemporaryReservationBuilder defaultBuilder(){
 		return TemporaryReservation.builder().reserveAt(now()).isConfirmed(false);

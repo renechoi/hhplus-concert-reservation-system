@@ -1,4 +1,4 @@
-package io.reservationservice.api.presentation.controller;
+package io.reservationservice.api.interfaces.controller;
 
 import static io.reservationservice.common.model.CommonApiResponse.*;
 
