@@ -26,3 +26,6 @@ custom:
 
 
 
+
+custom-logging-filter:
+  enabled: true

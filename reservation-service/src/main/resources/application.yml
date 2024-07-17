@@ -19,3 +19,8 @@ custom:
   feign:
     direct:
       host:
+
+
+
+custom-logging-filter:
+  enabled: true

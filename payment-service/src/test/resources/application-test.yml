@@ -36,3 +36,8 @@ logging:
     org.hibernate.SQL: debug
     org.hibernate.type.descriptor.sql.BasicBinder: trace
   config: classpath:log/logback-spring.xml
+
+
+
+custom-logging-filter:
+  enabled: true

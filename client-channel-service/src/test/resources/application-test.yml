@@ -62,3 +62,8 @@ custom:
   feign:
     direct:
       host: http://localhost:${wiremock.server.port}
+
+
+
+custom-logging-filter:
+  enabled: true

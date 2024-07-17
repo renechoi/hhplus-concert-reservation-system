@@ -16,6 +16,7 @@ public class YmlLoader {
 
 	private static YmlLoader instance;
 	private Map<String, String> configMap;
+	private Map<String, String> backupConfigMap;
 	private final String contextPath;
 
 
@@ -44,10 +45,14 @@ public class YmlLoader {
 		this.configMap = new HashMap<>();
 		try {
 			this.configMap = loadYml("src/main/resources/application.yml");
-			this.contextPath = this.configMap.getOrDefault("server.servlet.context-path", "");
 		} catch (IOException e) {
-			throw new RuntimeException("Failed to load configuration", e);
+			try {
+				this.configMap = loadYml("queue-management-service/src/main/resources/application.yml");
+			} catch (IOException ex) {
+				throw new RuntimeException("Failed to load configuration from both default and fallback paths", ex);
+			}
 		}
+		this.contextPath = this.configMap.getOrDefault("server.servlet.context-path", "");
 	}
 
 
@@ -141,4 +146,35 @@ public class YmlLoader {
 		YmlLoader loader = YmlLoader.ymlLoader();
 		return Integer.parseInt(loader.configMap.getOrDefault("processing-queue.policy.max-limit", "10000"));
 	}
+
+	public static int getTokenExpiryInSeconds() {
+		YmlLoader loader = YmlLoader.ymlLoader();
+		return Integer.parseInt(loader.configMap.getOrDefault("waiting-queue.policy.token-expiry-as-seconds", "300"));
+	}
+
+	public static long getSchedulerFixedRate(String key) {
+		YmlLoader loader = YmlLoader.ymlLoader();
+		return Long.parseLong(loader.configMap.getOrDefault(key, "1000"));
+	}
+
+	public boolean isLoggingFilterEnabled() {
+		return Boolean.parseBoolean(this.configMap.getOrDefault("custom-logging-filter.enabled", "false"));
+	}
+
+	public void setLoggingFilterEnabled(boolean enabled) {
+		this.configMap.put("custom-logging-filter.enabled", String.valueOf(enabled));
+	}
+
+	public void backup() {
+		this.backupConfigMap = new HashMap<>(this.configMap);
+	}
+
+	public void restore() {
+		if (this.backupConfigMap!=null){
+			this.configMap = new HashMap<>(this.backupConfigMap);
+			this.backupConfigMap = null;
+		}
+	}
+
+
 }
