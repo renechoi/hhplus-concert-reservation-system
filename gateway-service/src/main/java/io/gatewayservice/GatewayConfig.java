@@ -29,10 +29,6 @@ public class GatewayConfig {
 			.route("payment-service", r -> r.path("/payment/**")
 				.filters(this::commonFilters)
 				.uri("lb://PAYMENT-SERVICE"))
-			.route("balance-service", r -> r.path("/balance/**")
-				.filters(this::commonFilters)
-				.uri("lb://BALANCE-SERVICE"))
-
 			.build();
 	}
 
