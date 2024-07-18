@@ -1,0 +1,30 @@
+spring:
+  profiles:
+    active: stage
+  application:
+    name: message-service
+
+
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:24010/eureka/
+  instance:
+    preferIpAddress: true
+
+server:
+  port: 24201
+  servlet:
+    context-path: /message-service
+
+
+
+custom-logging-filter:
+  enabled: true
+
+
+slack:
+  message:
+    polling:
+      interval: 5000
