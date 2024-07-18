@@ -1,5 +1,6 @@
 package io.queuemanagement.api.business.operators;
 
+import static io.queuemanagement.api.business.dto.inport.WaitingQueueTokenSearchCommand.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -18,6 +19,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import io.queuemanagement.api.business.domainmodel.ProcessingQueueToken;
 import io.queuemanagement.api.business.domainmodel.QueueStatus;
 import io.queuemanagement.api.business.domainmodel.WaitingQueueToken;
+import io.queuemanagement.api.business.dto.inport.WaitingQueueTokenSearchCommand;
 import io.queuemanagement.api.business.dto.outport.WaitingQueueTokenGenerateInfo;
 import io.queuemanagement.api.business.persistence.ProcessingQueueRetrievalRepository;
 import io.queuemanagement.api.business.persistence.WaitingQueueTokenRetrievalRepository;
@@ -63,7 +65,12 @@ public class WaitingQueueTokenDuplicateCheckerTest {
 	@Test
 	@DisplayName("대기열에 토큰이 존재할 때 중복 체크")
 	void testCheckForDuplicate_whenTokenExistsInWaitingQueue() {
-		when(waitingQueueTokenRetrievalRepository.findByUserIdAndStatusOptional(anyString(), any(QueueStatus.class)))
+		WaitingQueueTokenSearchCommand searchCommand = WaitingQueueTokenSearchCommand.builder()
+			.userId("testUser")
+			.status(QueueStatus.WAITING)
+			.build();
+
+		when(waitingQueueTokenRetrievalRepository.findSingleByConditionOptional(refEq(searchCommand)))
 			.thenReturn(Optional.of(waitingQueueToken));
 
 		Optional<WaitingQueueTokenGenerateInfo> result = waitingQueueTokenDuplicateChecker.checkForDuplicate("testUser");
@@ -74,7 +81,12 @@ public class WaitingQueueTokenDuplicateCheckerTest {
 	@Test
 	@DisplayName("처리열에 토큰이 존재할 때 중복 체크")
 	void testCheckForDuplicate_whenTokenExistsInProcessingQueue() {
-		when(waitingQueueTokenRetrievalRepository.findByUserIdAndStatusOptional(anyString(), any(QueueStatus.class)))
+		WaitingQueueTokenSearchCommand waitingSearchCommand = WaitingQueueTokenSearchCommand.builder()
+			.userId("testUser")
+			.status(QueueStatus.WAITING)
+			.build();
+
+		when(waitingQueueTokenRetrievalRepository.findSingleByConditionOptional(refEq(waitingSearchCommand)))
 			.thenReturn(Optional.empty());
 		when(processingQueueRetrievalRepository.findSingleByConditionOptional(any()))
 			.thenReturn(Optional.of(processingQueueToken));
@@ -87,7 +99,12 @@ public class WaitingQueueTokenDuplicateCheckerTest {
 	@Test
 	@DisplayName("대기열 및 처리열에 토큰이 존재하지 않을 때 중복 체크")
 	void testCheckForDuplicate_whenTokenDoesNotExist() {
-		when(waitingQueueTokenRetrievalRepository.findByUserIdAndStatusOptional(anyString(), any(QueueStatus.class)))
+		WaitingQueueTokenSearchCommand waitingSearchCommand = WaitingQueueTokenSearchCommand.builder()
+			.userId("testUser")
+			.status(QueueStatus.WAITING)
+			.build();
+
+		when(waitingQueueTokenRetrievalRepository.findSingleByConditionOptional(refEq(waitingSearchCommand)))
 			.thenReturn(Optional.empty());
 		when(processingQueueRetrievalRepository.findSingleByConditionOptional(any()))
 			.thenReturn(Optional.empty());

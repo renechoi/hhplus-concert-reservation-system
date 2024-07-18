@@ -18,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import io.queuemanagement.api.business.domainmodel.ProcessingQueueToken;
 import io.queuemanagement.api.business.dto.outport.ProcessingQueueTokenGeneralInfo;
 import io.queuemanagement.api.business.persistence.ProcessingQueueRetrievalRepository;
+import io.queuemanagement.api.infrastructure.persistence.orm.ProcessingQueueTokenJpaRepository;
 
 /**
  * @author : Rene Choi
@@ -33,6 +34,7 @@ public class SimpleProcessingQueueTokenServiceTest {
 
 	@InjectMocks
 	private SimpleProcessingQueueTokenService simpleProcessingQueueTokenService;
+
 
 	private ProcessingQueueToken mockProcessingQueueToken;
 

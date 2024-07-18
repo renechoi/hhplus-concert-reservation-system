@@ -7,7 +7,7 @@ import org.springframework.web.servlet.HandlerInterceptor;
 
 import io.apiorchestrationservice.api.application.facade.TokenValidationFacade;
 import io.apiorchestrationservice.common.annotation.ValidatedToken;
-import io.apiorchestrationservice.common.exception.InvalidTokenException;
+import io.apiorchestrationservice.common.exception.definitions.InvalidTokenException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;

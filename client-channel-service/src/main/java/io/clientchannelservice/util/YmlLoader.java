@@ -177,4 +177,10 @@ public class YmlLoader {
 	}
 
 
+
+	public static String getSlackChannelName() {
+		YmlLoader loader = YmlLoader.ymlLoader();
+		return loader.configMap.getOrDefault("slack.channel.name", "default-channel");
+	}
+
 }

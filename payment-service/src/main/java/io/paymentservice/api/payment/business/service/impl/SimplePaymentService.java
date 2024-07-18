@@ -9,7 +9,7 @@ import io.paymentservice.api.payment.business.operators.processor.PaymentCancell
 import io.paymentservice.api.payment.business.operators.processor.PaymentHistoryReader;
 import io.paymentservice.api.payment.business.operators.processor.PaymentProcessor;
 import io.paymentservice.api.payment.business.service.PaymentService;
-import io.paymentservice.common.exception.PaymentHistoryNotFoundException;
+import io.paymentservice.common.exception.definitions.PaymentHistoryNotFoundException;
 import lombok.RequiredArgsConstructor;
 
 /**

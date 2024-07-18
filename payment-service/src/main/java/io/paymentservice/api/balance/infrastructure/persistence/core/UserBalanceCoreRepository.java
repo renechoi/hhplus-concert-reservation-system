@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository;
 import io.paymentservice.api.balance.business.domainentity.UserBalance;
 import io.paymentservice.api.balance.business.persistence.UserBalanceRepository;
 import io.paymentservice.api.balance.infrastructure.persistence.orm.UserBalanceJpaRepository;
-import io.paymentservice.common.exception.UserBalanceNotFoundException;
+import io.paymentservice.common.exception.definitions.UserBalanceNotFoundException;
 import lombok.RequiredArgsConstructor;
 
 /**

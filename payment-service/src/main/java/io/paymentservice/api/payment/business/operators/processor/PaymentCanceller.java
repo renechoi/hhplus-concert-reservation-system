@@ -11,7 +11,7 @@ import io.paymentservice.api.payment.business.domainentity.PaymentStatus;
 import io.paymentservice.api.payment.business.domainentity.PaymentTransaction;
 import io.paymentservice.api.payment.business.dto.outport.PaymentInfo;
 import io.paymentservice.api.payment.business.persistence.PaymentTransactionRepository;
-import io.paymentservice.common.exception.PaymentCancelUnAvailableException;
+import io.paymentservice.common.exception.definitions.PaymentCancelUnAvailableException;
 import lombok.RequiredArgsConstructor;
 
 /**

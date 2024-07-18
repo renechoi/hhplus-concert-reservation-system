@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository;
 import io.paymentservice.api.payment.business.domainentity.PaymentTransaction;
 import io.paymentservice.api.payment.business.persistence.PaymentTransactionRepository;
 import io.paymentservice.api.payment.infrastructure.orm.PaymentTransactionJpaRepository;
-import io.paymentservice.common.exception.PaymentTransactionNotFoundException;
+import io.paymentservice.common.exception.definitions.PaymentTransactionNotFoundException;
 import lombok.RequiredArgsConstructor;
 
 /**

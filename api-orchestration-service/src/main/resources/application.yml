@@ -49,12 +49,28 @@ springdoc:
 
 
 feign:
+  client:
+    config:
+      default:
+        connectTimeout: 5000
+        readTimeout: 5000
+        loggerLevel: full
   httpclient:
-    enabled: false
-  okhttp:
     enabled: true
+    max-connections: 200
+    max-connections-per-route: 20
+    time-to-live: 1
+    time-to-live-unit: MINUTES
+  okhttp:
+    enabled: false
 
 
 
 custom-logging-filter:
-  enabled: true
+  enabled: false
+
+
+
+slack:
+  channel:
+    name: slack-test

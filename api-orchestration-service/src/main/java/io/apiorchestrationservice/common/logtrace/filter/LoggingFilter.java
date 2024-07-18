@@ -14,13 +14,14 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author : Rene Choi
  * @since : 2024/07/17
  */
 @RequiredArgsConstructor
+@Slf4j
 public class LoggingFilter implements Filter {
 
     private final RequestResponseLogger logger;
@@ -47,7 +48,7 @@ public class LoggingFilter implements Filter {
             if (status != null) {
                 logger.logException(status, e);
             }
-            chain.doFilter(request, response);
+            log.error("Exception in LoggingFilter: ", e);
         }
     }
 
