@@ -4,6 +4,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 import io.reservationservice.api.application.dto.request.ReservationCreateRequest;
+import io.reservationservice.api.application.dto.response.ReservationStatusResponses;
 import io.reservationservice.api.application.dto.response.TemporaryReservationCreateResponse;
 
 /**
@@ -14,12 +15,18 @@ import io.reservationservice.api.application.dto.response.TemporaryReservationCr
 public class ReservationContextHolder implements TestDtoContextHolder {
 	private static final ConcurrentHashMap<Long, TemporaryReservationCreateResponse> reservationResponseMap = new ConcurrentHashMap<>();
 	private static final ConcurrentHashMap<Long, ReservationCreateRequest> reservationRequestMap = new ConcurrentHashMap<>();
+	private static final ConcurrentHashMap<Long, ReservationStatusResponses> reservationStatusResponseMap = new ConcurrentHashMap<>();
 	private static final AtomicReference<Long> mostRecentReservationId = new AtomicReference<>();
+	private static final AtomicReference<Long> mostRecentUserId = new AtomicReference<>();
+	private static final AtomicReference<Long> mostRecentConcertOptionId = new AtomicReference<>();
 
 	public static void initFields() {
 		reservationResponseMap.clear();
 		reservationRequestMap.clear();
+		reservationStatusResponseMap.clear();
 		mostRecentReservationId.set(null);
+		mostRecentUserId.set(null);
+		mostRecentConcertOptionId.set(null);
 	}
 
 	public static void putReservationCreateRequest(Long reservationId, ReservationCreateRequest request) {
@@ -51,5 +58,22 @@ public class ReservationContextHolder implements TestDtoContextHolder {
 	public static TemporaryReservationCreateResponse getMostRecentReservationCreateResponse() {
 		Long recentReservationId = mostRecentReservationId.get();
 		return recentReservationId != null ? getReservationResponse(recentReservationId) : null;
+	}
+
+	public static void putReservationStatusResponse(Long userId, Long concertOptionId, ReservationStatusResponses response) {
+		reservationStatusResponseMap.put(userId, response);
+		mostRecentUserId.set(userId);
+		mostRecentConcertOptionId.set(concertOptionId);
+	}
+
+
+
+	public static ReservationStatusResponses getReservationStatusResponse(Long userId) {
+		return reservationStatusResponseMap.get(userId);
+	}
+
+	public static ReservationStatusResponses getMostRecentReservationStatusResponse() {
+		Long recentUserId = mostRecentUserId.get();
+		return recentUserId != null ? getReservationStatusResponse(recentUserId) : null;
 	}
 }

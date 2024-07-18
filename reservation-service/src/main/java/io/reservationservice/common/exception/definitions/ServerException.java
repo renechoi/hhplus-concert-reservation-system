@@ -1,4 +1,4 @@
-package io.reservationservice.common.exception;
+package io.reservationservice.common.exception.definitions;
 
 import io.reservationservice.common.model.GlobalResponseCode;
 import lombok.Getter;

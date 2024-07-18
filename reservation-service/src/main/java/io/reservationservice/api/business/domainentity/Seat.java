@@ -73,4 +73,9 @@ public class Seat {
 		this.occupied = false;
 		return this;
 	}
+
+
+	public boolean isAvailable(LocalDateTime date) {
+		return !isOccupied() && concertOption.isConcertDateAfter(date);
+	}
 }

@@ -1,4 +1,4 @@
-package io.reservationservice.common.advice;
+package io.reservationservice.common.exception.apiadvice;
 
 
 
@@ -19,8 +19,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
-import io.reservationservice.common.exception.ItemNotFoundException;
-import io.reservationservice.common.exception.ServerException;
+import io.reservationservice.common.exception.definitions.ItemNotFoundException;
+import io.reservationservice.common.exception.definitions.ServerException;
 import io.reservationservice.common.model.CommonApiResponse;
 import lombok.extern.slf4j.Slf4j;
 

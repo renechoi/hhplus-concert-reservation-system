@@ -29,6 +29,10 @@ public class ReservationFacade {
 	}
 
 	public ReservationStatusResponses getReservationStatus(Long userId, Long concertOptionId) {
-		return reservationCrudService.getReservationStatus(userId, concertOptionId);
+		return ReservationStatusResponses.from(reservationCrudService.getReservationStatus(userId, concertOptionId));
+	}
+
+	public void cancelExpiredTemporalReservations() {
+		reservationCrudService.cancelExpiredTemporalReservations();
 	}
 }

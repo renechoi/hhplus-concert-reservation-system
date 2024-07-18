@@ -59,4 +59,8 @@ public class ConcertOption implements EntityRecordable{
 		this.concert = concert;
 		return this;
 	}
+
+	public boolean isConcertDateAfter(LocalDateTime date) {
+		return concertDate.isAfter(date);
+	}
 }

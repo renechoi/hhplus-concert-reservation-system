@@ -26,12 +26,18 @@ public class TemporaryReservationSearchCommand {
 	private Long seatId;
 	private Boolean isConfirmed;
 	private LocalDateTime reserveAt;
+	private LocalDateTime expireAt;
 	private LocalDateTime createdAt;
 	private LocalDateTime requestAt;
 
+	private String dateSearchTarget;
 	private String dateSearchCondition; // "after", "before", "on"
 
 	public static TemporaryReservationSearchCommand searchTemporaryReservationByUserIdAndConcertOptionId(Long userId, Long concertOptionId) {
 		return TemporaryReservationSearchCommand.builder().userId(userId).concertOptionId(concertOptionId).build();
+	}
+
+	public static TemporaryReservationSearchCommand searchTemporaryReservationByExpireAt(LocalDateTime searchTime, String dateSearchCondition) {
+		return TemporaryReservationSearchCommand.builder().expireAt(searchTime).dateSearchTarget("expireAt").dateSearchCondition(dateSearchCondition).build();
 	}
 }

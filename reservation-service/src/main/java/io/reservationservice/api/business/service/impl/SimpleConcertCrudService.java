@@ -1,5 +1,9 @@
 package io.reservationservice.api.business.service.impl;
 
+import static io.reservationservice.api.business.domainentity.Seat.*;
+
+import java.util.stream.IntStream;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,9 +43,9 @@ public class SimpleConcertCrudService implements ConcertCrudService {
 		ConcertOption concertOption = command.toEntityWithConcert(concert);
 		concertOptionRepository.save(concertOption);
 
-		for (int i = 1; i <= command.getMaxSeats(); i++) {
-			seatRepository.save(Seat.createSeatWithConcertOptionAndNumber(concertOption, (long)i));
-		}
+		IntStream.rangeClosed(1, command.getMaxSeats())
+			.mapToObj(i -> createSeatWithConcertOptionAndNumber(concertOption, (long) i))
+			.forEach(seatRepository::save);
 
 		return ConcertOptionCreateInfo.from(concertOption);
 	}

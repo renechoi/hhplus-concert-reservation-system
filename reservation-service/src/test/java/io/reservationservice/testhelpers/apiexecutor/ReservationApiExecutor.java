@@ -17,6 +17,8 @@ import io.restassured.specification.RequestSpecification;
 public class ReservationApiExecutor extends AbstractRequestExecutor {
 	private static final String CONTEXT_PATH = YmlLoader.ymlLoader().getContextPath();
 	private static final String CONCERT_API_URL_PATH = CONTEXT_PATH + "/api/reservations";
+	private static final String RESERVATION_STATUS_API_URL_PATH = CONCERT_API_URL_PATH + "/status";
+
 
 	private static RequestSpecification getRequestSpecification(int port) {
 		return given().log().all().port(port).contentType(APPLICATION_JSON_VALUE);
@@ -28,5 +30,15 @@ public class ReservationApiExecutor extends AbstractRequestExecutor {
 
 	public static ExtractableResponse<Response> createReservationWithCreated(ReservationCreateRequest request) {
 		return doPostWithCreated(getRequestSpecification(getPort()), CONCERT_API_URL_PATH, request);
+	}
+
+
+	public static ExtractableResponse<Response> getReservationStatus(Long userId, Long concertOptionId) {
+		return doGet(getRequestSpecification(getPort()), String.format("%s/%d/%d", RESERVATION_STATUS_API_URL_PATH, userId, concertOptionId));
+	}
+
+
+	public static ExtractableResponse<Response> getReservationStatusWithOk(Long userId, Long concertOptionId) {
+		return doGetWithOk(getRequestSpecification(getPort()), String.format("%s/%d/%d", RESERVATION_STATUS_API_URL_PATH, userId, concertOptionId));
 	}
 }

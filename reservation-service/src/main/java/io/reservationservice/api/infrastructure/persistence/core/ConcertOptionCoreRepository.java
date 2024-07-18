@@ -8,7 +8,7 @@ import io.reservationservice.api.business.domainentity.ConcertOption;
 import io.reservationservice.api.business.dto.inport.ConcertOptionSearchCommand;
 import io.reservationservice.api.business.persistence.ConcertOptionRepository;
 import io.reservationservice.api.infrastructure.persistence.orm.ConcertOptionJpaRepository;
-import io.reservationservice.common.exception.ConcertOptionNotFoundException;
+import io.reservationservice.common.exception.definitions.ConcertOptionNotFoundException;
 import lombok.RequiredArgsConstructor;
 
 /**

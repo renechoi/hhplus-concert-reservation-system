@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 
 import com.querydsl.core.types.Predicate;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.DateTimePath;
 
 import io.reservationservice.api.business.domainentity.QTemporaryReservation;
 import io.reservationservice.api.business.dto.inport.TemporaryReservationSearchCommand;
@@ -14,8 +15,8 @@ import io.reservationservice.util.QueryDslBooleanExpressionBuilder;
 import lombok.RequiredArgsConstructor;
 
 /**
- * @author : Rene Choi
- * @since : 2024/07/07
+ * Author: Rene Choi
+ * Since: 2024/07/07
  */
 @Component
 @RequiredArgsConstructor
@@ -23,34 +24,35 @@ public class TemporaryReservationQueryFilter implements QueryFilter<TemporaryRes
 
 	private static final QTemporaryReservation TEMPORARY_RESERVATION = QTemporaryReservation.temporaryReservation;
 
-
-
 	@Override
 	public Predicate createGlobalSearchQuery(TemporaryReservationSearchCommand searchCommand) {
 		QueryDslBooleanExpressionBuilder builder = new QueryDslBooleanExpressionBuilder(TEMPORARY_RESERVATION.isNotNull())
 			.notNullAnd(TEMPORARY_RESERVATION.userId::eq, searchCommand.getUserId())
 			.notNullAnd(TEMPORARY_RESERVATION.concertOption.concertOptionId::eq, searchCommand.getConcertOptionId())
 			.notNullAnd(TEMPORARY_RESERVATION.seat.seatId::eq, searchCommand.getSeatId())
-			.notNullAnd(TEMPORARY_RESERVATION.isConfirmed::eq, searchCommand.getIsConfirmed());
+			.notNullAnd(TEMPORARY_RESERVATION.isConfirmed::eq, searchCommand.getIsConfirmed())
 
-		Optional.ofNullable(searchCommand.getReserveAt()).ifPresent(reserveAt ->
-			builder.notEmptyAnd(this::createDatePredicate, searchCommand.getDateSearchCondition(), reserveAt.toString())
-		);
+			.and(createDatePredicate(searchCommand.getDateSearchCondition(), searchCommand.getReserveAt(), TEMPORARY_RESERVATION.reserveAt))
+			.and(createDatePredicate(searchCommand.getDateSearchCondition(), searchCommand.getExpireAt(), TEMPORARY_RESERVATION.expireAt))
+			.and(createDatePredicate(searchCommand.getDateSearchCondition(), searchCommand.getCreatedAt(), TEMPORARY_RESERVATION.createdAt))
+			.and(createDatePredicate(searchCommand.getDateSearchCondition(), searchCommand.getRequestAt(), TEMPORARY_RESERVATION.requestAt));
 
 		return builder.build();
 	}
 
-	private BooleanExpression createDatePredicate(String valueCondition, String value) {
-		LocalDateTime dateTime = LocalDateTime.parse(value);
-		if ("after".equals(valueCondition)) {
-			return TEMPORARY_RESERVATION.reserveAt.after(dateTime);
-		} else if ("before".equals(valueCondition)) {
-			return TEMPORARY_RESERVATION.reserveAt.before(dateTime);
-		} else if ("on".equals(valueCondition)) {
-			return TEMPORARY_RESERVATION.reserveAt.eq(dateTime);
-		} else {
+	private BooleanExpression createDatePredicate(String condition, LocalDateTime date, DateTimePath<LocalDateTime> dateTimePath) {
+		if (condition == null || date == null) {
 			return null;
 		}
+		switch (condition) {
+			case "before":
+				return dateTimePath.before(date);
+			case "after":
+				return dateTimePath.after(date);
+			case "on":
+				return dateTimePath.eq(date);
+			default:
+				return null;
+		}
 	}
-
 }
