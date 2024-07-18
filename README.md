@@ -1491,6 +1491,14 @@ public class SlackMessagePollingProcessor {
 </details>
 
 
+<details>
+<summary><b>메시지 예시</b></summary>
+
+
+![slack-alert.png](documents%2Fslack-message-captures%2Fslack-alert.png)
+
+</details>
+
 
 </details>
 
