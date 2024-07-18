@@ -51,3 +51,8 @@ feign:
     enabled: false
   okhttp:
     enabled: true
+
+
+
+custom-logging-filter:
+  enabled: true

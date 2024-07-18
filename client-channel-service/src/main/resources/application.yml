@@ -15,3 +15,8 @@ custom:
   feign:
     direct:
       host: http://localhost:24000/
+
+
+
+custom-logging-filter:
+  enabled: true

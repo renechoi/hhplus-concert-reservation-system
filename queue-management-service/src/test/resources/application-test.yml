@@ -45,3 +45,13 @@ waiting-queue:
 processing-queue:
   policy:
     max-limit: 100
+
+
+
+scheduler:
+  queueTransferRate: 1000  # 1초마다 실행
+  expireTokensRate: 1000   # 1초마다 실행
+
+
+custom-logging-filter:
+  enabled: true
