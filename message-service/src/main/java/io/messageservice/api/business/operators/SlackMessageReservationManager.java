@@ -2,6 +2,7 @@ package io.messageservice.api.business.operators;
 
 import java.util.Optional;
 
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,7 +27,7 @@ public class SlackMessageReservationManager {
 		return SlackMessageReserveInfo.from(slackMessageReserveRepository.save(command.toEntity().init()));
 	}
 
-	@Transactional(readOnly = true)
+	@Transactional
 	public SlackMessageReserveInfo popNextReservedMessage() {
 
 		Optional<SlackMessage> slackMessageOptional = slackMessageReserveRepository.popNextReservedMessage();
@@ -38,7 +39,8 @@ public class SlackMessageReservationManager {
 	}
 
 	@Transactional
-	public void markAsSent(Long id) {
+	@Async
+	public void markAsSentAsync(Long id) {
 		SlackMessage message = slackMessageReserveRepository.findById(id).orElseThrow();
 		message.markAsSent();
 		slackMessageReserveRepository.save(message);
