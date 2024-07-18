@@ -2,6 +2,7 @@ package io.queuemanagement.api.business.operators;
 
 import static io.queuemanagement.api.business.domainmodel.QueueStatus.*;
 import static io.queuemanagement.api.business.dto.inport.ProcessingQueueTokenSearchCommand.*;
+import static io.queuemanagement.api.business.dto.inport.WaitingQueueTokenSearchCommand.*;
 
 import java.util.Optional;
 
@@ -32,12 +33,12 @@ public class WaitingQueueTokenDuplicateChecker {
 	 * 현재의 구현은 대기열 혹은 처리열에 이미 존재하는 경우, 해당 토큰을 반환하도록 구현되어 있다
 	 */
 	public Optional<WaitingQueueTokenGenerateInfo> checkForDuplicate(String userId) {
-		Optional<WaitingQueueToken> waitingQueueTokenByUserOptional = waitingQueueTokenRetrievalRepository.findByUserIdAndStatusOptional(userId, QueueStatus.WAITING);
+		Optional<WaitingQueueToken> waitingQueueTokenByUserOptional = waitingQueueTokenRetrievalRepository.findSingleByConditionOptional(createWaitingTokenSearchConditionByUserIdAndStatus(userId, QueueStatus.WAITING));
 		if (waitingQueueTokenByUserOptional.isPresent()) {
 			return Optional.ofNullable(WaitingQueueTokenGenerateInfo.from(waitingQueueTokenByUserOptional.get()));
 		}
 
-		Optional<ProcessingQueueToken> processingQueueTokenOptional = processingQueueRetrievalRepository.findSingleByConditionOptional(createSearchConditionByUserIdAndStatus(userId, PROCESSING));
+		Optional<ProcessingQueueToken> processingQueueTokenOptional = processingQueueRetrievalRepository.findSingleByConditionOptional(searchByUserIdAndStatus(userId, PROCESSING));
 		return processingQueueTokenOptional.map(WaitingQueueTokenGenerateInfo::from);
 
 	}

@@ -16,8 +16,6 @@ import io.queuemanagement.api.infrastructure.persistence.querydsl.ProcessingQueu
  */
 public interface ProcessingQueueTokenJpaRepository extends JpaRepository<ProcessingQueueTokenEntity, Long>, ProcessingQueueTokenQueryDslCustomRepository {
 	long countByStatus(QueueStatus status);
-	Optional<ProcessingQueueTokenEntity> findByTokenValue(String tokenValue);
 	List<ProcessingQueueTokenEntity> findAllByStatusAndValidUntilBefore(QueueStatus status, LocalDateTime time);
 
-	Optional<ProcessingQueueTokenEntity> findByUserId(String  userId);
 }

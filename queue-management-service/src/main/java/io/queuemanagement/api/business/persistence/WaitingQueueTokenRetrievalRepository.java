@@ -6,6 +6,7 @@ import java.util.Optional;
 
 import io.queuemanagement.api.business.domainmodel.QueueStatus;
 import io.queuemanagement.api.business.domainmodel.WaitingQueueToken;
+import io.queuemanagement.api.business.dto.inport.WaitingQueueTokenSearchCommand;
 
 /**
  * @author : Rene Choi
@@ -13,14 +14,10 @@ import io.queuemanagement.api.business.domainmodel.WaitingQueueToken;
  */
 public interface WaitingQueueTokenRetrievalRepository {
 
-	WaitingQueueToken findTokenByUserIdWithThrows(String  userId);
-	Optional<WaitingQueueToken> findTokenByUserOptional(String  userId);
+	WaitingQueueToken findSingleByConditionWithThrows(WaitingQueueTokenSearchCommand searchCommand);
 
-	Optional<WaitingQueueToken> findByUserIdAndStatusOptional(String userId, QueueStatus queueStatus);
-	List<WaitingQueueToken> findAllByUserIdAndStatus(String userId, QueueStatus queueStatus);
+	Optional<WaitingQueueToken> findSingleByConditionOptional(WaitingQueueTokenSearchCommand searchCommand);
 
-	List<WaitingQueueToken> findByStatus(QueueStatus queueStatus);
-	List<WaitingQueueToken> findByStatusOrderByRequestAtAsc(QueueStatus status);
+	List<WaitingQueueToken> findAllByCondition(WaitingQueueTokenSearchCommand searchCommand);
 
-	List<WaitingQueueToken> findByStatusInAndValidUntilBefore(List<QueueStatus> statuses, LocalDateTime localDateTime);
 }

@@ -1,44 +1,51 @@
-package io.queuemanagement.api.application.facade;
+package io.queuemanagement.api.interfaces.scheduler;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
 
-import io.queuemanagement.api.business.service.QueueManagementService;
-import io.queuemanagement.common.annotation.Facade;
+import io.queuemanagement.api.application.facade.QueueManagementFacade;
 import lombok.RequiredArgsConstructor;
 
 /**
  * @author : Rene Choi
- * @since : 2024/07/06
+ * @since : 2024/07/15
  */
-@Facade
+@Component
 @RequiredArgsConstructor
-public class QueueProcessingSchedulerFacade {
-	private final QueueManagementService queueManagementService;
+public class TokenScheduler {
+	private final QueueManagementFacade queueManagementFacade;
+
 
 	/**
 	 * 대기열 -> 처리열 이동
 	 */
-	@Scheduled(fixedRate = 2000) // 2초마다 실행
+	@Scheduled(fixedRateString = "${scheduler.queueTransferRate}")
 	// @SchedulerLock(name = "processScheduledQueueTransfer", lockAtMostFor = "PT5S", lockAtLeastFor = "PT2S")
 	public void processScheduledQueueTransfer() {
-		queueManagementService.processScheduledQueueTransfer();
+		queueManagementFacade.processScheduledQueueTransfer();
+	}
+
+	/**
+	 * 만료 토큰 처리
+	 */
+	@Scheduled(fixedRateString = "${scheduler.expireTokensRate}")
+	// @SchedulerLock(name = "expireTokens", lockAtMostFor = "PT15S", lockAtLeastFor = "PT10S")
+	public void expireTokens() {
+		queueManagementFacade.expireQueueTokens();
 	}
 
 
-	@Scheduled(fixedRate = 10000) // 10초마다 실행
-	// @SchedulerLock(name = "expireQueueTokens", lockAtMostFor = "PT15S", lockAtLeastFor = "PT10S")
-	public void expireQueueTokens() {
-		queueManagementService.expireProcessingQueueTokens();
-		queueManagementService.expireWaitingQueueTokens();
-	}
 
 	/**
 	 * 대기열에 존재하는 모든 토큰들에 대해 순서를 일일히 재조정하여 각각 업데이트 치는 방식
 	 */
-	// @Scheduled(fixedRate = 5000) // 5 초
+	@Deprecated
 	public void recalculateWaitingQueuePositionsBySimpleReOrderingEach() {
-		queueManagementService.recalculateWaitingQueuePositionsBySimpleReOrderingEach();
+		queueManagementFacade.recalculateWaitingQueuePositionsBySimpleReOrderingEach();
 	}
+
+
 
 	/**
 	 * 대기열에 존재하는 모든 토큰들에 대해 순서를 일일히 재조정하되, 별도의 position 테이블에, 전체 토큰의 순번이 계산된 json 문서를 업데이트
@@ -46,10 +53,9 @@ public class QueueProcessingSchedulerFacade {
 	 * -> 실시간성 미보장, 데이터 수가 많아질 때 json 연산에 대한 비용 계산 측정 필요
 	 * -> 조회시에 해당 테이블의 값을 가져와서 position으로 사용
 	 */
-	@Scheduled(fixedRate = 5000) // 5 초
-	// @SchedulerLock(name = "recalculateWaitingQueuePositionsWithJsonStoring", lockAtMostFor = "PT10S", lockAtLeastFor = "PT5S")
+	@Deprecated
 	public void recalculateWaitingQueuePositionsWithJsonStoring() {
-		queueManagementService.recalculateWaitingQueuePositionsWithJsonStoring();
+		queueManagementFacade.recalculateWaitingQueuePositionsWithJsonStoring();
 	}
 
 }

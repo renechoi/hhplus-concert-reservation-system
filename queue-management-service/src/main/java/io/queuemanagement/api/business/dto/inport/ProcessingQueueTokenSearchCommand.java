@@ -29,15 +29,22 @@ public class ProcessingQueueTokenSearchCommand extends AbstractCommonRequestInfo
 	private QueueStatus status;
 	private LocalDateTime createdAt;
 
+	private String dateSearchCondition; // "after", "before", "on"
+
 	public static ProcessingQueueTokenSearchCommand createSearchConditionByTokenAndUserIdAndStatus(String queueToken, String userId, QueueStatus queueStatus) {
 		return ProcessingQueueTokenSearchCommand.builder().tokenValue(queueToken).userId(userId).status(queueStatus).build();
 	}
 
-	public static ProcessingQueueTokenSearchCommand createSearchConditionByUserIdAndStatus(String userId, QueueStatus queueStatus) {
+	public static ProcessingQueueTokenSearchCommand searchByUserIdAndStatus(String userId, QueueStatus queueStatus) {
 		return ProcessingQueueTokenSearchCommand.builder().userId(userId).status(queueStatus).build();
 	}
 
 	public static ProcessingQueueTokenSearchCommand createSearchConditionByTokenAndStatus(String queueToken,  QueueStatus queueStatus) {
 		return ProcessingQueueTokenSearchCommand.builder().tokenValue(queueToken).status(queueStatus).build();
 	}
+
+	public static ProcessingQueueTokenSearchCommand searchByStatusAndValidUntil(QueueStatus queueStatus, LocalDateTime validUntil, String dateSearchCondition) {
+		return ProcessingQueueTokenSearchCommand.builder().status(queueStatus).validUntil(validUntil).dateSearchCondition(dateSearchCondition).build();
+	}
+
 }

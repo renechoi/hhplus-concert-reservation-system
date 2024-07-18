@@ -5,7 +5,7 @@ import org.springframework.stereotype.Repository;
 import io.queuemanagement.api.business.domainmodel.WaitingQueueToken;
 import io.queuemanagement.api.business.persistence.WaitingQueueTokenManagementRepository;
 import io.queuemanagement.api.infrastructure.persistence.orm.WaitingQueueTokenJpaRepository;
-import io.queuemanagement.common.exception.WaitingQueueTokenNotFoundException;
+import io.queuemanagement.common.exception.definitions.WaitingQueueTokenNotFoundException;
 import lombok.RequiredArgsConstructor;
 
 /**

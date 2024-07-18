@@ -23,4 +23,12 @@ public record WaitingQueueTokenGeneralInfo(
 	public static WaitingQueueTokenGeneralInfo from(WaitingQueueToken waitingQueueToken) {
 		return ObjectMapperBasedVoMapper.convert(waitingQueueToken, WaitingQueueTokenGeneralInfo.class);
 	}
+
+	public static WaitingQueueTokenGeneralInfo empty() {
+		return new WaitingQueueTokenGeneralInfo(null, null, null, null, null, null, null);
+	}
+
+	public boolean isEmpty() {
+		return this.waitingQueueTokenId == null;
+	}
 }
