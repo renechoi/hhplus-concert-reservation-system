@@ -14,7 +14,7 @@ import io.paymentservice.api.balance.business.operators.balancecharger.UserBalan
 import io.paymentservice.api.balance.business.operators.balanceusemanager.UserBalanceUseManager;
 import io.paymentservice.api.payment.business.dto.inport.PaymentCommand;
 import io.paymentservice.api.payment.business.dto.outport.PaymentInfo;
-import io.paymentservice.common.exception.PaymentProcessUnAvailableException;
+import io.paymentservice.common.exception.definitions.PaymentProcessUnAvailableException;
 import lombok.RequiredArgsConstructor;
 
 /**

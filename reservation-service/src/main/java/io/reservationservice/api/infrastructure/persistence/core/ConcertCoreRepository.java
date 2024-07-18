@@ -5,7 +5,7 @@ import org.springframework.stereotype.Repository;
 import io.reservationservice.api.business.domainentity.Concert;
 import io.reservationservice.api.business.persistence.ConcertRepository;
 import io.reservationservice.api.infrastructure.persistence.orm.ConcertJpaRepository;
-import io.reservationservice.common.exception.ConcertNotFoundException;
+import io.reservationservice.common.exception.definitions.ConcertNotFoundException;
 import lombok.RequiredArgsConstructor;
 
 /**

@@ -47,6 +47,7 @@ public class WaitingQueueTokenContextHolder implements TestDtoContextHolder {
 
 	public static void putWaitingQueueTokenGeneralResponse(WaitingQueueTokenGeneralResponse response) {
 		generalResponseMap.put(response.userId(), response);
+		mostRecentResponseUserId.set(response.userId());
 	}
 
 	public static WaitingQueueTokenGeneralResponse getWaitingQueueTokenGeneralResponse(String userId) {

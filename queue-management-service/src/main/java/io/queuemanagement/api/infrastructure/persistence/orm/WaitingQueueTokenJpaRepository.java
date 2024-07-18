@@ -8,12 +8,13 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import io.queuemanagement.api.business.domainmodel.QueueStatus;
 import io.queuemanagement.api.infrastructure.entity.WaitingQueueTokenEntity;
+import io.queuemanagement.api.infrastructure.persistence.querydsl.WaitingQueueTokenQueryDslCustomRepository;
 
 /**
  * @author : Rene Choi
  * @since : 2024/07/04
  */
-public interface WaitingQueueTokenJpaRepository extends JpaRepository<WaitingQueueTokenEntity, Long> {
+public interface WaitingQueueTokenJpaRepository extends JpaRepository<WaitingQueueTokenEntity, Long>, WaitingQueueTokenQueryDslCustomRepository {
 	Optional<WaitingQueueTokenEntity> findByUserId(String  userId);
 	Optional<WaitingQueueTokenEntity> findTopByUserIdOrderByRequestAtDesc(String userId);
 	Optional<WaitingQueueTokenEntity> findByUserIdAndStatus(String userId, QueueStatus status);

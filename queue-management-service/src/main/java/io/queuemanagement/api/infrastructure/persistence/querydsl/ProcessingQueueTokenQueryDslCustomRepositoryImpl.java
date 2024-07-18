@@ -1,5 +1,6 @@
 package io.queuemanagement.api.infrastructure.persistence.querydsl;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.stereotype.Component;
@@ -34,5 +35,15 @@ public class ProcessingQueueTokenQueryDslCustomRepositoryImpl implements Process
 				.where(searchPredicate)
 				.fetchOne()
 		);
+	}
+
+	@Override
+	public List<ProcessingQueueTokenEntity> findAllByCondition(ProcessingQueueTokenSearchCommand searchCommand) {
+		QProcessingQueueTokenEntity processingQueueToken = QProcessingQueueTokenEntity.processingQueueTokenEntity;
+		Predicate searchPredicate = queryFilter.createGlobalSearchQuery(searchCommand);
+
+		return queryFactory.selectFrom(processingQueueToken)
+			.where(searchPredicate)
+			.fetch();
 	}
 }

@@ -11,6 +11,7 @@
     <file type="web" url="file://$PROJECT_DIR$/client-channel-service" />
     <file type="web" url="file://$PROJECT_DIR$/eureka-service" />
     <file type="web" url="file://$PROJECT_DIR$/gateway-service" />
+    <file type="web" url="file://$PROJECT_DIR$/message-service" />
     <file type="web" url="file://$PROJECT_DIR$/payment-service" />
     <file type="web" url="file://$PROJECT_DIR$/queue-management-service" />
     <file type="web" url="file://$PROJECT_DIR$/reservation-service" />

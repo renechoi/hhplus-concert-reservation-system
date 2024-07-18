@@ -4,6 +4,7 @@ import static io.queuemanagement.api.business.domainmodel.ProcessingQueueToken.*
 import static io.queuemanagement.api.business.domainmodel.QueueStatus.*;
 import static io.queuemanagement.api.business.domainmodel.WaitingQueuePositionJson.*;
 import static io.queuemanagement.api.business.dto.inport.ProcessingQueueTokenSearchCommand.*;
+import static io.queuemanagement.api.business.dto.inport.WaitingQueueTokenSearchCommand.*;
 import static io.queuemanagement.common.mapper.ObjectMapperBasedVoMapper.*;
 import static io.queuemanagement.util.YmlLoader.*;
 import static java.time.LocalDateTime.*;
@@ -53,7 +54,7 @@ public class SimpleQueueManagementService implements QueueManagementService {
 			return;
 		}
 
-		waitingQueueTokenRetrievalRepository.findByStatusOrderByRequestAtAsc(WAITING)
+		waitingQueueTokenRetrievalRepository.findAllByCondition(searchByStatusAndOrderByRequestAtAsc(WAITING))
 			.stream()
 			.limit(availableSlots)
 			.toList()
@@ -69,7 +70,7 @@ public class SimpleQueueManagementService implements QueueManagementService {
 	@Transactional
 	@Override
 	public void expireProcessingQueueTokens() {
-		List<ProcessingQueueToken> tokensToExpire = processingQueueRetrievalRepository.findAllByStatusAndValidUntilBefore(PROCESSING,  now());
+		List<ProcessingQueueToken> tokensToExpire = processingQueueRetrievalRepository.findAllByCondition(searchByStatusAndValidUntil(PROCESSING,  now(), "before"));
 		tokensToExpire.forEach(token -> {
 			token = token.withExpired();
 			processingQueueStoreRepository.store(token);
@@ -79,7 +80,7 @@ public class SimpleQueueManagementService implements QueueManagementService {
 	@Override
 	@Transactional
 	public void expireWaitingQueueTokens() {
-		List<WaitingQueueToken> tokensToExpire = waitingQueueTokenRetrievalRepository.findByStatusInAndValidUntilBefore(List.of(WAITING, PROCESSING), now());
+		List<WaitingQueueToken> tokensToExpire = waitingQueueTokenRetrievalRepository.findAllByCondition(searchByStatusesAndValidUntil(List.of(WAITING, PROCESSING), now(), "before"));
 		tokensToExpire.forEach(token -> {
 			token = token.withExpired();
 			waitingQueueTokenManagementRepository.updateStatus(token);
@@ -89,7 +90,7 @@ public class SimpleQueueManagementService implements QueueManagementService {
 	@Transactional
 	@Override
 	public void completeProcessingQueueToken(String userId) {
-		ProcessingQueueToken processingQueueToken = processingQueueRetrievalRepository.findSingleByConditionWithThrows(createSearchConditionByUserIdAndStatus(userId, PROCESSING));
+		ProcessingQueueToken processingQueueToken = processingQueueRetrievalRepository.findSingleByConditionWithThrows(searchByUserIdAndStatus(userId, PROCESSING));
 		processingQueueToken = processingQueueToken.withCompleted();
 		processingQueueStoreRepository.store(processingQueueToken);
 	}
@@ -97,7 +98,7 @@ public class SimpleQueueManagementService implements QueueManagementService {
 	@Override
 	@Transactional
 	public void completeWaitingQueueTokenByUserId(String userId) {
-		waitingQueueTokenRetrievalRepository.findAllByUserIdAndStatus(userId, PROCESSING)
+		waitingQueueTokenRetrievalRepository.findAllByCondition(createWaitingTokenSearchConditionByUserIdAndStatus(userId, PROCESSING))
 			.forEach(
 				item -> waitingQueueTokenManagementRepository.updateStatus(item.withCompleted())
 			);
@@ -105,8 +106,9 @@ public class SimpleQueueManagementService implements QueueManagementService {
 
 	@Transactional
 	@Override
+	@Deprecated
 	public void recalculateWaitingQueuePositionsBySimpleReOrderingEach() {
-		List<WaitingQueueToken> waitingTokens = waitingQueueTokenRetrievalRepository.findByStatusOrderByRequestAtAsc(WAITING);
+		List<WaitingQueueToken> waitingTokens = waitingQueueTokenRetrievalRepository.findAllByCondition(searchByStatusAndOrderByRequestAtAsc(WAITING));
 
 		long currentPosition = 1;
 		for (WaitingQueueToken token : waitingTokens) {
@@ -118,8 +120,9 @@ public class SimpleQueueManagementService implements QueueManagementService {
 	@SneakyThrows
 	@Transactional
 	@Override
+	@Deprecated
 	public void recalculateWaitingQueuePositionsWithJsonStoring() {
-		List<WaitingQueueToken> waitingTokens = waitingQueueTokenRetrievalRepository.findByStatusOrderByRequestAtAsc(WAITING);
+		List<WaitingQueueToken> waitingTokens = waitingQueueTokenRetrievalRepository.findAllByCondition(searchByStatusAndOrderByRequestAtAsc(WAITING));
 
 		Map<Long, Long> positionMap = new HashMap<>();
 		long currentPosition = 1;

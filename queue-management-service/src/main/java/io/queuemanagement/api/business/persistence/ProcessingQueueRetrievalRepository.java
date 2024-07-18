@@ -19,7 +19,7 @@ public interface ProcessingQueueRetrievalRepository {
 
 	Optional<ProcessingQueueToken> findSingleByConditionOptional(ProcessingQueueTokenSearchCommand searchCommand);
 
-	Optional<ProcessingQueueToken> findTokenByUserOptional(String userId);
+	List<ProcessingQueueToken> findAllByCondition(ProcessingQueueTokenSearchCommand searchCommand);
 
 	List<ProcessingQueueToken> findAllByStatusAndValidUntilBefore(QueueStatus queueStatus, LocalDateTime time);
 

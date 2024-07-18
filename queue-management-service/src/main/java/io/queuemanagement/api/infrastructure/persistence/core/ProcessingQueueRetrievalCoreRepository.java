@@ -12,7 +12,7 @@ import io.queuemanagement.api.business.dto.inport.ProcessingQueueTokenSearchComm
 import io.queuemanagement.api.business.persistence.ProcessingQueueRetrievalRepository;
 import io.queuemanagement.api.infrastructure.entity.ProcessingQueueTokenEntity;
 import io.queuemanagement.api.infrastructure.persistence.orm.ProcessingQueueTokenJpaRepository;
-import io.queuemanagement.common.exception.ProcessingQueueTokenNotFoundException;
+import io.queuemanagement.common.exception.definitions.ProcessingQueueTokenNotFoundException;
 import lombok.RequiredArgsConstructor;
 
 /**
@@ -40,8 +40,11 @@ public class ProcessingQueueRetrievalCoreRepository implements ProcessingQueueRe
 	}
 
 	@Override
-	public Optional<ProcessingQueueToken> findTokenByUserOptional(String userId) {
-		return processingQueueTokenJpaRepository.findByUserId(userId).map(ProcessingQueueTokenEntity::toDomain);
+	public List<ProcessingQueueToken> findAllByCondition(ProcessingQueueTokenSearchCommand searchCommand) {
+		return processingQueueTokenJpaRepository.findAllByCondition(searchCommand)
+			.stream()
+			.map(ProcessingQueueTokenEntity::toDomain)
+			.toList();
 	}
 
 	@Override

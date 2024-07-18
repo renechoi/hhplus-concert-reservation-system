@@ -1,5 +1,6 @@
 package io.queuemanagement.api.business.service.impl;
 
+import static io.queuemanagement.api.business.dto.inport.WaitingQueueTokenSearchCommand.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -15,6 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import io.queuemanagement.api.business.domainmodel.WaitingQueuePositionJson;
 import io.queuemanagement.api.business.domainmodel.WaitingQueueToken;
 import io.queuemanagement.api.business.dto.inport.WaitingQueueTokenGenerateCommand;
+import io.queuemanagement.api.business.dto.inport.WaitingQueueTokenSearchCommand;
 import io.queuemanagement.api.business.dto.outport.WaitingQueueTokenGeneralInfo;
 import io.queuemanagement.api.business.dto.outport.WaitingQueueTokenGenerateInfo;
 import io.queuemanagement.api.business.operators.WaitingQueueTokenDuplicateChecker;
@@ -77,19 +79,13 @@ public class SimpleWaitingQueueServiceTest {
 			.tokenValue("token123")
 			.position(1L)
 			.build();
-		String positionJson = "{\"1\":1}";
-		WaitingQueuePositionJson positionDocument = new WaitingQueuePositionJson(1L, positionJson);
 		WaitingQueueTokenGeneralInfo expectedInfo = WaitingQueueTokenGeneralInfo.from(token);
 
-		when(waitingQueueTokenRetrievalRepository.findTokenByUserIdWithThrows(userId))
+		when(waitingQueueTokenRetrievalRepository.findSingleByConditionWithThrows(any(WaitingQueueTokenSearchCommand.class)))
 			.thenReturn(token);
-		when(queuePositionDocumentRepository.findDocumentByIdOrElseDefault(1L))
-			.thenReturn(positionDocument);
 
-		WaitingQueueTokenGeneralInfo result = simpleWaitingQueueService.retrieve(userId);
+		WaitingQueueTokenGeneralInfo result = simpleWaitingQueueService.retrieveByAiAtOnceCalculation(userId);
 
 		assertEquals(expectedInfo, result);
-		verify(waitingQueueTokenRetrievalRepository, times(1)).findTokenByUserIdWithThrows(userId);
-		verify(queuePositionDocumentRepository, times(1)).findDocumentByIdOrElseDefault(1L);
 	}
 }

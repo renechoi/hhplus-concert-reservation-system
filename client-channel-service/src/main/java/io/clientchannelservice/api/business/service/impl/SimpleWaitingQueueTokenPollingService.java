@@ -5,7 +5,7 @@ import org.springframework.stereotype.Service;
 import io.clientchannelservice.api.business.client.WaitingQueueTokenClientAdapter;
 import io.clientchannelservice.api.business.dto.outport.WaitingQueueTokenPollingInfo;
 import io.clientchannelservice.api.business.service.WaitingQueueTokenPollingService;
-import io.clientchannelservice.common.exception.WaitingQueueTokenNotFoundException;
+import io.clientchannelservice.common.exception.definitions.WaitingQueueTokenNotFoundException;
 import lombok.RequiredArgsConstructor;
 
 /**

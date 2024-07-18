@@ -39,6 +39,10 @@ public class WaitingQueueTokenApiStepDef implements En {
 
 
 
+		When("다음과 같은 유저 아이디로 대기열 토큰 조회를 요청하고 제시된 응답을 받는다", this::retrieveTokenWithExpectedStatusCode);
+
+
+
 	}
 
 	private void givenUserInfoWithDataTableAndGenerateTokenWithSuccessResponse(DataTable dataTable) {
@@ -48,6 +52,16 @@ public class WaitingQueueTokenApiStepDef implements En {
 
 		putWaitingQueueTokenGenerationResponse(parseWaitingQueueTokenGenerationResponse(generateWaitingQueueToken(tokenGenerateRequest)));
 		putWaitingQueueTokenGenerateRequest(tokenGenerateRequest);
+	}
+
+
+	private void retrieveTokenWithExpectedStatusCode(DataTable dataTable) {
+		Map<String, String> userIdMap = dataTable.asMaps().get(0);
+		String userId = userIdMap.get("userId");
+		int expectedStatusCode = Integer.parseInt(userIdMap.get("statusCode"));
+
+		int statusCode = retrieveWaitingQueueToken(userId).statusCode();
+		assertEquals(expectedStatusCode, statusCode, "응답 코드가 일치하지 않습니다.");
 	}
 
 	private void verifyTokenInfo(DataTable dataTable) {

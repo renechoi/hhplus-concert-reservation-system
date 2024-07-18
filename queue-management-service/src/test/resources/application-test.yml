@@ -30,6 +30,7 @@ spring:
         max-size: 20
         queue-capacity: 100
 
+
 logging:
   level:
     root: info
@@ -55,3 +56,9 @@ scheduler:
 
 custom-logging-filter:
   enabled: true
+
+
+
+slack:
+  channel:
+    name: slack-test

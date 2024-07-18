@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import io.queuemanagement.api.business.dto.inport.WaitingQueueTokenGenerateCommand;
 import io.queuemanagement.common.annotation.DomainModel;
+import io.queuemanagement.util.YmlLoader;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -33,10 +34,14 @@ public class WaitingQueueToken implements DomainRecordable{
 		return WaitingQueueToken.builder()
 			.userId(command.getUserId())
 			.tokenValue(UUID.randomUUID().toString())
-			.validUntil(LocalDateTime.now().plusMinutes(5))
 			.status(QueueStatus.WAITING)
 			.requestAt(command.getRequestAt())
 			.build();
+	}
+
+	public WaitingQueueToken withValidUntil(int seconds) {
+		this.validUntil = LocalDateTime.now().plusSeconds(seconds);
+		return this;
 	}
 
 

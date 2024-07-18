@@ -27,4 +27,4 @@ custom-logging-filter:
 slack:
   message:
     polling:
-      interval: 5000
+      interval: 100

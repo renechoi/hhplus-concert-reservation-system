@@ -51,7 +51,7 @@ public class SimpleAvailabilityService implements AvailabilityService {
 		List<Seat> seats = seatRepository.findMultipleByCondition(searchByConcertOptionId(concertOptionId));
 
 		List<AvailableSeatsInfo> availableSeats = seats.stream()
-			.filter(seat -> !seat.isOccupied() && seat.getConcertOption().getConcertDate().isAfter(date))
+			.filter(seat -> seat.isAvailable(date))
 			.map(AvailableSeatsInfo::from)
 			.collect(Collectors.toList());
 

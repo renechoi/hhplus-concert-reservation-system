@@ -42,6 +42,6 @@ public class SlackMessageService {
 			return;
 		}
 		slackMessageSender.sendAsync(slackMessageReserveInfo.toCommand());
-		slackMessageReservationManager.markAsSent(slackMessageReserveInfo.id());
+		slackMessageReservationManager.markAsSentAsync(slackMessageReserveInfo.id());
 	}
 }

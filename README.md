@@ -564,6 +564,56 @@ Content-Type: application/json
 
 
 
+<details>
+<summary><b>Tests</b></summary>
+
+## 서비스별 테스트 코드 현황
+
+- 총계: 91 건
+
+### api-orchestration-service
+
+- 14 건
+
+![api-orchestration-service.png](documents%2Ftest-captures%2Fapi-orchestration-service.png)
+
+
+
+### queue-management-service
+
+- 38 건 
+
+![queue-management-service.png](documents%2Ftest-captures%2Fqueue-management-service.png)
+
+
+
+### reservation-service
+
+
+- 14 건
+
+![reservation-service.png](documents%2Ftest-captures%2Freservation-service.png)
+
+
+### payment-service
+
+- 22 건
+
+![payment-service.png](documents%2Ftest-captures%2Fpayment-service.png)
+
+
+### client-channel-service 
+
+- 3 건
+
+![client-channel-service.png](documents%2Ftest-captures%2Fclient-channel-service.png)
+
+
+
+</details>
+
+
+
 
 <details>
 <summary><b>구상 단계에서의 기술적 고민들</b></summary>
@@ -698,60 +748,219 @@ polling 대비 sse나 websocket을 사용하는 방식은 비동기적 프로세
 
 
 
-## 4. 콘서트 - 콘서트 옵션 - 좌석 생성 방식에 대한 쟁점 
+## 4. 콘서트 옵션 - 좌석 생성 방식에 대한 쟁점 
 
-// 각각을 만들 것인가 
-// 한번에 만들 것인가 
 
-// 좌석을 어떻게 만들 것인가? 
-// 콘서트 옵션을 만들때 좌석을 만든다면? 비동기로 처리할 수 있다. 
-// 그런데 그때 좌석이 10만개라면 ? 미리 데이터 row가 10만개가 생긴다 -> 비효율적일 수 있음 
+Concert Option와 Seat의 연관관계 기반의 프로세스에서 좌석을 언제 생성할 것인가 문제가 있다. 
+즉, 콘서트 옵션 생성 시점에서 할 것인지, 실제 예약 요청 시점에서 할 것인지에 대한 문제이다. 
+각각의 접근 방식에는 장단점이 있어서 다음과 같이 고민해보았다. 
 
-// 적응적 생성 방식 : 요청이 들어올 때 그때 그때 만든다 
-// 적절한가? 
-// 해당 api에 대한 부하를 고려해볼 때 -> 많지 않을 것으로 예상된다. 따라서 적절 
+
+### 엔티티 구조와 관계
+
+먼저 엔티티 간의 관계를 살펴보자.
+
+1. **Concert**: 콘서트 자체를 의미한다. 
+2. **Concert Option**: 콘서트의 특정 옵션 또는 인스턴스를 나타내며, 날짜, 시간, 티켓 가격 등을 설정한다.
+3. **Seat**: 특정 콘서트 옵션 내에서 예약 가능한 개별 좌석을 나타낸다.
+
+Concert는 여러 Concert Option을 가지고, 각 Concert Option은 여러 Seat를 가진다. 
+
+
+<details>
+<summary><b>Concert</b></summary>
+
+
+```java
+@Entity
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+@Getter
+@EntityListeners({AuditingEntityListener.class})
+public class Concert {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long concertId;
+    private String title;
+    @CreatedDate
+    @Column(updatable = false)
+    @Setter
+    private LocalDateTime createdAt;
+    @Setter
+    private LocalDateTime requestAt;
+}
+```
+</details>
+
+
+
+<details>
+<summary><b>ConcertOption</b></summary>
+
+```
+@Entity
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+@Getter
+@EntityListeners({AuditingEntityListener.class})
+public class ConcertOption {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long concertOptionId;
+    @ManyToOne
+    @JoinColumn(name = "concert_id")
+    private Concert concert;
+    private LocalDateTime concertDate;
+    private Duration concertDuration;
+    private String title;
+    private String description;
+    private BigDecimal price;
+    @CreatedDate
+    @Column(updatable = false)
+    @Setter
+    private LocalDateTime createdAt;
+    @Setter
+    private LocalDateTime requestAt;
+}
+```
+</details>
+
+
+
+
+<details>
+<summary><b>Seat</b></summary>
+```
+@Entity
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+@Getter
+@EntityListeners({AuditingEntityListener.class})
+public class Seat {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long seatId;
+    @ManyToOne
+    @JoinColumn(name = "concert_option_id")
+    private ConcertOption concertOption;
+    private Long seatNumber;
+    private Boolean occupied;
+    @CreatedDate
+    @Column(updatable = false)
+    @Setter
+    private LocalDateTime createdAt;
+}
+```
+
+</details>
+
+
+### 1. 콘서트 옵션 생성 시 좌석 생성 전략
+
+#### 장점:
+- **즉시 사용 가능**: 콘서트 옵션이 생성되자마자 좌석이 준비해 놓는 방식이다. 조회시 이미 생성된 좌석을 불러오기만 하면 된다.
+
+#### 단점:
+- **잠재적 오버헤드**: 콘서트 옵션 생성 로직과 결합도가 크다. 대규모 이벤트의 경우, 수천, 수만 개의 좌석을 미리 생성한다면, 옵션 생성 자체에서 시간 소요가 클 수 있다.
+- **미사용 좌석**: 콘서트 옵션이 매진되지 않으면 미리 생성된 좌석이 가비지가 될 수 있다. 
+
+### 2. 예약 요청 시 좌석 생성 전략
+
+#### 장점:
+- **자원 효율성**: 수요가 있을 때만 좌석을 생성하여 불필요한 자원을 절약할 수 있다.
+
+#### 단점:
+- **증가된 예약 지연**: 실시간으로 좌석을 생성하므로 예약 과정에서 지연을 초래할 수 있다.
+- **복잡한 예약 로직**: 좌석 생성과 동시에 좌석 이용 가능성을 처리하는 부분에서 복잡도가 올라간다.
+
+
+### 기술적 고려 사항
+
+### 성능
+- **사전 생성**: 예측 가능한 높은 수요와 많은 좌석이 있는 이벤트에 적합하다. 
+- **요청 시 생성**: 수요가 불확실한 동적 환경에 이상적이다. 초기 오버헤드를 줄일 수 있지만, 동시성 처리가 필요하다.
+
+### 데이터 일관성
+- **사전 생성**: 좌석이 미리 정의되어 있고 상태만 변경되므로 데이터 일관성이 보장된다.
+- **요청 시 생성**: 충돌을 피하고 좌석 가용성을 보장하기 위해 신중한 관리가 필요하다.
+
+### 동시성
+- **사전 생성**: 좌석 엔티티가 미리 존재하므로 동시성 관리가 간단하다.
+- **요청 시 생성**: 동시에 들어오는 요청을 처리하고 중복 좌석 생성을 방지하기 위해 강력한 동시성 제어가 필요하다.
+
+### 멘토링 피드백
+
+허재 코치님의 공개 Q&A 세션에서 다음과 같은 피드백을 받았다.
+
+1. **부하 관리**: 예약 요청 시 좌석을 생성하는 것은 피크 타임에 상당한 부하를 줄 수 있다. 
+2. **동시성 문제**: 요청 시 좌석 생성을 처리하기 위한 동시성 처리가 필요하다. 
+3. **가비지 데이터?**: 미리 생성해 놓는 것을 꼭 가비지로 볼 것인가? 통계 자료 활용 등에서도 보다 유연하고 쉽게 대응할 수 있지 않나?
+
+### 결론
+
+초기 생각했던 것은, 예약 API가 호출되는 시점은 이미 유량 제어가 된 시점이므로, 예약과 좌석을 결합하는 방식이 나쁘지 않을 것이라고 생각했다. 
+
+하지만 그렇더라도 동시성 이슈나 복잡도 측면에서 난이도가 더 어려운 접근이라고 판단했다. 
+
+미리 생성해두는 방식을 선택하기에 가장 마음에 걸렸던 부분은 `미리 생성해둔 좌석이 예마가 안되면?` `예를 들어 10만 건 예매 했는데 3만 건만 예약되면 7만 건은 가비지 아닌가?` 였다. 
+
+그런데 그 자원이 서버에 그렇게 부담이 되는가를 고려했을 때, 그렇게 큰 부담은 아닐 수 있고, 또 가비지 데이터에 대해서는 사후 처리로 관리하기도 용이할 것이라 판단했다.
+
+따라서 후자의 방식, 즉 예약 요청 시 좌석을 생성하는 방식을 선택하기로 결정했다.
 
 
 
 
 ## 5. 임시 예약과 예약에 대한 테이블 분리에 대한 쟁점 
 
-// 예약 요청시 임시 예약을 먼저 하고, 결제가 완료될 때 해당 예약에 대한 상태가 완료 처리된다는 비즈니스 요구 사항에 대해서, 
-// 상태 값으로 관리하거나 테이블을 분리해서 하는 방법 두가지 고민 
+임시 예약(temporary reservation)과 본 예약(confirmed reservation)을 어떻게 관리할 것인가에 대한 고민이 있다.
 
-// status -> 구현 간단, 데이터 관리 쉬울 수 있다....
-// 하지만 한 테이블에 데이터 모수가 많아진다. 
+### 배경
+
+사용자가 콘서트 예약을 요청하면, 서버는 먼저 임시 예약을 생성한다.
+결제가 일정 시간 내에 완료되지 않으면, 이 임시 예약은 취소된다. 결제가 완료되면 임시 예약이 본 예약으로 확정된다. 
+이때 임시 예약 관리에 대해, 두 가지 방식을 고려할 수 있다.
+1. 예약 상태 필드를 통해 하나의 테이블에서 관리
+2. 임시 예약과 본 예약을 별도의 테이블로 분리하여 관리
+
+### 두 방식 비교
+
+##### 상태 필드를 통한 관리
+상태 필드를 통해 하나의 테이블에서 임시 예약과 본 예약을 관리하는 방법을 살펴보자.
+
+장점은 구현이 간단하다는 것이다. 데이터베이스 스키마가 단순해지고, 단일 테이블에서 모든 예약 데이터를 조회할 수 있기 때문에 데이터 접근도 용이하다.
+
+하지만 다음과 같은 단점들이 있다.
+
+1. **모수 증가의 문제**: 테이블에 모든 예약 데이터를 저장할 경우, 데이터 모수 증가의 문제가 있다. 
+2. **상태 관리 복잡성**: 상태 전이(transition)에 대한 일관성을 유지하도록 구현해야 한다. 
+
+##### 테이블 분리를 통한 관리
+
+별도 임시 예약 테이블로 분리하여 관리하는 방법은 관리 포인트를 명확히 분리하는 것이다. 
+
+1. **데이터 관리 용이성**: 적은 모수의 장점이 있다. 관리와 성능에서 용이할 수 있다.
+
+하지만, 이 방법 역시 다음과 같은 단점이 존재한다.
+
+1. **구현의 복잡성**: 두 개의 테이블을 관리하기 위한 추가적인 로직이 필요하다. 
+2. **동기화의 어려움**: 분리된 테이블 간의 데이터 일관성을 유지하기 위한 동기화 작업이 중요하다.
+
+### 최종 결정: 테이블 분리
+고민 끝에 임시 예약과 본 예약을 별도의 테이블로 분리하여 관리하는 방향으로 결정했다. 
+주요 이유는 관리 포인트를 나누는 것이 좀 더 편하다고 생각했고, 또 확장성을 고려할 때 적은 모수라는 장점이 크다고 생각했다. 
 
 
-// 임시 예약 테이블로 관리 -> 명확한 분리 -> 데이터 관리에 용이
-// 정리할 때 편하다 ! 
-// 적은 모수에서 놀 수 있음 
-// 성능 최적화에 유리? 
-
-// 구현의 복잡도.... 
-// 동기화의 어려움 
 
 
 
-// 그런데 대규모 데이터셋을 고려하면 분리하는 게 나을 것 같다. 
+## 6. MSA 아키텍처에서 '잔액'을 별도의 도메인 서비스로 분리하는 것에 대한 문제 
 
 
 
-
-
-
-## 6. 임시 예약까지 했다가 중간에 나갔다가 다시 예약하는 경우 
-
-seat에서 userId를 반정규화 하고 있을 필요성 
-
-
-
-
-
-## 7. MSA 아키텍처에서 '잔액'을 별도의 도메인 서비스로 분리하는 것에 대한 문제 
-
-
-```
 잔액 충전/조회 API를 개발하는 데 있어, 별도의 도메인 서비스로 'balance service'를 분리하는 것에 대해 검토해보았다.
 
 ### 도메인 모델링 관점에서의 적절성 검토
@@ -780,16 +989,6 @@ seat에서 userId를 반정규화 하고 있을 필요성
 
 ### 결론
 
-**장점:**
-- **단일 책임 원칙 준수**: 잔액 관련 로직을 별도로 관리하여 서비스의 책임을 명확히 할 수 있다.
-- **확장성**: 잔액 관련 기능 확장 시 독립적으로 개발 및 배포가 가능하다.
-
-**단점:**
-- **복잡성 증가**: 결제와 잔액 간의 상호작용에서 데이터 일관성 유지 및 트랜잭션 관리가 복잡해질 수 있다.
-- **성능 이슈**: 서비스 간의 통신 오버헤드가 발생할 수 있다.
-
-### 결론
-
 잔액(포인트) 관리 기능이 시스템 내에서 중요한 비즈니스 로직을 독립적으로 제공하지 않기 때문에, 엄밀히 말하면 Passive Domain으로 볼 수 있다. 
 따라서 별도의 도메인 서비스로 'balance service'를 분리하는 것은 필요에 따라 결정할 수 있다.
 
@@ -798,7 +997,7 @@ seat에서 userId를 반정규화 하고 있을 필요성
 
 현재 요구 사항과 시스템의 복잡성을 고려하여, 잔액 관리를 결제 서비스와 통합하여 구현하는 것이 적절하다고 판단. 
 이후 시스템이 확장되고, 잔액 관련 로직이 복잡해진다면 그때 별도의 서비스로 분리하는 것을 고려하자.
-```
+
 
 
 
@@ -1050,6 +1249,251 @@ Opaque 토큰은 클라이언트가 토큰의 내용을 해석할 수 없게 하
 병목 예상 구간 -> 대기열 관리, 특히 대기열 조회 부분!
 
 </details>
+
+
+
+<details>
+<summary><b>예외 처리 및 알림 프로세스</b></summary>
+
+비동기 예외와 전체 애플리케이션 예외를 포착하고, 로깅 및 알림을 별도로 관리하는 방식이 필요하여 구현한 예외 처리 및 알림 프로세스이다.
+
+## 예외 처리 시스템
+
+### 1. Global Exception Handler
+
+`@RestControllerAdvice`와 `ResponseEntityExceptionHandler`를 활용한 전역 예외 처리를 구현 예시는 다음과 같다. 
+
+모든 예외를 포착하고 적절한 로깅 및 응답을 제공한다.
+
+
+
+<details>
+<summary><b>구현 예시</b></summary>
+
+```java
+@RestControllerAdvice
+@Slf4j
+class ApiControllerAdvice extends ResponseEntityExceptionHandler {
+    @ExceptionHandler(value = Exception.class)
+    public Object handleException(Exception ex) {
+        log.error("processUnDefinedErrors: {}", ex.getMessage());
+        return new CommonApiResponse<>(UNKNOWN_ERROR);
+    }
+
+    @ExceptionHandler(ServerException.class)
+    public Object processServerException(ServerException serverException) {
+        log.error("ServerException: {}", serverException.getMessage());
+        return new CommonApiResponse<>(serverException.getCode());
+    }
+
+    @ExceptionHandler(ItemNotFoundException.class)
+    public Object processNotFoundException(ServerException serverException) {
+        log.error("ServerException: {}", serverException.getMessage());
+        return new CommonApiResponse<>(NO_CONTENT);
+    }
+}
+```
+</details>
+
+### 2. Async Exception Handler
+
+비동기 메서드에서 발생하는 예외를 처리하기 위한 `AsyncUncaughtExceptionHandler`의 구현 예시는 다음과 같다.
+
+비동기 메서드에서 발생하는 예외는 일반적인 예외 처리 흐름에 포함되지 않으므로, 이를 별도로 처리해야 한다.
+
+
+
+
+<details>
+<summary><b>구현 예시</b></summary>
+
+```java
+@Component
+@RequiredArgsConstructor
+@Slf4j
+public class CustomAsyncUncaughtExceptionHandler implements AsyncUncaughtExceptionHandler {
+
+    private final GlobalExceptionAlertInternalPublisher globalExceptionAlertInternalPublisher;
+
+    @Override
+    public void handleUncaughtException(Throwable throwable, Method method, Object... obj) {
+        log.error("Thread {} threw exception: {}", Thread.currentThread().getName(), throwable.getMessage());
+        globalExceptionAlertInternalPublisher.publish(new GlobalExceptionAlertEvent("uncaughtException", throwable));
+    }
+}
+```
+</details>
+
+
+### 3. AOP를 통한 예외 포착
+
+애플리케이션 전역의 비동기 및 동기 메서드에서 발생하는 예외를 포착하기 위해 AOP를 활용했다.
+
+<details>
+<summary><b>구현 예시</b></summary>
+
+```java
+@Slf4j
+@Aspect
+@Component
+@RequiredArgsConstructor
+public class GlobalExceptionAlertAspect {
+
+    private final GlobalExceptionAlertInternalPublisher globalExceptionAlertInternalPublisher;
+    private final Set<Throwable> markedExceptions = Collections.newSetFromMap(new WeakHashMap<>());
+
+    @Pointcut("execution(public * io.reservationservice.api..*(..))")
+    void apiMethods() {}
+
+    @Pointcut("@annotation(org.springframework.scheduling.annotation.Async)")
+    void async() {}
+
+    @Pointcut("!async()")
+    void notAsync() {}
+
+    @AfterThrowing(pointcut = "apiMethods() && notAsync()", throwing = "throwable")
+    public void alertApplicationWideMethods(JoinPoint jp, Throwable throwable) {
+        if (!isMarkedException(throwable)) {
+            log.debug("(alertApplicationWideMethods) Class = {}, Method = {}, Cause = {}", jp.getSignature().getDeclaringTypeName(), jp.getSignature().getName(), throwable.getLocalizedMessage());
+            globalExceptionAlertInternalPublisher.publish(new GlobalExceptionAlertEvent(jp.getSignature().getName(), throwable));
+            markException(throwable);
+        }
+    }
+
+    private boolean isMarkedException(Throwable throwable) {
+        return markedExceptions.contains(throwable);
+    }
+
+    private void markException(Throwable throwable) {
+        markedExceptions.add(throwable);
+    }
+}
+```
+</details>
+
+이 클래스는 특정 포인트컷을 정의하고, 예외가 발생했을 때 이를 포착하여 알림을 발행한다. 
+여기서 정의된 포인트컷은 `apiMethods`와 `async`이며, 비동기 메서드를 제외한 모든 메서드에서 발생한 예외를 포착한다. 
+포착된 예외는 `GlobalExceptionAlertInternalPublisher`를 통해 알림으로 발행된다.
+
+## 알림 시스템
+
+
+`message-service`는 알림을 관리하는 별도의 마이크로서비스이다.
+현재는 슬랙을 통해 알림을 지원하며, 추후 다른 알림 채널을 추가할 수 있다.
+
+슬랙 메시지 예약 기능을 구현하여, 메시지를 예약하고 별도의 스레드에서 이를 폴링하여 발송한다.
+
+### 설계 철학
+알림 시스템은 메시지 서비스에서 독립적으로 동작하며, 사용자 요청에 대한 빠른 응답을 보장한다. 
+알림을 즉시 발송하는 대신, 먼저 저장해 두고 내부에서 폴링(polling)을 통해 순차적으로 발송하는 방식을 채택했다. 
+이러한 설계로 성능을 최적화하며, 메시지 발송 실패에 따른 재시도 등의 확장 로직 가능성을 열어둔다. 
+
+### 1. 슬랙 메시지 서비스
+
+`message service`의 슬랙 메시지 예약 및 발송을 처리하는 서비스이다.
+
+<details>
+<summary><b>구현 예시</b></summary>
+
+```java
+@Service
+@RequiredArgsConstructor
+public class SlackMessageService {
+
+    private final SlackChannelRegistrar slackChannelRegistrar;
+    private final SlackChannelRetriever slackChannelRetriever;
+    private final SlackMessageSender slackMessageSender;
+    private final SlackMessageReservationManager slackMessageReservationManager;
+
+    public SlackChannelRegistrationResponse register(SlackChannelRegistrationRequest request) {
+        return SlackChannelRegistrationResponse.from(slackChannelRegistrar.save(request.toCommand()));
+    }
+
+    public SlackMessageReserveResponse reserve(SlackMessageReserveRequest slackMessageReserveRequest) {
+        SlackChannelInfo slackChannelInfo = slackChannelRetriever.retrieveSlackChannelByName(slackMessageReserveRequest.getChannelName());
+        return SlackMessageReserveResponse.from(slackMessageReservationManager.reserve(slackMessageReserveRequest.toCommand().withChannelInfo(slackChannelInfo)));
+    }
+
+    public void sendReservedMessages() {
+        SlackMessageReserveInfo slackMessageReserveInfo = slackMessageReservationManager.popNextReservedMessage();
+        if (slackMessageReserveInfo.isEmpty()) {
+            return;
+        }
+        slackMessageSender.sendAsync(slackMessageReserveInfo.toCommand());
+        slackMessageReservationManager.markAsSentAsync(slackMessageReserveInfo.id());
+    }
+}
+```
+
+</details>
+
+
+### 2. 슬랙 메시지 발송기
+
+슬랙 메시지를 비동기적으로 발송하는 컴포넌트이다.
+
+<details>
+<summary><b>구현 예시</b></summary>
+
+```java
+@Component
+@RequiredArgsConstructor
+public class SlackMessageSender {
+
+    private final Slack slack = Slack.getInstance();
+
+    @SneakyThrows
+    @Async("slackMessageSenderExecutor")
+    public void sendAsync(SlackMessageSendCommand command) {
+        ChatPostMessageRequest request = ChatPostMessageRequest.builder()
+            .token(command.getToken())
+            .channel(command.getChannelId())
+            .text(command.getMessage())
+            .build();
+
+        slack.methods().chatPostMessage(request);
+    }
+}
+```
+
+</details>
+
+### 3. 폴링 프로세서
+
+예약된 메시지를 주기적으로 폴링하여 발송하는 프로세서이다.
+
+<details>
+<summary><b>구현 예시</b></summary>
+
+```java
+@Component
+@RequiredArgsConstructor
+public class SlackMessagePollingProcessor {
+
+    private final SlackMessageService slackMessageService;
+
+    @Value("${slack.message.polling.interval:100}")  // 폴링 간격 (기본값: 100ms)
+    private long pollingInterval;
+
+    public void startPolling() {
+        while (true) {
+            try {
+                slackMessageService.sendReservedMessages();
+                Thread.sleep(pollingInterval);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+    }
+}
+```
+</details>
+
+
+
+</details>
+
 
 </details>
 

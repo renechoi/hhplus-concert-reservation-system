@@ -5,6 +5,7 @@ import org.springframework.transaction.annotation.Transactional;
 import io.reservationservice.api.application.dto.response.ReservationStatusResponses;
 import io.reservationservice.api.business.dto.inport.ReservationCreateCommand;
 import io.reservationservice.api.business.dto.outport.ReservationConfirmInfo;
+import io.reservationservice.api.business.dto.outport.ReservationStatusInfos;
 import io.reservationservice.api.business.dto.outport.TemporaryReservationCreateInfo;
 
 /**
@@ -13,13 +14,10 @@ import io.reservationservice.api.business.dto.outport.TemporaryReservationCreate
  */
 public interface ReservationCrudService {
 	TemporaryReservationCreateInfo createTemporaryReservation(ReservationCreateCommand command);
-
-	@Transactional
 	ReservationConfirmInfo confirmReservation(Long temporaryReservationId);
-
-	ReservationStatusResponses getReservationStatus(Long userId, Long concertOptionId);
-	@Transactional
+	ReservationStatusInfos getReservationStatus(Long userId, Long concertOptionId);
 	void cancelTemporaryReservation(Long temporaryReservationId);
+	void cancelExpiredTemporalReservations();
 
 }
 

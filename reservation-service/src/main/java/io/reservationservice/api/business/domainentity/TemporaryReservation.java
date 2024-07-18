@@ -49,7 +49,9 @@ public class TemporaryReservation {
 
 	private Boolean isConfirmed;
 
-	private LocalDateTime reserveAt; // todo -> 별도의 expireAt이 필요한가?
+	private LocalDateTime reserveAt;
+
+	private LocalDateTime expireAt;
 
 	@CreatedDate
 	@Column(updatable = false)
@@ -65,8 +67,8 @@ public class TemporaryReservation {
 		return TemporaryReservation.builder().reserveAt(now()).isConfirmed(false);
 	}
 
-	public static TemporaryReservation of(ReservationCreateCommand command, ConcertOption concertOption, Seat seat) {
-		return defaultBuilder().userId(command.getUserId()).requestAt(command.getRequestAt()).concertOption(concertOption).seat(seat).build();
+	public static TemporaryReservation of(ReservationCreateCommand command, ConcertOption concertOption, Seat seat, LocalDateTime expireAt) {
+		return defaultBuilder().userId(command.getUserId()).requestAt(command.getRequestAt()).concertOption(concertOption).seat(seat).expireAt(expireAt).build();
 	}
 
 	public void confirm() {
@@ -75,6 +77,7 @@ public class TemporaryReservation {
 
 	public void cancelConfirm(){
 		this.isConfirmed = false;
+		this.isCanceled = true;
 	}
 
 	public Reservation toConfirmedReservation() {

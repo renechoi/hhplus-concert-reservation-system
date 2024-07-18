@@ -29,4 +29,13 @@ public class SimpleQuerySorter<T> implements QuerySorter<T> {
 		}
 		return query;
 	}
+
+	@Override
+	public JPQLQuery<T> applySorting(JPQLQuery<T> query, String orderBy, String orderDirection, EntityPathBase<T> entityPathBase) {
+		PathBuilder<T> pathBuilder = new PathBuilder<>(entityPathBase.getType(), entityPathBase.getMetadata());
+		PathBuilder<Object> objectPathBuilder = pathBuilder.get(orderBy);
+		Order order = "asc".equalsIgnoreCase(orderDirection) ? Order.ASC : Order.DESC;
+		query = query.orderBy(new OrderSpecifier(order, objectPathBuilder));
+		return query;
+	}
 }

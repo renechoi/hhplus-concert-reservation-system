@@ -18,7 +18,7 @@ import io.paymentservice.api.balance.business.domainentity.UserBalance;
 import io.paymentservice.api.balance.business.dto.inport.UserBalanceUseCommand;
 import io.paymentservice.api.balance.business.dto.outport.UserBalanceUseInfo;
 import io.paymentservice.api.balance.business.persistence.UserBalanceRepository;
-import io.paymentservice.common.exception.UserBalanceUseUnAvailableException;
+import io.paymentservice.common.exception.definitions.UserBalanceUseUnAvailableException;
 
 /**
  * @author : Rene Choi

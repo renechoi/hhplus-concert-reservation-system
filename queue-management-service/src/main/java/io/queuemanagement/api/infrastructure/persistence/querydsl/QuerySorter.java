@@ -12,4 +12,6 @@ import com.querydsl.jpa.JPQLQuery;
  */
 public interface QuerySorter <T>{
 	JPQLQuery<T> applySorting(JPQLQuery<T> query, Pageable pageable, EntityPathBase<T> entityPathBase);
+
+	JPQLQuery<T> applySorting(JPQLQuery<T> query, String orderBy, String orderDirection, EntityPathBase<T> entityPathBase);
 }

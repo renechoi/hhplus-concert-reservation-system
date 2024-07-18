@@ -3,6 +3,7 @@ package io.queuemanagement.api.application.facade;
 import io.queuemanagement.api.application.dto.request.WaitingQueueTokenGenerateRequest;
 import io.queuemanagement.api.application.dto.response.WaitingQueueTokenGeneralResponse;
 import io.queuemanagement.api.application.dto.response.WaitingQueueTokenGenerationResponse;
+import io.queuemanagement.api.business.dto.outport.WaitingQueueTokenGeneralInfo;
 import io.queuemanagement.api.business.service.WaitingQueueService;
 import io.queuemanagement.common.annotation.Facade;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,6 @@ public class WaitingQueueManagementFacade {
 	}
 
 	public WaitingQueueTokenGeneralResponse retrieveToken(String  userId) {
-		return WaitingQueueTokenGeneralResponse.from(waitingQueueService.retrieve(userId));
+		return WaitingQueueTokenGeneralResponse.from(waitingQueueService.retrieveByAiAtOnceCalculation(userId));
 	}
 }

@@ -8,7 +8,7 @@ import io.reservationservice.api.business.domainentity.TemporaryReservation;
 import io.reservationservice.api.business.dto.inport.TemporaryReservationSearchCommand;
 import io.reservationservice.api.business.persistence.TemporaryReservationRepository;
 import io.reservationservice.api.infrastructure.persistence.orm.TemporalReservationJpaRepository;
-import io.reservationservice.common.exception.TemporaryReservationNotFoundException;
+import io.reservationservice.common.exception.definitions.TemporaryReservationNotFoundException;
 import lombok.RequiredArgsConstructor;
 
 /**

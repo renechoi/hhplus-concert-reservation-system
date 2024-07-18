@@ -24,3 +24,19 @@ custom:
 
 custom-logging-filter:
   enabled: true
+
+
+
+scheduler:
+  temporalReservationExpireRate: 1000  # 1초마다 실행
+
+
+
+reservation:
+  temporary:
+    expire-seconds: 300
+
+
+slack:
+  channel:
+    name: slack-test

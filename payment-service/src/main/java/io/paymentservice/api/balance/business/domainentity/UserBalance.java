@@ -13,7 +13,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import io.paymentservice.api.balance.business.dto.event.UserBalanceChargeEvent;
 import io.paymentservice.api.balance.business.dto.event.UserBalanceUseEvent;
-import io.paymentservice.common.exception.UserBalanceUseUnAvailableException;
+import io.paymentservice.common.exception.definitions.UserBalanceUseUnAvailableException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;

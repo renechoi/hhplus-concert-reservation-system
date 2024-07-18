@@ -6,7 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
-import io.clientchannelservice.common.exception.FeignCommunicationException;
+import io.clientchannelservice.common.exception.definitions.FeignCommunicationException;
 import lombok.RequiredArgsConstructor;
 
 /**

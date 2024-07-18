@@ -4,6 +4,9 @@ import java.time.LocalDateTime;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+import io.reservationservice.api.business.dto.outport.SeatInfo;
+import io.reservationservice.common.mapper.ObjectMapperBasedVoMapper;
+
 /**
  * @author : Rene Choi
  * @since : 2024/07/08
@@ -18,4 +21,7 @@ public record SeatResponse(
 	Boolean occupied,
 	LocalDateTime createdAt
 ) {
+	public static SeatResponse from(SeatInfo info) {
+		return ObjectMapperBasedVoMapper.convert(info, SeatResponse.class);
+	}
 }

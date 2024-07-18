@@ -14,7 +14,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import io.paymentservice.api.balance.business.dto.event.UserBalanceChargeEvent;
 import io.paymentservice.api.balance.business.dto.event.UserBalanceUseEvent;
-import io.paymentservice.common.exception.UserBalanceUseUnAvailableException;
+import io.paymentservice.common.exception.definitions.UserBalanceUseUnAvailableException;
 
 /**
  * @author : Rene Choi

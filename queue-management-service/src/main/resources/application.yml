@@ -37,7 +37,24 @@ server:
 waiting-queue:
   policy:
     max-limit: 10000
+    token-expiry-as-seconds: 300
 
 processing-queue:
   policy:
     max-limit: 100
+
+
+
+scheduler:
+  queueTransferRate: 1000  # 1초마다 실행
+  expireTokensRate: 1000   # 1초마다 실행
+
+
+
+custom-logging-filter:
+  enabled: true
+
+
+slack:
+  channel:
+    name: slack-test

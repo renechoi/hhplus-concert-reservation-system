@@ -29,3 +29,9 @@ custom:
 
 custom-logging-filter:
   enabled: true
+
+
+
+slack:
+  channel:
+    name: slack-test

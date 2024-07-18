@@ -1,5 +1,7 @@
 package io.reservationservice.api.infrastructure.persistence.core;
 
+import static io.reservationservice.common.model.GlobalResponseCode.*;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -9,6 +11,7 @@ import io.reservationservice.api.business.domainentity.Seat;
 import io.reservationservice.api.business.dto.inport.SeatSearchCommand;
 import io.reservationservice.api.business.persistence.SeatRepository;
 import io.reservationservice.api.infrastructure.persistence.orm.SeatJpaRepository;
+import io.reservationservice.common.exception.definitions.ReservationUnAvailableException;
 import lombok.RequiredArgsConstructor;
 
 /**
@@ -28,6 +31,11 @@ public class SeatCoreRepository implements SeatRepository {
 	@Override
 	public Optional<Seat> findSingleByConditionOptional(SeatSearchCommand searchCommand) {
 		return seatJpaRepository.findSingleByCondition(searchCommand);
+	}
+
+	@Override
+	public Seat findSingleByConditionWithThrows(SeatSearchCommand searchCommand) {
+		return seatJpaRepository.findSingleByCondition(searchCommand).orElseThrow(() -> new ReservationUnAvailableException(SEAT_NOT_FOUND));
 	}
 
 	@Override

@@ -127,6 +127,7 @@ public class YmlLoader {
 		return newPath.toString();
 	}
 
+
 	/**
 	 * contextPath를 반환합니다.
 	 *
@@ -137,24 +138,15 @@ public class YmlLoader {
 	}
 
 
-	public static int getMaxWaitingTokens() {
-		YmlLoader loader = YmlLoader.ymlLoader();
-		return Integer.parseInt(loader.configMap.getOrDefault("waiting-queue.policy.max-limit", "10000"));
-	}
 
-	public static int getMaxProcessingTokens() {
-		YmlLoader loader = YmlLoader.ymlLoader();
-		return Integer.parseInt(loader.configMap.getOrDefault("processing-queue.policy.max-limit", "10000"));
-	}
-
-	public static int getTokenExpiryInSeconds() {
-		YmlLoader loader = YmlLoader.ymlLoader();
-		return Integer.parseInt(loader.configMap.getOrDefault("waiting-queue.policy.token-expiry-as-seconds", "300"));
-	}
-
-	public static long getSchedulerFixedRate(String key) {
+	public long getSchedulerFixedRate(String key) {
 		YmlLoader loader = YmlLoader.ymlLoader();
 		return Long.parseLong(loader.configMap.getOrDefault(key, "1000"));
+	}
+
+	public long getTemporaryReservationExpireSeconds() {
+		YmlLoader loader = YmlLoader.ymlLoader();
+		return Long.parseLong(loader.configMap.getOrDefault("reservation.temporary.expire-seconds", "300"));
 	}
 
 	public boolean isLoggingFilterEnabled() {
@@ -176,5 +168,12 @@ public class YmlLoader {
 		}
 	}
 
+
+
+
+	public static String getSlackChannelName() {
+		YmlLoader loader = YmlLoader.ymlLoader();
+		return loader.configMap.getOrDefault("slack.channel.name", "default-channel");
+	}
 
 }

@@ -1,5 +1,8 @@
 package io.queuemanagement.api.business.service.impl;
 
+import static io.queuemanagement.api.business.domainmodel.QueueStatus.*;
+import static io.queuemanagement.api.business.dto.inport.ProcessingQueueTokenSearchCommand.*;
+import static io.queuemanagement.api.business.dto.inport.WaitingQueueTokenSearchCommand.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -13,6 +16,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import io.queuemanagement.api.business.domainmodel.ProcessingQueueToken;
+import io.queuemanagement.api.business.domainmodel.QueueStatus;
 import io.queuemanagement.api.business.domainmodel.WaitingQueueToken;
 import io.queuemanagement.api.business.persistence.ProcessingQueueEnqueueRepository;
 import io.queuemanagement.api.business.persistence.ProcessingQueueRetrievalRepository;
@@ -59,7 +63,7 @@ public class SimpleQueueManagementServiceTest {
 	@DisplayName("만료된 처리 대기열 토큰을 만료 상태로 업데이트")
 	public void testExpireProcessingQueueTokens() {
 		ProcessingQueueToken token = mock(ProcessingQueueToken.class);
-		when(processingQueueRetrievalRepository.findAllByStatusAndValidUntilBefore(any(), any()))
+		when(processingQueueRetrievalRepository.findAllByCondition(searchByStatusAndValidUntil(QueueStatus.PROCESSING, any(), "before")))
 			.thenReturn(List.of(token));
 
 		simpleQueueManagementService.expireProcessingQueueTokens();
@@ -71,7 +75,7 @@ public class SimpleQueueManagementServiceTest {
 	@DisplayName("만료된 대기열 토큰을 만료 상태로 업데이트")
 	public void testExpireWaitingQueueTokens() {
 		WaitingQueueToken token = mock(WaitingQueueToken.class);
-		when(waitingQueueTokenRetrievalRepository.findByStatusInAndValidUntilBefore(anyList(), any()))
+		when(waitingQueueTokenRetrievalRepository.findAllByCondition(searchByStatusesAndValidUntil(List.of(WAITING, PROCESSING), any(), "before")))
 			.thenReturn(List.of(token));
 
 		simpleQueueManagementService.expireWaitingQueueTokens();
@@ -94,7 +98,7 @@ public class SimpleQueueManagementServiceTest {
 	@DisplayName("사용자의 대기열 토큰을 완료 상태로 업데이트")
 	public void testCompleteWaitingQueueTokenByUserId() {
 		WaitingQueueToken token = mock(WaitingQueueToken.class);
-		when(waitingQueueTokenRetrievalRepository.findAllByUserIdAndStatus(anyString(), any())).thenReturn(List.of(token));
+		when(waitingQueueTokenRetrievalRepository.findAllByCondition(createWaitingTokenSearchConditionByUserIdAndStatus("userId", any()))).thenReturn(List.of(token));
 
 		simpleQueueManagementService.completeWaitingQueueTokenByUserId("userId");
 
@@ -105,7 +109,7 @@ public class SimpleQueueManagementServiceTest {
 	@DisplayName("대기열 위치를 단순 재정렬로 재계산")
 	public void testRecalculateWaitingQueuePositionsBySimpleReOrderingEach() {
 		WaitingQueueToken token = mock(WaitingQueueToken.class);
-		when(waitingQueueTokenRetrievalRepository.findByStatusOrderByRequestAtAsc(any())).thenReturn(List.of(token));
+		when(waitingQueueTokenRetrievalRepository.findAllByCondition(searchByStatusAndOrderByRequestAtAsc(any()))).thenReturn(List.of(token));
 
 		simpleQueueManagementService.recalculateWaitingQueuePositionsBySimpleReOrderingEach();
 
@@ -116,7 +120,7 @@ public class SimpleQueueManagementServiceTest {
 	@DisplayName("JSON 저장으로 대기열 위치를 재계산")
 	public void testRecalculateWaitingQueuePositionsWithJsonStoring() {
 		WaitingQueueToken token = mock(WaitingQueueToken.class);
-		when(waitingQueueTokenRetrievalRepository.findByStatusOrderByRequestAtAsc(any())).thenReturn(List.of(token));
+		when(waitingQueueTokenRetrievalRepository.findAllByCondition(searchByStatusAndOrderByRequestAtAsc(any()))).thenReturn(List.of(token));
 
 		simpleQueueManagementService.recalculateWaitingQueuePositionsWithJsonStoring();
 

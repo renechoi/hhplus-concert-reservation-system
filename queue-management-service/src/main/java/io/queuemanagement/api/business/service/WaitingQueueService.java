@@ -1,5 +1,7 @@
 package io.queuemanagement.api.business.service;
 
+import org.springframework.transaction.annotation.Transactional;
+
 import io.queuemanagement.api.business.dto.inport.WaitingQueueTokenGenerateCommand;
 import io.queuemanagement.api.business.dto.outport.WaitingQueueTokenGeneralInfo;
 import io.queuemanagement.api.business.dto.outport.WaitingQueueTokenGenerateInfo;
@@ -11,5 +13,8 @@ import io.queuemanagement.api.business.dto.outport.WaitingQueueTokenGenerateInfo
 public interface WaitingQueueService {
 	WaitingQueueTokenGenerateInfo generateAndEnqueue(WaitingQueueTokenGenerateCommand waitingQueueTokenGenerateCommand);
 
-	WaitingQueueTokenGeneralInfo retrieve(String  userId);
+	WaitingQueueTokenGeneralInfo retrieveByJsonFetchingCalculation(String  userId);
+
+	@Transactional(readOnly = true)
+	WaitingQueueTokenGeneralInfo retrieveByAiAtOnceCalculation(String userId);
 }

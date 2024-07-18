@@ -10,7 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import io.paymentservice.api.balance.business.dto.inport.UserBalanceChargeCommand;
 import io.paymentservice.api.balance.business.dto.outport.UserBalanceChargeInfo;
 import io.paymentservice.api.balance.business.persistence.UserBalanceRepository;
-import io.paymentservice.common.exception.UserBalanceChargeUnAvailableException;
+import io.paymentservice.common.exception.definitions.UserBalanceChargeUnAvailableException;
 import lombok.RequiredArgsConstructor;
 
 /**

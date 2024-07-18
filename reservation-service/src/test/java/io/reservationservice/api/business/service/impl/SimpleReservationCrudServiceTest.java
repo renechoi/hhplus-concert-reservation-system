@@ -4,8 +4,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-import java.util.Optional;
-
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,7 +22,7 @@ import io.reservationservice.api.business.persistence.ConcertOptionRepository;
 import io.reservationservice.api.business.persistence.ReservationRepository;
 import io.reservationservice.api.business.persistence.SeatRepository;
 import io.reservationservice.api.business.persistence.TemporaryReservationRepository;
-import io.reservationservice.common.exception.ReservationUnAvailableException;
+import io.reservationservice.common.exception.definitions.ReservationUnAvailableException;
 import io.reservationservice.common.model.GlobalResponseCode;
 
 /**
@@ -64,7 +62,7 @@ public class SimpleReservationCrudServiceTest {
 		Seat seat = mock(Seat.class);
 
 		when(concertOptionRepository.findByIdWithThrows(anyLong())).thenReturn(concertOption);
-		when(seatRepository.findSingleByConditionOptional(any())).thenReturn(Optional.of(seat));
+		when(seatRepository.findSingleByConditionWithThrows(any())).thenReturn(seat);
 		when(seat.isOccupied()).thenReturn(false);
 		when(seatRepository.save(any())).thenReturn(seat);
 		TemporaryReservation temporaryReservation = mock(TemporaryReservation.class);
@@ -76,7 +74,7 @@ public class SimpleReservationCrudServiceTest {
 		// Then
 		assertNotNull(result);
 		verify(concertOptionRepository).findByIdWithThrows(command.getConcertOptionId());
-		verify(seatRepository).findSingleByConditionOptional(any());
+		verify(seatRepository).findSingleByConditionWithThrows(any());
 	}
 
 	@Test
@@ -93,7 +91,7 @@ public class SimpleReservationCrudServiceTest {
 		Seat seat = mock(Seat.class);
 
 		when(concertOptionRepository.findByIdWithThrows(anyLong())).thenReturn(concertOption);
-		when(seatRepository.findSingleByConditionOptional(any())).thenReturn(Optional.of(seat));
+		when(seatRepository.findSingleByConditionWithThrows(any())).thenReturn(seat);
 		when(seat.isOccupied()).thenReturn(true);
 
 		// When
@@ -104,7 +102,7 @@ public class SimpleReservationCrudServiceTest {
 		// Then
 		assertEquals(GlobalResponseCode.SEAT_ALREADY_RESERVED, exception.getCode());
 		verify(concertOptionRepository).findByIdWithThrows(command.getConcertOptionId());
-		verify(seatRepository).findSingleByConditionOptional(any());
+		verify(seatRepository).findSingleByConditionWithThrows(any());
 	}
 
 	@Test

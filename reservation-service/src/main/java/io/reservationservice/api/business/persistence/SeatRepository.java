@@ -14,6 +14,7 @@ public interface SeatRepository {
 	Seat save(Seat seat);
 
 	Optional<Seat> findSingleByConditionOptional(SeatSearchCommand searchCommand);
+	Seat findSingleByConditionWithThrows(SeatSearchCommand searchCommand);
 
 	List<Seat> findMultipleByCondition(SeatSearchCommand searchCommand);
 }

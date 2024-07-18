@@ -7,8 +7,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
-import io.apiorchestrationservice.common.exception.FeignCommunicationException;
-import io.apiorchestrationservice.common.exception.ItemNotFoundException;
+import io.apiorchestrationservice.common.exception.definitions.FeignCommunicationException;
+import io.apiorchestrationservice.common.exception.definitions.ItemNotFoundException;
 import lombok.RequiredArgsConstructor;
 
 /**

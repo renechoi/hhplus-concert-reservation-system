@@ -5,6 +5,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 
 import io.reservationservice.api.business.dto.outport.ConcertOptionCreateInfo;
+import io.reservationservice.api.business.dto.outport.ConcertOptionInfo;
 import io.reservationservice.common.mapper.ObjectMapperBasedVoMapper;
 
 /**
@@ -24,6 +25,10 @@ public record ConcertOptionResponse(
 	LocalDateTime requestAt
 ) {
 	public static ConcertOptionResponse from(ConcertOptionCreateInfo info) {
+		return ObjectMapperBasedVoMapper.convert(info, ConcertOptionResponse.class);
+	}
+
+	public static ConcertOptionResponse from(ConcertOptionInfo info) {
 		return ObjectMapperBasedVoMapper.convert(info, ConcertOptionResponse.class);
 	}
 }
