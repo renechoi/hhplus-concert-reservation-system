@@ -8,8 +8,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.math.BigDecimal;
 
 import io.cucumber.java8.En;
-import io.paymentservice.api.balance.presentation.dto.request.UserBalanceChargeRequest;
-import io.paymentservice.api.balance.presentation.dto.response.UserBalanceChargeResponse;
+import io.paymentservice.api.balance.interfaces.dto.request.UserBalanceChargeRequest;
+import io.paymentservice.api.balance.interfaces.dto.response.UserBalanceChargeResponse;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
 

@@ -12,7 +12,7 @@ import java.util.Map;
 
 import io.cucumber.datatable.DataTable;
 import io.cucumber.java8.En;
-import io.paymentservice.api.balance.presentation.dto.response.BalanceTransactionResponses;
+import io.paymentservice.api.balance.interfaces.dto.response.BalanceTransactionResponses;
 import lombok.SneakyThrows;
 
 /**

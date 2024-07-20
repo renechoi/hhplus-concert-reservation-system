@@ -15,7 +15,7 @@ import io.cucumber.datatable.DataTable;
 import io.cucumber.java.Before;
 import io.cucumber.java8.En;
 import io.paymentservice.api.payment.business.persistence.PaymentTransactionRepository;
-import io.paymentservice.api.payment.presentation.dto.request.PaymentRequest;
+import io.paymentservice.api.payment.interfaces.dto.request.PaymentRequest;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
 

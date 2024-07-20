@@ -43,8 +43,6 @@ public class SimpleWaitingQueueServiceTest {
 	@Mock
 	private WaitingQueueTokenDuplicateChecker waitingQueueTokenDuplicateChecker;
 
-	@Mock
-	private QueuePositionDocumentRepository queuePositionDocumentRepository;
 
 	@InjectMocks
 	private SimpleWaitingQueueService simpleWaitingQueueService;

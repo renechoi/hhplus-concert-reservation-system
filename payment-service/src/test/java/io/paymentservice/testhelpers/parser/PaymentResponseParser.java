@@ -2,8 +2,8 @@ package io.paymentservice.testhelpers.parser;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.paymentservice.api.payment.presentation.dto.response.PaymentResponse;
-import io.paymentservice.api.payment.presentation.dto.response.PaymentResponses;
+import io.paymentservice.api.payment.interfaces.dto.response.PaymentResponse;
+import io.paymentservice.api.payment.interfaces.dto.response.PaymentResponses;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
 import lombok.SneakyThrows;

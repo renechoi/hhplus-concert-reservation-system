@@ -12,12 +12,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.paymentservice.api.balance.business.service.impl.UserBalanceService;
-import io.paymentservice.api.balance.presentation.dto.request.UserBalanceChargeRequest;
-import io.paymentservice.api.balance.presentation.dto.request.UserBalanceUseRequest;
-import io.paymentservice.api.balance.presentation.dto.response.BalanceTransactionResponses;
-import io.paymentservice.api.balance.presentation.dto.response.UserBalanceChargeResponse;
-import io.paymentservice.api.balance.presentation.dto.response.UserBalanceSearchResponse;
-import io.paymentservice.api.balance.presentation.dto.response.UserBalanceUseResponse;
+import io.paymentservice.api.balance.interfaces.dto.request.UserBalanceChargeRequest;
+import io.paymentservice.api.balance.interfaces.dto.request.UserBalanceUseRequest;
+import io.paymentservice.api.balance.interfaces.dto.response.BalanceTransactionResponses;
+import io.paymentservice.api.balance.interfaces.dto.response.UserBalanceChargeResponse;
+import io.paymentservice.api.balance.interfaces.dto.response.UserBalanceSearchResponse;
+import io.paymentservice.api.balance.interfaces.dto.response.UserBalanceUseResponse;
 import io.paymentservice.common.model.CommonApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;

@@ -6,7 +6,7 @@ import static io.paymentservice.testhelpers.parser.UserBalanceResponseParser.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 import io.cucumber.java8.En;
-import io.paymentservice.api.balance.presentation.dto.response.UserBalanceSearchResponse;
+import io.paymentservice.api.balance.interfaces.dto.response.UserBalanceSearchResponse;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
 

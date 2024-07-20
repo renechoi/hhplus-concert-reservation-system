@@ -54,8 +54,6 @@ public class SimpleQueueManagementServiceTest {
 	@Mock
 	private WaitingQueueTokenCounterCrudRepository waitingQueueTokenCounterCrudRepository;
 
-	@Mock
-	private QueuePositionDocumentRepository queuePositionDocumentRepository;
 
 
 	@Test

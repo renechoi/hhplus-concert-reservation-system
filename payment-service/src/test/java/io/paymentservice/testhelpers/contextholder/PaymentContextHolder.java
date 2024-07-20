@@ -3,9 +3,9 @@ package io.paymentservice.testhelpers.contextholder;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
-import io.paymentservice.api.payment.presentation.dto.request.PaymentRequest;
-import io.paymentservice.api.payment.presentation.dto.response.PaymentResponse;
-import io.paymentservice.api.payment.presentation.dto.response.PaymentResponses;
+import io.paymentservice.api.payment.interfaces.dto.request.PaymentRequest;
+import io.paymentservice.api.payment.interfaces.dto.response.PaymentResponse;
+import io.paymentservice.api.payment.interfaces.dto.response.PaymentResponses;
 
 /**
  * @author : Rene Choi

@@ -1,4 +1,4 @@
-package io.paymentservice.api.balance.presentation.dto.response;
+package io.paymentservice.api.balance.interfaces.dto.response;
 
 import java.util.List;
 

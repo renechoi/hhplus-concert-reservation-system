@@ -3,12 +3,12 @@ package io.paymentservice.testhelpers.contextholder;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
-import io.paymentservice.api.balance.presentation.dto.request.UserBalanceChargeRequest;
-import io.paymentservice.api.balance.presentation.dto.request.UserBalanceUseRequest;
-import io.paymentservice.api.balance.presentation.dto.response.BalanceTransactionResponses;
-import io.paymentservice.api.balance.presentation.dto.response.UserBalanceChargeResponse;
-import io.paymentservice.api.balance.presentation.dto.response.UserBalanceSearchResponse;
-import io.paymentservice.api.balance.presentation.dto.response.UserBalanceUseResponse;
+import io.paymentservice.api.balance.interfaces.dto.request.UserBalanceChargeRequest;
+import io.paymentservice.api.balance.interfaces.dto.request.UserBalanceUseRequest;
+import io.paymentservice.api.balance.interfaces.dto.response.BalanceTransactionResponses;
+import io.paymentservice.api.balance.interfaces.dto.response.UserBalanceChargeResponse;
+import io.paymentservice.api.balance.interfaces.dto.response.UserBalanceSearchResponse;
+import io.paymentservice.api.balance.interfaces.dto.response.UserBalanceUseResponse;
 
 /**
  * @author : Rene Choi

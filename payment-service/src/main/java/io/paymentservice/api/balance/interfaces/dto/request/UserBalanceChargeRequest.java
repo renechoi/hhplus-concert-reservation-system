@@ -1,4 +1,4 @@
-package io.paymentservice.api.balance.presentation.dto.request;
+package io.paymentservice.api.balance.interfaces.dto.request;
 
 import java.math.BigDecimal;
 

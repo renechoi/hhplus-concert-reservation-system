@@ -1,9 +1,9 @@
 package io.paymentservice.testhelpers.parser;
 
-import io.paymentservice.api.balance.presentation.dto.response.BalanceTransactionResponses;
-import io.paymentservice.api.balance.presentation.dto.response.UserBalanceChargeResponse;
-import io.paymentservice.api.balance.presentation.dto.response.UserBalanceSearchResponse;
-import io.paymentservice.api.balance.presentation.dto.response.UserBalanceUseResponse;
+import io.paymentservice.api.balance.interfaces.dto.response.BalanceTransactionResponses;
+import io.paymentservice.api.balance.interfaces.dto.response.UserBalanceChargeResponse;
+import io.paymentservice.api.balance.interfaces.dto.response.UserBalanceSearchResponse;
+import io.paymentservice.api.balance.interfaces.dto.response.UserBalanceUseResponse;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
 

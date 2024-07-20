@@ -1,4 +1,4 @@
-package io.paymentservice.api.payment.presentation.controller;
+package io.paymentservice.api.payment.interfaces.controller;
 
 import static io.paymentservice.common.model.CommonApiResponse.*;
 
@@ -11,9 +11,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.paymentservice.api.payment.business.service.PaymentService;
-import io.paymentservice.api.payment.presentation.dto.request.PaymentRequest;
-import io.paymentservice.api.payment.presentation.dto.response.PaymentResponse;
-import io.paymentservice.api.payment.presentation.dto.response.PaymentResponses;
+import io.paymentservice.api.payment.interfaces.dto.request.PaymentRequest;
+import io.paymentservice.api.payment.interfaces.dto.response.PaymentResponse;
+import io.paymentservice.api.payment.interfaces.dto.response.PaymentResponses;
 import io.paymentservice.common.model.CommonApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;

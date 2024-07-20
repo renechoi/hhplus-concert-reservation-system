@@ -8,7 +8,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.math.BigDecimal;
 
 import io.cucumber.java8.En;
-import io.paymentservice.api.balance.presentation.dto.request.UserBalanceUseRequest;
+import io.paymentservice.api.balance.interfaces.dto.request.UserBalanceUseRequest;
 
 /**
  * @author : Rene Choi

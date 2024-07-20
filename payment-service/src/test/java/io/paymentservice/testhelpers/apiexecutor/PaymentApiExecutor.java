@@ -4,7 +4,7 @@ import static io.paymentservice.testhelpers.apiexecutor.DynamicPortHolder.*;
 import static io.restassured.RestAssured.*;
 import static org.springframework.util.MimeTypeUtils.*;
 
-import io.paymentservice.api.payment.presentation.dto.request.PaymentRequest;
+import io.paymentservice.api.payment.interfaces.dto.request.PaymentRequest;
 import io.paymentservice.util.YmlLoader;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;

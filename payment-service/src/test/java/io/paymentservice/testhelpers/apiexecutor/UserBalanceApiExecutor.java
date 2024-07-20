@@ -4,8 +4,8 @@ import static io.paymentservice.testhelpers.apiexecutor.DynamicPortHolder.*;
 import static io.restassured.RestAssured.*;
 import static org.springframework.http.MediaType.*;
 
-import io.paymentservice.api.balance.presentation.dto.request.UserBalanceChargeRequest;
-import io.paymentservice.api.balance.presentation.dto.request.UserBalanceUseRequest;
+import io.paymentservice.api.balance.interfaces.dto.request.UserBalanceChargeRequest;
+import io.paymentservice.api.balance.interfaces.dto.request.UserBalanceUseRequest;
 import io.paymentservice.util.YmlLoader;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
