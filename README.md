@@ -1250,6 +1250,206 @@ Opaque 토큰은 클라이언트가 토큰의 내용을 해석할 수 없게 하
 
 </details>
 
+<details>
+<summary><b>어플리케이션 로깅 시스템</b></summary>
+
+
+
+# 어플리케이션 로깅 시스템
+
+이전에 김영한님의 강의를 듣다가 AOP를 이용한 어플리케이션 로깅 코드를 배운 적이 있다.
+현업에서 계속 일을 하면서 해당 코드를 고도화시켜 최적화하고 맞춤형으로 사용하고 있다.
+본 프로젝트에서도 AOP 기반의 로깅 시스템을 구현하여 사용했다.
+
+## 로깅의 니즈 
+
+다음과 같은 로깅의 니즈를 만족시켜준다.
+
+1. 로깅 자체가 어플리케이션의 성능을 떨어뜨려서는 안 된다.
+
+로깅이 어플리케이션의 성능에 영향을 주지 않도록 Logback의 비동기 로깅 설정을 사용할 수 있다. 
+비동기 로깅을 통해 로깅 작업이 별도의 스레드에서 처리되어 애플리케이션의 주요 작업 흐름에 영향을 주지 않게 된다.
+
+   ```xml
+   <appender name="ASYNC-STDOUT" class="ch.qos.logback.classic.AsyncAppender">
+       <param name="BufferSize" value="8196"/>
+       <appender-ref ref="STDOUT"/>
+   </appender>
+
+   <root level="INFO">
+       <appender-ref ref="ASYNC-STDOUT"/>
+   </root>
+   ```
+
+2. 필요한 로깅을 해야 한다. 
+   - 비즈니스 로직 수행에서 각 메서드의 시작 시점과 반환 시점 (+파라미터, 시간 측정)
+   - 요청(request) 및 응답(response)시 파라미터 로깅 (컨트롤러)
+   - 예외 발생 시
+   - 특정 구간에서 추가 필요시
+
+
+
+## 구현 코드 
+
+### LogTrace 애노테이션
+`LogTrace` 애노테이션은 메서드 수준에서 로깅을 활성화하기 위해 사용된다. 기본적으로 Aspect로 동작하지만 특정 구간에서 추가 필요시 사용될 수 있다. 
+
+```java
+@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface LogTrace {
+}
+```
+
+### LogTracer 인터페이스
+`LogTracer` 인터페이스는 로깅의 기본 구조를 정의한다. `begin`, `end`, `exception` 메서드를 통해 로깅을 시작하고 끝내며 예외 상황을 처리한다.
+
+```java
+public interface LogTracer {
+    TraceStatus begin(String message);
+    void end(Object result, TraceStatus status);
+    void exception(Object result, TraceStatus status, Exception e);
+}
+```
+
+### ThreadLocalLogTracer 클래스
+`ThreadLocalLogTracer` 클래스는 `LogTracer` 인터페이스를 구현하며, 로깅의 세부 사항을 정의한다.
+각 스레드에 독립적인 `TraceId`를 관리하며, 시작, 종료, 예외 상황에 따른 로깅을 처리한다.
+
+```java
+@Slf4j
+@Component
+public class ThreadLocalLogTracer implements LogTracer {
+
+    private static final String START_PREFIX = "-->";
+    private static final String COMPLETE_PREFIX = "<--";
+    private static final String EXCEPTION_PREFIX = "<X-";
+
+    private ThreadLocal<TraceId> traceIdHolder = new ThreadLocal<>();
+    private ThreadLocal<Boolean> isExceptionLogged = ThreadLocal.withInitial(() -> false);
+
+    @Override
+    public TraceStatus begin(String message) {
+        isExceptionLogged.set(false);
+        syncTraceId();
+        TraceId traceId = getCurrentTraceId();
+        Long startTimeMs = System.currentTimeMillis();
+        log.info("[{}] {}{}", traceId.getId(), addSpace(START_PREFIX, traceId.getLevel()), message);
+
+        return new TraceStatus(traceId, startTimeMs, message);
+    }
+
+    @Override
+    public void end(Object result, TraceStatus status) {
+        complete(result, status, null);
+    }
+
+    @Override
+    public void exception(Object result, TraceStatus status, Exception exception) {
+        if (!isExceptionLogged.get()) {
+            log.info("[{}] {}{} time={}ms ex={}", status.getTraceId().getId(), addSpace(EXCEPTION_PREFIX, status.getTraceId().getLevel()),
+                limitMessage(status.getMessage()), System.currentTimeMillis() - status.getStartTimeMs(), exception.toString());
+            isExceptionLogged.set(true);
+        }
+        releaseTraceId();
+    }
+
+    private void complete(Object result, TraceStatus status, Exception exception) {
+        long resultTimeMs = System.currentTimeMillis() - status.getStartTimeMs();
+        TraceId traceId = status.getTraceId();
+        if (exception == null) {
+            log.info("[{}] {}{} time={}ms", traceId.getId(), addSpace(COMPLETE_PREFIX, traceId.getLevel()),
+                limitMessage(status.getMessage()), resultTimeMs);
+        } else {
+            log.info("[{}] {}{} time={}ms ex={}", traceId.getId(), addSpace(EXCEPTION_PREFIX, traceId.getLevel()),
+                limitMessage(status.getMessage()), resultTimeMs, exception.toString());
+        }
+        releaseTraceId();
+    }
+	
+    // 기타 메서드 생략
+}
+```
+
+### GlobalTraceHandler 클래스
+`GlobalTraceHandler` 클래스는 AOP를 활용하여 전역적인 로깅을 처리한다. 
+각 메서드 호출 전후에 로깅을 수행하며, 예외 발생 시에도 로깅을 처리한다.
+
+```java
+@Slf4j
+@Aspect
+@Component
+@RequiredArgsConstructor
+public class GlobalTraceHandler {
+
+    private final LogTracer logTracer;
+
+    @Around("all()")
+    public Object execute(ProceedingJoinPoint joinPoint) throws Throwable {
+        TraceStatus status = null;
+        Object result = null;
+
+        try {
+            status = logTracer.begin(joinPoint.getSignature().toShortString());
+
+            if (isAnnotationPresent(joinPoint, RestController.class)) {
+                result = logWithParameters(joinPoint, status);
+            } else {
+                result = joinPoint.proceed();
+                logTracer.end(result, status);
+            }
+            return result;
+        } catch (Exception exception) {
+            logTracer.exception(null, status, exception);
+            throw exception;
+        }
+    }
+
+    private Object logWithParameters(ProceedingJoinPoint joinPoint, TraceStatus status) throws Throwable {
+        log.info("Incoming Request Body: {}", Arrays.toString(joinPoint.getArgs())); // 들어오는 DTO 로깅
+        Object result = joinPoint.proceed();
+        log.info("Outgoing Response Body: {}", result); // 나가는 DTO 로깅
+        logTracer.end(result, status);
+        return result;
+    }
+
+    // 기타 메서드 생략
+}
+```
+
+## 실제 로깅 내용 예시
+
+아래는 실제 애플리케이션 실행 중 로깅된 내용의 예시이다. 각 요청의 시작과 종료 시점, 그리고 요청 및 응답 파라미터가 로깅된 모습을 확인할 수 있다.
+
+```plaintext
+00:16:21.949 [INFO ] [http-nio-auto-1-exec-1] [i.a.c.logtrace.ThreadLocalLogTracer] - [a09595d2] |-->TokenInterceptor.preHandle(..)
+00:16:21.951 [INFO ] [http-nio-auto-1-exec-1] [i.a.c.logtrace.ThreadLocalLogTracer] - [a09595d2] |<--TokenInterceptor.preHandle(..) time=3ms
+00:16:22.043 [INFO ] [http-nio-auto-1-exec-1] [i.a.c.logtrace.ThreadLocalLogTracer] - [411b92ba] |-->BalanceAndPaymentOrchestrationController.chargeBalance(..)
+00:16:22.046 [INFO ] [http-nio-auto-1-exec-1] [i.a.c.l.impl.GlobalTraceHandler] - Incoming Request Body: [UserBalanceChargeRequest(userId=1, amount=500)]
+00:16:22.047 [INFO ] [http-nio-auto-1-exec-1] [i.a.c.logtrace.ThreadLocalLogTracer] - [411b92ba] |   |-->BalanceChargeFacade.charge(..)
+00:16:22.065 [INFO ] [http-nio-auto-1-exec-1] [i.a.c.logtrace.ThreadLocalLogTracer] - [411b92ba] |   |   |-->SimpleBalanceService.charge(..)
+...
+00:16:22.317 [INFO ] [http-nio-auto-1-exec-1] [i.a.c.logtrace.ThreadLocalLogTracer] - [411b92ba] |<--BalanceAndPaymentOrchestrationController.chargeBalance(..) time=275ms
+```
+
+## 한계점 및 해결 방안
+
+개인적으로는 개별 log 파일에서 리눅스 커맨트를 활용해서 찾는 것을 선호하는 편이다.
+위의 로깅 시스템으로 실제 서비스를 운영하면서 불편하거나 놓치는 케이스는 없었던 것 같다.
+
+하지만 다음과 같은 이유로 어플리케이션 수준의 로깅을 넘어서, 중앙화된 로깅 시스템이 필요하다. 
+
+- **로그의 양과 성능 이슈**: SLF4J, Log4j, Logback, Winston 만으로는 한계가 있다. 로그가 많이 쌓이면 시스템 부하가 증가할 수 있다.
+- **동시성 및 서버 부하**: 서버가 늘어나면 중앙화된 방식의 성능 좋은 로깅 시스템이 필요하다. 이를 위해 ELK Stack (Elasticsearch, Logstash, Kibana) 또는 EFK (Elasticsearch, Fluentd, Kibana)를 이용한 중앙화가 필요하다.
+
+현재 다니는 회사에서는 Greylog를 사용하여 중앙화된 로깅 시스템을 운영하고 있다.
+어쩌면 중앙화된 로그를 잘 활용하지 못하는 것일 수도 있다.
+
+본 프로젝트의 고도화 시점에 ELK? EFK 스택을 붙여서 로깅 중앙화를 시도해보고자 한다!
+
+</details>
+
+
 
 
 <details>
