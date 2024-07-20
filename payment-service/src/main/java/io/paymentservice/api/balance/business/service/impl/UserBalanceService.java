@@ -12,7 +12,6 @@ import io.paymentservice.api.balance.business.operators.balancecharger.UserBalan
 import io.paymentservice.api.balance.business.operators.balanceusemanager.UserBalanceUseManager;
 import io.paymentservice.api.balance.business.operators.historyfetcher.UserBalanceHistoryFetcher;
 import io.paymentservice.api.balance.business.operators.reader.UserBalanceReader;
-import io.paymentservice.api.balance.business.service.UserBalanceService;
 import lombok.RequiredArgsConstructor;
 
 /**
@@ -21,29 +20,25 @@ import lombok.RequiredArgsConstructor;
  */
 @Service
 @RequiredArgsConstructor
-public class SimpleUserBalanceService implements UserBalanceService {
+public class UserBalanceService  {
 
 	private final UserBalanceReader reader;
 	private final UserBalanceCharger charger;
 	private final UserBalanceUseManager userBalanceUseManager;
 	private final UserBalanceHistoryFetcher historyFetcher;
 
-	@Override
 	public UserBalanceChargeInfo charge(UserBalanceChargeCommand command) {
 		return charger.charge(command);
 	}
 
-	@Override
 	public UserBalanceSearchInfo search(UserBalanceChargeCommand command) {
 		return reader.search(command);
 	}
 
-	@Override
 	public UserBalanceUseInfo use(UserBalanceUseCommand command) {
 		return userBalanceUseManager.use(command);
 	}
 
-	@Override
 	public BalanceTransactionInfos getHistories(long userId) {
 		return historyFetcher.getHistories(userId);
 	}

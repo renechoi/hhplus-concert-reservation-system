@@ -79,7 +79,7 @@ public class WaitingQueueTokenSearchCommand extends AbstractCommonRequestInfo {
 			.build();
 	}
 
-	public static WaitingQueueTokenSearchCommand createWaitingTokenSearchConditionByUserIdAndStatus(String userId, QueueStatus queueStatus) {
+	public static WaitingQueueTokenSearchCommand searchConditionByUserIdAndStatus(String userId, QueueStatus queueStatus) {
 		return WaitingQueueTokenSearchCommand.builder()
 			.userId(userId)
 			.status(queueStatus)

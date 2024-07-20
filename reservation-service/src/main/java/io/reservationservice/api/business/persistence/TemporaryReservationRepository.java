@@ -11,9 +11,6 @@ import io.reservationservice.api.business.dto.inport.TemporaryReservationSearchC
  */
 public interface TemporaryReservationRepository {
 	TemporaryReservation save(TemporaryReservation temporaryReservation);
-
 	TemporaryReservation findByIdWithThrows(Long temporaryReservationId);
-
 	List<TemporaryReservation> findMultipleByCondition(TemporaryReservationSearchCommand temporaryReservationSearchCommand);
-
 }

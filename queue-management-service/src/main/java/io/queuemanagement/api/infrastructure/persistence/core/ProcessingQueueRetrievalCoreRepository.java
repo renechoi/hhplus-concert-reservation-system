@@ -47,13 +47,4 @@ public class ProcessingQueueRetrievalCoreRepository implements ProcessingQueueRe
 			.toList();
 	}
 
-	@Override
-	public List<ProcessingQueueToken> findAllByStatusAndValidUntilBefore(QueueStatus queueStatus, LocalDateTime time) {
-		return processingQueueTokenJpaRepository.findAllByStatusAndValidUntilBefore(queueStatus, time)
-			.stream()
-			.map(ProcessingQueueTokenEntity::toDomain)
-			.toList();
-	}
-
-
 }

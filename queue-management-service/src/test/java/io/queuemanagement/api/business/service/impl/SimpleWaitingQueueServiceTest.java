@@ -1,6 +1,5 @@
 package io.queuemanagement.api.business.service.impl;
 
-import static io.queuemanagement.api.business.dto.inport.WaitingQueueTokenSearchCommand.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -13,14 +12,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import io.queuemanagement.api.business.domainmodel.WaitingQueuePositionJson;
 import io.queuemanagement.api.business.domainmodel.WaitingQueueToken;
 import io.queuemanagement.api.business.dto.inport.WaitingQueueTokenGenerateCommand;
 import io.queuemanagement.api.business.dto.inport.WaitingQueueTokenSearchCommand;
 import io.queuemanagement.api.business.dto.outport.WaitingQueueTokenGeneralInfo;
 import io.queuemanagement.api.business.dto.outport.WaitingQueueTokenGenerateInfo;
 import io.queuemanagement.api.business.operators.WaitingQueueTokenDuplicateChecker;
-import io.queuemanagement.api.business.persistence.QueuePositionDocumentRepository;
 import io.queuemanagement.api.business.persistence.WaitingQueueTokenCounterCrudRepository;
 import io.queuemanagement.api.business.persistence.WaitingQueueTokenEnqueueRepository;
 import io.queuemanagement.api.business.persistence.WaitingQueueTokenRetrievalRepository;

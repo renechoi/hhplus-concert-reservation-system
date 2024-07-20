@@ -1,4 +1,4 @@
-package io.paymentservice.api.balance.presentation.controller;
+package io.paymentservice.api.balance.interfaces.controller;
 
 import static io.paymentservice.api.balance.business.dto.inport.UserBalanceChargeCommand.*;
 import static io.paymentservice.common.model.CommonApiResponse.*;
@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import io.paymentservice.api.balance.business.service.UserBalanceService;
+import io.paymentservice.api.balance.business.service.impl.UserBalanceService;
 import io.paymentservice.api.balance.presentation.dto.request.UserBalanceChargeRequest;
 import io.paymentservice.api.balance.presentation.dto.request.UserBalanceUseRequest;
 import io.paymentservice.api.balance.presentation.dto.response.BalanceTransactionResponses;
@@ -33,7 +33,7 @@ import lombok.RequiredArgsConstructor;
 public class UserBalanceController {
 
 
-	private final UserBalanceService facade;
+	private final UserBalanceService service;
 
 
 	/**
@@ -41,7 +41,7 @@ public class UserBalanceController {
 	 */
 	@GetMapping("/{userId}")
 	public CommonApiResponse<UserBalanceSearchResponse> balanceSearch(@PathVariable long userId) {
-		return OK(UserBalanceSearchResponse.from(facade.search(searchCommandById(userId))));
+		return OK(UserBalanceSearchResponse.from(service.search(searchCommandById(userId))));
 	}
 
 	/**
@@ -49,7 +49,7 @@ public class UserBalanceController {
 	 */
 	@GetMapping("/histories/{userId}")
 	public CommonApiResponse<BalanceTransactionResponses> history(@PathVariable long userId) {
-		return OK(BalanceTransactionResponses.from(facade.getHistories(userId)));
+		return OK(BalanceTransactionResponses.from(service.getHistories(userId)));
 	}
 
 	/**
@@ -57,7 +57,7 @@ public class UserBalanceController {
 	 */
 	@PutMapping("/charge/{userId}")
 	public CommonApiResponse<UserBalanceChargeResponse> charge(@PathVariable long userId, @RequestBody @Validated UserBalanceChargeRequest userPointChargeRequest) {
-		return OK(UserBalanceChargeResponse.from(facade.charge(userPointChargeRequest.withUserId(userId).toCommand())));
+		return OK(UserBalanceChargeResponse.from(service.charge(userPointChargeRequest.withUserId(userId).toCommand())));
 	}
 
 	/**
@@ -65,6 +65,6 @@ public class UserBalanceController {
 	 */
 	@PutMapping("/use/{userId}")
 	public CommonApiResponse<UserBalanceUseResponse> use(@PathVariable long userId, @RequestBody @Validated UserBalanceUseRequest userPointUseRequest) {
-		return OK(UserBalanceUseResponse.from(facade.use(userPointUseRequest.withUserId(userId).toCommand())));
+		return OK(UserBalanceUseResponse.from(service.use(userPointUseRequest.withUserId(userId).toCommand())));
 	}
 }

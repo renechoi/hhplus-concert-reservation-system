@@ -23,15 +23,4 @@ public class QueueManagementFacade {
 		queueManagementService.expireProcessingQueueTokens();
 		queueManagementService.expireWaitingQueueTokens();
 	}
-
-	@Deprecated
-	public void recalculateWaitingQueuePositionsBySimpleReOrderingEach() {
-		queueManagementService.recalculateWaitingQueuePositionsBySimpleReOrderingEach();
-	}
-
-	@Deprecated
-	public void recalculateWaitingQueuePositionsWithJsonStoring() {
-		queueManagementService.recalculateWaitingQueuePositionsWithJsonStoring();
-	}
-
 }

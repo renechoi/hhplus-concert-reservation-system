@@ -20,8 +20,4 @@ public interface ProcessingQueueRetrievalRepository {
 	Optional<ProcessingQueueToken> findSingleByConditionOptional(ProcessingQueueTokenSearchCommand searchCommand);
 
 	List<ProcessingQueueToken> findAllByCondition(ProcessingQueueTokenSearchCommand searchCommand);
-
-	List<ProcessingQueueToken> findAllByStatusAndValidUntilBefore(QueueStatus queueStatus, LocalDateTime time);
-
-
 }

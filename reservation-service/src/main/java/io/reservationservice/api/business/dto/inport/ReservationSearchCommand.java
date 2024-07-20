@@ -32,7 +32,7 @@ public class ReservationSearchCommand {
 
 	private String dateSearchCondition; // "after", "before", "on"
 
-	public static ReservationSearchCommand searchReservationByUserIdAndConcertOptionId(Long userId, Long concertOptionId) {
+	public static ReservationSearchCommand searchByUserIdAndConcertOptionId(Long userId, Long concertOptionId) {
 		return ReservationSearchCommand.builder().userId(userId).concertOptionId(concertOptionId).build();
 	}
 }

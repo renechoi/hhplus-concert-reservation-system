@@ -100,9 +100,10 @@ public class SimpleReservationCrudService implements ReservationCrudService {
 	@Override
 	@Transactional(readOnly = true)
 	public ReservationStatusInfos getReservationStatus(Long userId, Long concertOptionId) {
-		List<Reservation> reservations = reservationRepository.findMultipleByCondition(searchReservationByUserIdAndConcertOptionId(userId, concertOptionId));
+		List<Reservation> reservations = reservationRepository.findMultipleByCondition(searchByUserIdAndConcertOptionId(userId, concertOptionId));
 
-		List<TemporaryReservation> temporaryReservations = temporaryReservationRepository.findMultipleByCondition(searchTemporaryReservationByUserIdAndConcertOptionId(userId, concertOptionId));
+		List<TemporaryReservation> temporaryReservations = temporaryReservationRepository
+			.findMultipleByCondition(searchTemporaryReservationByUserIdAndConcertOptionId(userId, concertOptionId));
 
 		List<ReservationStatusInfo> statusResponses = Stream.concat(
 			reservations.stream().map(ReservationStatusInfo::from),
@@ -134,8 +135,8 @@ public class SimpleReservationCrudService implements ReservationCrudService {
 	@Override
 	@Transactional
 	public void cancelExpiredTemporalReservations() {
-		List<TemporaryReservation> expiredReservations = temporaryReservationRepository.findMultipleByCondition(searchTemporaryReservationByExpireAt(now(), "before"));
-		expiredReservations.forEach(temporaryReservation -> {
+		temporaryReservationRepository.findMultipleByCondition(searchByExpireAt(now(), "before"))
+		.forEach(temporaryReservation -> {
 			temporaryReservation.doCancelSeat();
 			temporaryReservation.cancelConfirm();
 		});

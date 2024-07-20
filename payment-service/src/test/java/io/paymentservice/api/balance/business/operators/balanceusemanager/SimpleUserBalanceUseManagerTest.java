@@ -49,7 +49,7 @@ public class SimpleUserBalanceUseManagerTest {
 	@DisplayName("use 메서드 - 잔액 차감 후 저장")
 	void use_ShouldDeductAmountAndSave() {
 		// given
-		UserBalanceUseCommand command = UserBalanceUseCommand.createPaymentCommand(1L, BigDecimal.valueOf(500));
+		UserBalanceUseCommand command = UserBalanceUseCommand.paymentCommand(1L, BigDecimal.valueOf(500));
 		when(userBalanceRepository.findByUserIdWithThrows(1L)).thenReturn(userBalance);
 		when(userBalanceRepository.save(any(UserBalance.class))).thenReturn(userBalance);
 
@@ -69,7 +69,7 @@ public class SimpleUserBalanceUseManagerTest {
 	@DisplayName("use 메서드 - 잔액 부족 예외 발생")
 	void use_ShouldThrowExceptionWhenInsufficientBalance() {
 		// given
-		UserBalanceUseCommand command = UserBalanceUseCommand.createPaymentCommand(1L, BigDecimal.valueOf(1500));
+		UserBalanceUseCommand command = UserBalanceUseCommand.paymentCommand(1L, BigDecimal.valueOf(1500));
 		when(userBalanceRepository.findByUserIdWithThrows(1L)).thenReturn(userBalance);
 
 		// when & then

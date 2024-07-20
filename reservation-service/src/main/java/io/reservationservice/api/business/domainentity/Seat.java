@@ -1,6 +1,8 @@
 package io.reservationservice.api.business.domainentity;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -77,5 +79,10 @@ public class Seat {
 
 	public boolean isAvailable(LocalDateTime date) {
 		return !isOccupied() && concertOption.isConcertDateAfter(date);
+	}
+
+	public boolean isAvailableAtRequestTime(Long requestAt) {
+		LocalDateTime date = Instant.ofEpochMilli(requestAt).atZone(ZoneOffset.UTC).toLocalDateTime();
+		return isAvailable(date);
 	}
 }

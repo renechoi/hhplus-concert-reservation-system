@@ -13,7 +13,6 @@ import io.queuemanagement.api.business.dto.outport.WaitingQueueTokenGenerateInfo
 public interface WaitingQueueService {
 	WaitingQueueTokenGenerateInfo generateAndEnqueue(WaitingQueueTokenGenerateCommand waitingQueueTokenGenerateCommand);
 
-	WaitingQueueTokenGeneralInfo retrieveByJsonFetchingCalculation(String  userId);
 
 	@Transactional(readOnly = true)
 	WaitingQueueTokenGeneralInfo retrieveByAiAtOnceCalculation(String userId);

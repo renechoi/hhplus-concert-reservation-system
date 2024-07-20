@@ -66,7 +66,7 @@ public class UserBalance extends AbstractAggregateRoot<UserBalance> {
 		return this;
 	}
 
-	public UserBalance deductAmount(BigDecimal amount, TransactionReason transactionReason) {
+	public UserBalance use(BigDecimal amount, TransactionReason transactionReason) {
 
 		if(this.amount.compareTo(amount) < 0){
 			throw new UserBalanceUseUnAvailableException();

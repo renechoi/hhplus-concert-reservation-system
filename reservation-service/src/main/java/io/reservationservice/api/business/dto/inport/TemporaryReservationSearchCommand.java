@@ -37,7 +37,7 @@ public class TemporaryReservationSearchCommand {
 		return TemporaryReservationSearchCommand.builder().userId(userId).concertOptionId(concertOptionId).build();
 	}
 
-	public static TemporaryReservationSearchCommand searchTemporaryReservationByExpireAt(LocalDateTime searchTime, String dateSearchCondition) {
+	public static TemporaryReservationSearchCommand searchByExpireAt(LocalDateTime searchTime, String dateSearchCondition) {
 		return TemporaryReservationSearchCommand.builder().expireAt(searchTime).dateSearchTarget("expireAt").dateSearchCondition(dateSearchCondition).build();
 	}
 }

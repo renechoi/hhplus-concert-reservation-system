@@ -27,7 +27,7 @@ public class UserBalanceUseCommand {
 		return UserBalanceUseCommand.builder().userId(userId).amount(amount).build();
 	}
 
-	public static UserBalanceUseCommand createPaymentCommand(Long userId, BigDecimal amount) {
+	public static UserBalanceUseCommand paymentCommand(Long userId, BigDecimal amount) {
 		return UserBalanceUseCommand.builder().userId(userId).amount(amount).transactionReason(PAYMENT).build();
 	}
 }

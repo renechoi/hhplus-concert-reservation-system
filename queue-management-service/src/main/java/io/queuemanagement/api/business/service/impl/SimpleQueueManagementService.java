@@ -2,16 +2,12 @@ package io.queuemanagement.api.business.service.impl;
 
 import static io.queuemanagement.api.business.domainmodel.ProcessingQueueToken.*;
 import static io.queuemanagement.api.business.domainmodel.QueueStatus.*;
-import static io.queuemanagement.api.business.domainmodel.WaitingQueuePositionJson.*;
 import static io.queuemanagement.api.business.dto.inport.ProcessingQueueTokenSearchCommand.*;
 import static io.queuemanagement.api.business.dto.inport.WaitingQueueTokenSearchCommand.*;
-import static io.queuemanagement.common.mapper.ObjectMapperBasedVoMapper.*;
 import static io.queuemanagement.util.YmlLoader.*;
 import static java.time.LocalDateTime.*;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,13 +18,11 @@ import io.queuemanagement.api.business.domainmodel.WaitingQueueTokenCounter;
 import io.queuemanagement.api.business.persistence.ProcessingQueueEnqueueRepository;
 import io.queuemanagement.api.business.persistence.ProcessingQueueRetrievalRepository;
 import io.queuemanagement.api.business.persistence.ProcessingQueueStoreRepository;
-import io.queuemanagement.api.business.persistence.QueuePositionDocumentRepository;
 import io.queuemanagement.api.business.persistence.WaitingQueueTokenCounterCrudRepository;
 import io.queuemanagement.api.business.persistence.WaitingQueueTokenManagementRepository;
 import io.queuemanagement.api.business.persistence.WaitingQueueTokenRetrievalRepository;
 import io.queuemanagement.api.business.service.QueueManagementService;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 
 /**
  * @author : Rene Choi
@@ -43,7 +37,6 @@ public class SimpleQueueManagementService implements QueueManagementService {
 	private final ProcessingQueueEnqueueRepository processingQueueEnqueueRepository;
 	private final ProcessingQueueStoreRepository processingQueueStoreRepository;
 	private final WaitingQueueTokenCounterCrudRepository waitingQueueTokenCounterCrudRepository;
-	private final QueuePositionDocumentRepository queuePositionDocumentRepository;
 
 	@Transactional
 	@Override
@@ -54,7 +47,8 @@ public class SimpleQueueManagementService implements QueueManagementService {
 			return;
 		}
 
-		waitingQueueTokenRetrievalRepository.findAllByCondition(searchByStatusAndOrderByRequestAtAsc(WAITING))
+		waitingQueueTokenRetrievalRepository
+			.findAllByCondition(searchByStatusAndOrderByRequestAtAsc(WAITING))
 			.stream()
 			.limit(availableSlots)
 			.toList()
@@ -98,39 +92,9 @@ public class SimpleQueueManagementService implements QueueManagementService {
 	@Override
 	@Transactional
 	public void completeWaitingQueueTokenByUserId(String userId) {
-		waitingQueueTokenRetrievalRepository.findAllByCondition(createWaitingTokenSearchConditionByUserIdAndStatus(userId, PROCESSING))
+		waitingQueueTokenRetrievalRepository.findAllByCondition(searchConditionByUserIdAndStatus(userId, PROCESSING))
 			.forEach(
 				item -> waitingQueueTokenManagementRepository.updateStatus(item.withCompleted())
 			);
 	}
-
-	@Transactional
-	@Override
-	@Deprecated
-	public void recalculateWaitingQueuePositionsBySimpleReOrderingEach() {
-		List<WaitingQueueToken> waitingTokens = waitingQueueTokenRetrievalRepository.findAllByCondition(searchByStatusAndOrderByRequestAtAsc(WAITING));
-
-		long currentPosition = 1;
-		for (WaitingQueueToken token : waitingTokens) {
-			token = token.withPositionValue(currentPosition++);
-			waitingQueueTokenManagementRepository.updatePosition(token);
-		}
-	}
-
-	@SneakyThrows
-	@Transactional
-	@Override
-	@Deprecated
-	public void recalculateWaitingQueuePositionsWithJsonStoring() {
-		List<WaitingQueueToken> waitingTokens = waitingQueueTokenRetrievalRepository.findAllByCondition(searchByStatusAndOrderByRequestAtAsc(WAITING));
-
-		Map<Long, Long> positionMap = new HashMap<>();
-		long currentPosition = 1;
-		for (WaitingQueueToken token : waitingTokens) {
-			positionMap.put(token.getWaitingQueueTokenId(), currentPosition++);
-		}
-
-		queuePositionDocumentRepository.updateQueuePositionJson(createPositionJson(1L, getObjectMapper().writeValueAsString(positionMap)));
-	}
-
 }

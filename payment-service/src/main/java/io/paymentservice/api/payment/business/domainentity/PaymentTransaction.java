@@ -60,4 +60,8 @@ public class PaymentTransaction {
 		this.paymentStatus = PaymentStatus.CANCELLED;
 		return this;
 	}
+
+	public boolean isCancelled() {
+		return this.paymentStatus == PaymentStatus.CANCELLED;
+	}
 }

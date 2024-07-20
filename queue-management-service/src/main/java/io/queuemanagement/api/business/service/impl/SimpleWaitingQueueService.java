@@ -2,30 +2,25 @@ package io.queuemanagement.api.business.service.impl;
 
 import static io.queuemanagement.api.business.domainmodel.WaitingQueueToken.*;
 import static io.queuemanagement.api.business.dto.inport.WaitingQueueTokenSearchCommand.*;
-import static io.queuemanagement.common.mapper.ObjectMapperBasedVoMapper.*;
 import static io.queuemanagement.util.YmlLoader.*;
 
-import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import io.queuemanagement.api.business.domainmodel.WaitingQueuePositionJson;
 import io.queuemanagement.api.business.domainmodel.WaitingQueueToken;
 import io.queuemanagement.api.business.domainmodel.WaitingQueueTokenCounter;
 import io.queuemanagement.api.business.dto.inport.WaitingQueueTokenGenerateCommand;
 import io.queuemanagement.api.business.dto.outport.WaitingQueueTokenGeneralInfo;
 import io.queuemanagement.api.business.dto.outport.WaitingQueueTokenGenerateInfo;
 import io.queuemanagement.api.business.operators.WaitingQueueTokenDuplicateChecker;
-import io.queuemanagement.api.business.persistence.QueuePositionDocumentRepository;
 import io.queuemanagement.api.business.persistence.WaitingQueueTokenCounterCrudRepository;
 import io.queuemanagement.api.business.persistence.WaitingQueueTokenEnqueueRepository;
 import io.queuemanagement.api.business.persistence.WaitingQueueTokenRetrievalRepository;
 import io.queuemanagement.api.business.service.WaitingQueueService;
 import io.queuemanagement.common.exception.definitions.WaitingQueueMaxLimitExceededException;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 
 /**
  * @author : Rene Choi
@@ -38,7 +33,6 @@ public class SimpleWaitingQueueService implements WaitingQueueService {
 	private final WaitingQueueTokenCounterCrudRepository waitingQueueTokenCounterCrudRepository;
 	private final WaitingQueueTokenRetrievalRepository waitingQueueTokenRetrievalRepository;
 	private final WaitingQueueTokenDuplicateChecker waitingQueueTokenDuplicateChecker;
-	private final QueuePositionDocumentRepository queuePositionDocumentRepository;
 
 	@Override
 	@Transactional
@@ -59,36 +53,7 @@ public class SimpleWaitingQueueService implements WaitingQueueService {
 		return WaitingQueueTokenGenerateInfo.from(waitingQueueTokenEnqueueRepository.enqueue(createToken(command).withValidUntil(getTokenExpiryInSeconds()).withPositionValue(counter.getCount())));
 	}
 
-	/**
-	 * JSON 가져오기 및 파싱을 통해 사용자의 현재 대기열 위치를 검색합니다.
-	 * Json 데이터는 스케줄링에 따라 백그라운드로 동기화되어야 합니다.
-	 *
-	 * @param userId 대기열 위치를 검색할 사용자의 ID
-	 * @return 대기열 토큰의 일반 정보
-	 * @throws Exception JSON 문서를 검색하거나 파싱하는 중 문제가 발생한 경우
-	 *
-	 * @deprecated 이 메서드는 높은 계산 비용과 성능 문제로 인해 사용되지 않습니다.
-	 * 이 메서드는 데이터베이스에서 큰 JSON 문서를 가져와서 이를 역직렬화하는데, 높은 동시 요청 시 비효율적이고 느림을 확인하였습니다.
-	 * 대신 {@link #retrieveByAiAtOnceCalculation(String)}를 사용합니다.
-	 */
-	@SneakyThrows
-	@Override
-	@Transactional(readOnly = true)
-	@Deprecated
-	public WaitingQueueTokenGeneralInfo retrieveByJsonFetchingCalculation(String userId) {
 
-		WaitingQueueToken token = waitingQueueTokenRetrievalRepository.findSingleByConditionWithThrows(searchActiveByUserIdAndOrderByRequestAtAsc(userId));
-
-		WaitingQueuePositionJson positionDocument = queuePositionDocumentRepository.findDocumentByIdOrElseDefault(1L);
-		Map<Long, Long> positionMap = getObjectMapper().readValue(positionDocument.getPositionJson(), Map.class);
-
-		if(positionMap.isEmpty()){
-			return WaitingQueueTokenGeneralInfo.from(token.withPositionValue(0L));
-		}
-
-		return WaitingQueueTokenGeneralInfo.from(
-			token.withPositionValue(positionMap.get(token.getWaitingQueueTokenId()) != null ? positionMap.get(token.getWaitingQueueTokenId()) : token.getPosition()));
-	}
 
 	/**
 	 * 실시간 Auto Increment Pk 기반 계산을 통해 사용자의 현재 대기열 위치를 검색합니다.

@@ -33,7 +33,7 @@ public class PaymentTransactionAspect {
 	@Around("execution(* io.paymentservice.api.payment.business.service.PaymentService.processPayment(..)) && args(paymentCommand)")
 	public PaymentInfo manageTransaction(ProceedingJoinPoint joinPoint, PaymentCommand paymentCommand) throws Throwable {
 		try {
-			userBalanceUseManager.use(createPaymentCommand(paymentCommand.getUserId(), paymentCommand.getAmount()));
+			userBalanceUseManager.use(paymentCommand(paymentCommand.getUserId(), paymentCommand.getAmount()));
 		} catch (Exception e) {
 			throw new PaymentProcessUnAvailableException(USER_BALANCE_USE_UNAVAILABLE, createFailed(paymentCommand), e);
 		}
@@ -41,7 +41,7 @@ public class PaymentTransactionAspect {
 		try {
 			return (PaymentInfo) joinPoint.proceed();
 		} catch (Exception e) {
-			userBalanceCharger.charge(createRollbackCommand(paymentCommand.getUserId(), paymentCommand.getAmount()));
+			userBalanceCharger.charge(rollbackCommand(paymentCommand.getUserId(), paymentCommand.getAmount()));
 			throw new PaymentProcessUnAvailableException(PAYMENT_PROCESSING_FAILED, createFailed(paymentCommand), e);
 		}
 	}

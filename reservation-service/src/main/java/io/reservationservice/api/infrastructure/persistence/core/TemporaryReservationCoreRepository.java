@@ -34,4 +34,5 @@ public class TemporaryReservationCoreRepository implements TemporaryReservationR
 	public List<TemporaryReservation> findMultipleByCondition(TemporaryReservationSearchCommand searchCommand) {
 		return temporalReservationJpaRepository.findMultipleByCondition(searchCommand);
 	}
+
 }

@@ -21,7 +21,6 @@ import io.queuemanagement.api.business.domainmodel.WaitingQueueToken;
 import io.queuemanagement.api.business.persistence.ProcessingQueueEnqueueRepository;
 import io.queuemanagement.api.business.persistence.ProcessingQueueRetrievalRepository;
 import io.queuemanagement.api.business.persistence.ProcessingQueueStoreRepository;
-import io.queuemanagement.api.business.persistence.QueuePositionDocumentRepository;
 import io.queuemanagement.api.business.persistence.WaitingQueueTokenCounterCrudRepository;
 import io.queuemanagement.api.business.persistence.WaitingQueueTokenManagementRepository;
 import io.queuemanagement.api.business.persistence.WaitingQueueTokenRetrievalRepository;
@@ -98,32 +97,10 @@ public class SimpleQueueManagementServiceTest {
 	@DisplayName("사용자의 대기열 토큰을 완료 상태로 업데이트")
 	public void testCompleteWaitingQueueTokenByUserId() {
 		WaitingQueueToken token = mock(WaitingQueueToken.class);
-		when(waitingQueueTokenRetrievalRepository.findAllByCondition(createWaitingTokenSearchConditionByUserIdAndStatus("userId", any()))).thenReturn(List.of(token));
+		when(waitingQueueTokenRetrievalRepository.findAllByCondition(searchConditionByUserIdAndStatus("userId", any()))).thenReturn(List.of(token));
 
 		simpleQueueManagementService.completeWaitingQueueTokenByUserId("userId");
 
 		verify(waitingQueueTokenManagementRepository, times(1)).updateStatus(any());
-	}
-
-	@Test
-	@DisplayName("대기열 위치를 단순 재정렬로 재계산")
-	public void testRecalculateWaitingQueuePositionsBySimpleReOrderingEach() {
-		WaitingQueueToken token = mock(WaitingQueueToken.class);
-		when(waitingQueueTokenRetrievalRepository.findAllByCondition(searchByStatusAndOrderByRequestAtAsc(any()))).thenReturn(List.of(token));
-
-		simpleQueueManagementService.recalculateWaitingQueuePositionsBySimpleReOrderingEach();
-
-		verify(waitingQueueTokenManagementRepository, times(1)).updatePosition(any());
-	}
-
-	@Test
-	@DisplayName("JSON 저장으로 대기열 위치를 재계산")
-	public void testRecalculateWaitingQueuePositionsWithJsonStoring() {
-		WaitingQueueToken token = mock(WaitingQueueToken.class);
-		when(waitingQueueTokenRetrievalRepository.findAllByCondition(searchByStatusAndOrderByRequestAtAsc(any()))).thenReturn(List.of(token));
-
-		simpleQueueManagementService.recalculateWaitingQueuePositionsWithJsonStoring();
-
-		verify(queuePositionDocumentRepository, times(1)).updateQueuePositionJson(any());
 	}
 }

@@ -64,7 +64,7 @@ public class UserBalanceTest {
 		TransactionReason reason = TransactionReason.NORMAL;
 
 		// when
-		userBalance.deductAmount(amountToDeduct, reason);
+		userBalance.use(amountToDeduct, reason);
 
 		// then
 		assertEquals(initialAmount.subtract(amountToDeduct), userBalance.getAmount());
@@ -81,7 +81,7 @@ public class UserBalanceTest {
 
 		// when / then
 		assertThrows(UserBalanceUseUnAvailableException.class, () -> {
-			userBalance.deductAmount(amountToDeduct, TransactionReason.NORMAL);
+			userBalance.use(amountToDeduct, TransactionReason.NORMAL);
 		});
 	}
 }

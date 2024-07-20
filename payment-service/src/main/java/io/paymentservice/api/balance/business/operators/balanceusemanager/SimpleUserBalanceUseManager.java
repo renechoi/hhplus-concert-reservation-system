@@ -24,7 +24,7 @@ public class SimpleUserBalanceUseManager implements UserBalanceUseManager{
 	@Transactional
 	public UserBalanceUseInfo use(UserBalanceUseCommand command) {
 		UserBalance userBalance = userBalanceRepository.findByUserIdWithThrows(command.getUserId());
-		userBalance.deductAmount(command.getAmount(), command.getTransactionReason());
+		userBalance.use(command.getAmount(), command.getTransactionReason());
 		return UserBalanceUseInfo.from(userBalanceRepository.save(userBalance));
 	}
 }

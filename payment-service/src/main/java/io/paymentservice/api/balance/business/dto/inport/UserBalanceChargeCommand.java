@@ -31,7 +31,7 @@ public class UserBalanceChargeCommand {
 		return UserBalanceChargeCommand.builder().userId(userId).build();
 	}
 
-	public static UserBalanceChargeCommand createRollbackCommand(Long userId, BigDecimal amount) {
+	public static UserBalanceChargeCommand rollbackCommand(Long userId, BigDecimal amount) {
 		return UserBalanceChargeCommand.builder().userId(userId).amount(amount).transactionReason(ROLLED_BACK).build();
 	}
 }

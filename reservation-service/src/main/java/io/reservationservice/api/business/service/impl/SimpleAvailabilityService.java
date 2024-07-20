@@ -47,11 +47,10 @@ public class SimpleAvailabilityService implements AvailabilityService {
 	@Override
 	@Transactional(readOnly = true)
 	public AvailableSeatsInfos getAvailableSeats(Long concertOptionId, Long requestAt) {
-		LocalDateTime date = Instant.ofEpochMilli(requestAt).atZone(ZoneOffset.UTC).toLocalDateTime();
 		List<Seat> seats = seatRepository.findMultipleByCondition(searchByConcertOptionId(concertOptionId));
 
 		List<AvailableSeatsInfo> availableSeats = seats.stream()
-			.filter(seat -> seat.isAvailable(date))
+			.filter(seat -> seat.isAvailableAtRequestTime(requestAt))
 			.map(AvailableSeatsInfo::from)
 			.collect(Collectors.toList());
 
