@@ -2,11 +2,11 @@ package io.paymentservice.api.payment.interfaces.controller;
 
 import static io.paymentservice.api.payment.business.domainentity.PaymentStatus.*;
 import static io.paymentservice.testhelpers.apiexecutor.PaymentApiExecutor.*;
-import static io.paymentservice.testhelpers.apiexecutor.UserBalanceApiExecutor.*;
+import static io.paymentservice.testhelpers.apiexecutor.BalanceApiExecutor.*;
 import static io.paymentservice.testhelpers.contextholder.PaymentContextHolder.*;
-import static io.paymentservice.testhelpers.contextholder.UserBalanceContextHolder.*;
+import static io.paymentservice.testhelpers.contextholder.BalanceContextHolder.*;
 import static io.paymentservice.testhelpers.parser.PaymentResponseParser.*;
-import static io.paymentservice.testhelpers.parser.UserBalanceResponseParser.*;
+import static io.paymentservice.testhelpers.parser.BalanceResponseParser.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 
@@ -20,7 +20,7 @@ import org.mockito.Mockito;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 
-import io.paymentservice.api.balance.interfaces.dto.request.UserBalanceChargeRequest;
+import io.paymentservice.api.balance.interfaces.dto.request.BalanceChargeRequest;
 import io.paymentservice.api.payment.CommonAcceptanceTest;
 import io.paymentservice.api.payment.business.domainentity.PaymentMethod;
 import io.paymentservice.api.payment.business.domainentity.PaymentTransaction;
@@ -55,16 +55,16 @@ class PaymentRollbackAcceptanceTest extends CommonAcceptanceTest {
 	void 결제_저장_중_실패하여_롤백되는_시나리오() throws Exception {
 		// Given
 		putPaymentRequest(new PaymentRequest(1L, BigDecimal.valueOf(1000), PaymentMethod.CREDIT_CARD));
-		putChargeResponse(1L, parseUserBalanceChargeResponse(chargeUserBalanceWithOk(1L, new UserBalanceChargeRequest(1L, BigDecimal.valueOf(3000)))));
+		putChargeResponse(1L, parseBalanceChargeResponse(chargeBalanceWithOk(1L, new BalanceChargeRequest(1L, BigDecimal.valueOf(3000)))));
 
 		// When
 		ExtractableResponse<Response> response = processPayment(getMostRecentPaymentRequest());
 		assertNotEquals(200, response.statusCode());
 		assertEquals(FAILED, parsePaymentResponseAsApiResponse(response).paymentStatus());
 
-		ExtractableResponse<Response> getUserBalanceResponse = getUserBalance(1L);
-		assertEquals(200, getUserBalanceResponse.statusCode());
-		assertEquals(3000, parseUserBalanceSearchResponse(getUserBalanceResponse).amount().longValue(), "조회한 잔액이 예상 값과 다릅니다.");
+		ExtractableResponse<Response> getBalanceResponse = getBalance(1L);
+		assertEquals(200, getBalanceResponse.statusCode());
+		assertEquals(3000, parseBalanceSearchResponse(getBalanceResponse).amount().longValue(), "조회한 잔액이 예상 값과 다릅니다.");
 
 	}
 

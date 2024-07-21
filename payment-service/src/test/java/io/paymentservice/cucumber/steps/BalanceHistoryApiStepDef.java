@@ -1,9 +1,9 @@
 package io.paymentservice.cucumber.steps;
 
-import static io.paymentservice.testhelpers.apiexecutor.UserBalanceApiExecutor.*;
-import static io.paymentservice.testhelpers.contextholder.UserBalanceContextHolder.*;
+import static io.paymentservice.testhelpers.apiexecutor.BalanceApiExecutor.*;
+import static io.paymentservice.testhelpers.contextholder.BalanceContextHolder.*;
 import static io.paymentservice.testhelpers.fieldmatcher.ResponseMatcher.*;
-import static io.paymentservice.testhelpers.parser.UserBalanceResponseParser.*;
+import static io.paymentservice.testhelpers.parser.BalanceResponseParser.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.lang.reflect.Field;
@@ -29,7 +29,7 @@ public class BalanceHistoryApiStepDef implements En {
 	}
 
 	private void historyBalanceRequestedWithSuccessResponse(Long id) {
-		BalanceTransactionResponses response = parseBalanceTransactionResponses(getUserBalanceHistories(id));
+		BalanceTransactionResponses response = parseBalanceTransactionResponses(getBalanceHistories(id));
 		putTransactionResponses(id, response);
 	}
 

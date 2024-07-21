@@ -7,8 +7,8 @@ import org.springframework.transaction.event.TransactionalEventListener;
 
 import io.paymentservice.api.balance.business.domainentity.BalanceTransaction;
 import io.paymentservice.api.balance.business.domainentity.TransactionType;
-import io.paymentservice.api.balance.business.dto.event.UserBalanceChargeEvent;
-import io.paymentservice.api.balance.business.dto.event.UserBalanceUseEvent;
+import io.paymentservice.api.balance.business.dto.event.BalanceChargeEvent;
+import io.paymentservice.api.balance.business.dto.event.BalanceUseEvent;
 import io.paymentservice.api.balance.business.persistence.BalanceTransactionRepository;
 import lombok.RequiredArgsConstructor;
 
@@ -23,7 +23,7 @@ public class BalanceTransactionEventListener {
 	private final BalanceTransactionRepository transactionRepository;
 
 	@TransactionalEventListener(phase = BEFORE_COMMIT)
-	public void handleBalanceChargedEvent(UserBalanceChargeEvent event) {
+	public void handleBalanceChargedEvent(BalanceChargeEvent event) {
 		BalanceTransaction transaction = BalanceTransaction.builder()
 			.userId(event.userId())
 			.amount(event.amount())
@@ -34,7 +34,7 @@ public class BalanceTransactionEventListener {
 	}
 
 	@TransactionalEventListener(phase = BEFORE_COMMIT)
-	public void handleBalanceUsedEvent(UserBalanceUseEvent event) {
+	public void handleBalanceUsedEvent(BalanceUseEvent event) {
 		BalanceTransaction transaction = BalanceTransaction.builder()
 			.userId(event.userId())
 			.amount(event.amount())

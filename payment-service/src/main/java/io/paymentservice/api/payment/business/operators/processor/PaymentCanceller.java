@@ -1,12 +1,12 @@
 package io.paymentservice.api.payment.business.operators.processor;
 
-import static io.paymentservice.api.balance.business.dto.inport.UserBalanceChargeCommand.*;
+import static io.paymentservice.api.balance.business.dto.inport.BalanceChargeCommand.*;
 import static io.paymentservice.common.model.GlobalResponseCode.*;
 
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import io.paymentservice.api.balance.business.operators.balancecharger.UserBalanceCharger;
+import io.paymentservice.api.balance.business.operators.balancecharger.BalanceCharger;
 import io.paymentservice.api.payment.business.domainentity.PaymentTransaction;
 import io.paymentservice.api.payment.business.dto.outport.PaymentInfo;
 import io.paymentservice.api.payment.business.persistence.PaymentTransactionRepository;
@@ -22,7 +22,7 @@ import lombok.RequiredArgsConstructor;
 public class PaymentCanceller {
 
 	private final PaymentTransactionRepository paymentTransactionRepository;
-	private final UserBalanceCharger userBalanceCharger;
+	private final BalanceCharger balanceCharger;
 
 	@Transactional
 	public PaymentInfo cancel(Long transactionId) {
@@ -32,7 +32,7 @@ public class PaymentCanceller {
 			throw new PaymentCancelUnAvailableException(PAYMENT_ALREADY_CANCELED, transactionId);
 		}
 
-		userBalanceCharger.charge(rollbackCommand(transaction.getUserId(), transaction.getAmount()));
+		balanceCharger.charge(rollbackCommand(transaction.getUserId(), transaction.getAmount()));
 		paymentTransactionRepository.save(transaction.doCancel());
 
 		return PaymentInfo.from(transaction);
