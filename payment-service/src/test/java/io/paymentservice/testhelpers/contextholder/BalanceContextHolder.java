@@ -3,6 +3,8 @@ package io.paymentservice.testhelpers.contextholder;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.springframework.stereotype.Component;
+
 import io.paymentservice.api.balance.interfaces.dto.request.BalanceChargeRequest;
 import io.paymentservice.api.balance.interfaces.dto.request.BalanceUseRequest;
 import io.paymentservice.api.balance.interfaces.dto.response.BalanceTransactionResponses;
@@ -14,7 +16,8 @@ import io.paymentservice.api.balance.interfaces.dto.response.BalanceUseResponse;
  * @author : Rene Choi
  * @since : 2024/07/09
  */
-public class BalanceContextHolder {
+@Component
+public class BalanceContextHolder implements TestDtoContextHolder{
 	private static final ConcurrentHashMap<Long, BalanceChargeRequest> chargeRequestMap = new ConcurrentHashMap<>();
 	private static final ConcurrentHashMap<Long, BalanceUseRequest> useRequestMap = new ConcurrentHashMap<>();
 	private static final ConcurrentHashMap<Long, BalanceSearchResponse> searchResponseMap = new ConcurrentHashMap<>();

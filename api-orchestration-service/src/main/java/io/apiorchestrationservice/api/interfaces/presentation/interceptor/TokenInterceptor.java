@@ -1,5 +1,7 @@
 package io.apiorchestrationservice.api.interfaces.presentation.interceptor;
 
+import static org.apache.commons.lang.StringUtils.*;
+
 import org.apache.commons.lang.StringUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
@@ -32,7 +34,7 @@ public class TokenInterceptor implements HandlerInterceptor {
 			if (validatedToken != null) {
 				String token = request.getHeader("X-Queue-Token");
 
-				if (StringUtils.isEmpty(token)) {
+				if (isEmpty(token)) {
 					throw new InvalidTokenException();
 				}
 

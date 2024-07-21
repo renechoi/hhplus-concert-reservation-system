@@ -23,4 +23,9 @@ public class QueueManagementFacade {
 		queueManagementService.expireProcessingQueueTokens();
 		queueManagementService.expireWaitingQueueTokens();
 	}
+
+	public void completeTokens(String userId) {
+		queueManagementService.completeProcessingQueueToken(userId);
+		queueManagementService.completeWaitingQueueTokenByUserId(userId);
+	}
 }

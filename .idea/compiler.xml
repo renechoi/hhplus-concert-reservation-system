@@ -19,14 +19,14 @@
           <entry name="$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.mysema.commons/mysema-commons-lang/0.2.4/d09c8489d54251a6c22fbce804bdd4a070557317/mysema-commons-lang-0.2.4.jar" />
           <entry name="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.eclipse.jdt/ecj/3.26.0/4837be609a3368a0f7e7cf0dc1bdbc7fe94993de/ecj-3.26.0.jar" />
         </processorPath>
-        <module name="reservation-service.main" />
+        <module name="payment-service.main" />
       </profile>
       <profile name="Gradle Imported" enabled="true">
         <outputRelativeToContentRoot value="true" />
         <processorPath useClasspath="false">
           <entry name="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.projectlombok/lombok/1.18.32/17d46b3e205515e1e8efd3ee4d57ce8018914163/lombok-1.18.32.jar" />
         </processorPath>
-        <module name="reservation-service.test" />
+        <module name="payment-service.test" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>

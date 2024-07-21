@@ -101,4 +101,11 @@ public class WaitingQueueTokenSearchCommand extends AbstractCommonRequestInfo im
 			.dateSearchTarget(DateSearchTarget.VALID_UNTIL)
 			.build();
 	}
+
+	public boolean isStatuesNotEmpty() {
+		return !isStatuesEmpty();
+	}
+	public boolean isStatuesEmpty() {
+		return this.statuses == null || this.statuses.isEmpty();
+	}
 }

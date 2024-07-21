@@ -36,7 +36,7 @@ public class WaitingQueueTokenQueryFilter implements QueryFilter<WaitingQueueTok
 			.dateEquals(waitingQueueTokenEntity.createdAt, searchCommand.getCreatedAt())
 			.and(createDatePredicate(searchCommand.getDateSearchCondition(), searchCommand.getValidUntil(), waitingQueueTokenEntity.validUntil));
 
-		if (searchCommand.getStatuses() != null && !searchCommand.getStatuses().isEmpty()) {
+		if (searchCommand.getStatuses() != null && searchCommand.isStatuesNotEmpty()) {
 			builder = builder.and(createStatusPredicate(searchCommand.getStatuses()));
 		}
 
