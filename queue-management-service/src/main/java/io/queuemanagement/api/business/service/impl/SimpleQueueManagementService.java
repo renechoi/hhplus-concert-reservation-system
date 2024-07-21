@@ -2,6 +2,7 @@ package io.queuemanagement.api.business.service.impl;
 
 import static io.queuemanagement.api.business.domainmodel.ProcessingQueueToken.*;
 import static io.queuemanagement.api.business.domainmodel.QueueStatus.*;
+import static io.queuemanagement.api.business.dto.inport.DateSearchCommand.DateSearchCondition.*;
 import static io.queuemanagement.api.business.dto.inport.ProcessingQueueTokenSearchCommand.*;
 import static io.queuemanagement.api.business.dto.inport.WaitingQueueTokenSearchCommand.*;
 import static io.queuemanagement.util.YmlLoader.*;
@@ -64,7 +65,7 @@ public class SimpleQueueManagementService implements QueueManagementService {
 	@Transactional
 	@Override
 	public void expireProcessingQueueTokens() {
-		List<ProcessingQueueToken> tokensToExpire = processingQueueRetrievalRepository.findAllByCondition(searchByStatusAndValidUntil(PROCESSING,  now(), "before"));
+		List<ProcessingQueueToken> tokensToExpire = processingQueueRetrievalRepository.findAllByCondition(searchByStatusAndValidUntil(PROCESSING,  now(), BEFORE));
 		tokensToExpire.forEach(token -> {
 			token = token.withExpired();
 			processingQueueStoreRepository.store(token);
@@ -74,7 +75,7 @@ public class SimpleQueueManagementService implements QueueManagementService {
 	@Override
 	@Transactional
 	public void expireWaitingQueueTokens() {
-		List<WaitingQueueToken> tokensToExpire = waitingQueueTokenRetrievalRepository.findAllByCondition(searchByStatusesAndValidUntil(List.of(WAITING, PROCESSING), now(), "before"));
+		List<WaitingQueueToken> tokensToExpire = waitingQueueTokenRetrievalRepository.findAllByCondition(searchByStatusesAndValidUntil(List.of(WAITING, PROCESSING), now(), BEFORE));
 		tokensToExpire.forEach(token -> {
 			token = token.withExpired();
 			waitingQueueTokenManagementRepository.updateStatus(token);

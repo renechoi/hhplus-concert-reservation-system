@@ -1,5 +1,6 @@
 package io.reservationservice.api.business.service.impl;
 
+import static io.reservationservice.api.business.dto.inport.DateSearchCommand.DateSearchCondition.*;
 import static io.reservationservice.api.business.dto.inport.SeatSearchCommand.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -17,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import io.reservationservice.api.business.domainentity.ConcertOption;
 import io.reservationservice.api.business.domainentity.Seat;
+import io.reservationservice.api.business.dto.inport.DateSearchCommand;
 import io.reservationservice.api.business.dto.outport.AvailableDateInfos;
 import io.reservationservice.api.business.dto.outport.AvailableSeatsInfos;
 import io.reservationservice.api.business.persistence.ConcertOptionRepository;
@@ -50,7 +52,7 @@ class SimpleAvailabilityServiceTest {
 		);
 
 		when(concertOptionRepository.findMultipleByCondition(argThat(command ->
-			command.getConcertId().equals(concertId) && "after".equals(command.getDateSearchCondition())
+			command.getConcertId().equals(concertId) && AFTER.equals(command.getDateSearchCondition())
 		))).thenReturn(concertOptions);
 
 		// when
@@ -59,7 +61,7 @@ class SimpleAvailabilityServiceTest {
 		// then
 		assertEquals(2, availableDates.availableDateInfos().size());
 		verify(concertOptionRepository, times(1)).findMultipleByCondition(argThat(command ->
-			command.getConcertId().equals(concertId) && "after".equals(command.getDateSearchCondition())
+			command.getConcertId().equals(concertId) && AFTER.equals(command.getDateSearchCondition())
 		));
 	}
 

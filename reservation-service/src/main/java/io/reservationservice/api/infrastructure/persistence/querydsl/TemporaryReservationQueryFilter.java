@@ -10,6 +10,7 @@ import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.DateTimePath;
 
 import io.reservationservice.api.business.domainentity.QTemporaryReservation;
+import io.reservationservice.api.business.dto.inport.DateSearchCommand;
 import io.reservationservice.api.business.dto.inport.TemporaryReservationSearchCommand;
 import io.reservationservice.util.QueryDslBooleanExpressionBuilder;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 public class TemporaryReservationQueryFilter implements QueryFilter<TemporaryReservationSearchCommand> {
 
 	private static final QTemporaryReservation TEMPORARY_RESERVATION = QTemporaryReservation.temporaryReservation;
+
 
 	@Override
 	public Predicate createGlobalSearchQuery(TemporaryReservationSearchCommand searchCommand) {
@@ -40,16 +42,16 @@ public class TemporaryReservationQueryFilter implements QueryFilter<TemporaryRes
 		return builder.build();
 	}
 
-	private BooleanExpression createDatePredicate(String condition, LocalDateTime date, DateTimePath<LocalDateTime> dateTimePath) {
+	private BooleanExpression createDatePredicate(DateSearchCommand.DateSearchCondition condition, LocalDateTime date, DateTimePath<LocalDateTime> dateTimePath) {
 		if (condition == null || date == null) {
 			return null;
 		}
 		switch (condition) {
-			case "before":
+			case BEFORE:
 				return dateTimePath.before(date);
-			case "after":
+			case AFTER:
 				return dateTimePath.after(date);
-			case "on":
+			case ON:
 				return dateTimePath.eq(date);
 			default:
 				return null;

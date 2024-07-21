@@ -1,6 +1,7 @@
 package io.queuemanagement.api.business.service.impl;
 
 import static io.queuemanagement.api.business.domainmodel.QueueStatus.*;
+import static io.queuemanagement.api.business.dto.inport.DateSearchCommand.DateSearchCondition.*;
 import static io.queuemanagement.api.business.dto.inport.ProcessingQueueTokenSearchCommand.*;
 import static io.queuemanagement.api.business.dto.inport.WaitingQueueTokenSearchCommand.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -60,7 +61,7 @@ public class SimpleQueueManagementServiceTest {
 	@DisplayName("만료된 처리 대기열 토큰을 만료 상태로 업데이트")
 	public void testExpireProcessingQueueTokens() {
 		ProcessingQueueToken token = mock(ProcessingQueueToken.class);
-		when(processingQueueRetrievalRepository.findAllByCondition(searchByStatusAndValidUntil(QueueStatus.PROCESSING, any(), "before")))
+		when(processingQueueRetrievalRepository.findAllByCondition(searchByStatusAndValidUntil(QueueStatus.PROCESSING, any(), BEFORE)))
 			.thenReturn(List.of(token));
 
 		simpleQueueManagementService.expireProcessingQueueTokens();
@@ -72,7 +73,7 @@ public class SimpleQueueManagementServiceTest {
 	@DisplayName("만료된 대기열 토큰을 만료 상태로 업데이트")
 	public void testExpireWaitingQueueTokens() {
 		WaitingQueueToken token = mock(WaitingQueueToken.class);
-		when(waitingQueueTokenRetrievalRepository.findAllByCondition(searchByStatusesAndValidUntil(List.of(WAITING, PROCESSING), any(), "before")))
+		when(waitingQueueTokenRetrievalRepository.findAllByCondition(searchByStatusesAndValidUntil(List.of(WAITING, PROCESSING), any(), BEFORE)))
 			.thenReturn(List.of(token));
 
 		simpleQueueManagementService.expireWaitingQueueTokens();

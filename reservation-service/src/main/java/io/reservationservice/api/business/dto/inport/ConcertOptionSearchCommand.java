@@ -18,7 +18,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ConcertOptionSearchCommand {
+public class ConcertOptionSearchCommand implements DateSearchCommand{
 	private Long concertOptionId;
 	private Concert concert;
 	private Long concertId;
@@ -31,14 +31,15 @@ public class ConcertOptionSearchCommand {
 	private LocalDateTime requestAt;
 
 
-	private String dateSearchCondition;
+	private DateSearchCondition dateSearchCondition;
+	private DateSearchTarget dateSearchTarget;
 
-	// 이 메서드를 사용하여 concertId로 검색하고 concertDate가 현재 시점 이후인 것만 필터링합니다.
 	public static ConcertOptionSearchCommand searchByConcertIdWithFutureConcertDates(Long concertId) {
 		return ConcertOptionSearchCommand.builder()
 			.concertId(concertId)
 			.concertDate(LocalDateTime.now())
-			.dateSearchCondition("after")
+			.dateSearchCondition(DateSearchCondition.AFTER)
+			.dateSearchTarget(DateSearchTarget.CONCERT_DATE)
 			.build();
 	}
 }

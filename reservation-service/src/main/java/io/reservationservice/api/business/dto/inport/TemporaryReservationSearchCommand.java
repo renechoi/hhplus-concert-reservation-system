@@ -1,5 +1,7 @@
 package io.reservationservice.api.business.dto.inport;
 
+import static io.reservationservice.api.business.dto.inport.DateSearchCommand.DateSearchTarget.*;
+
 import java.time.LocalDateTime;
 
 import io.reservationservice.api.business.domainentity.ConcertOption;
@@ -17,7 +19,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class TemporaryReservationSearchCommand {
+public class TemporaryReservationSearchCommand implements DateSearchCommand {
 	private Long temporaryReservationId;
 	private Long userId;
 	private ConcertOption concertOption;
@@ -30,14 +32,15 @@ public class TemporaryReservationSearchCommand {
 	private LocalDateTime createdAt;
 	private LocalDateTime requestAt;
 
-	private String dateSearchTarget;
-	private String dateSearchCondition; // "after", "before", "on"
+	private DateSearchCondition dateSearchCondition;
+	private DateSearchTarget dateSearchTarget;
 
 	public static TemporaryReservationSearchCommand searchTemporaryReservationByUserIdAndConcertOptionId(Long userId, Long concertOptionId) {
 		return TemporaryReservationSearchCommand.builder().userId(userId).concertOptionId(concertOptionId).build();
 	}
 
-	public static TemporaryReservationSearchCommand searchByExpireAt(LocalDateTime searchTime, String dateSearchCondition) {
-		return TemporaryReservationSearchCommand.builder().expireAt(searchTime).dateSearchTarget("expireAt").dateSearchCondition(dateSearchCondition).build();
+	public static TemporaryReservationSearchCommand searchByExpireAt(LocalDateTime searchTime, DateSearchCondition dateSearchCondition) {
+		return TemporaryReservationSearchCommand.builder().expireAt(searchTime).dateSearchTarget(EXPIRE_AT).dateSearchCondition(dateSearchCondition).build();
+
 	}
 }

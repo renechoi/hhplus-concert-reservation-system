@@ -1,5 +1,6 @@
 package io.reservationservice.api.business.service.impl;
 
+import static io.reservationservice.api.business.dto.inport.DateSearchCommand.DateSearchCondition.*;
 import static io.reservationservice.api.business.dto.inport.ReservationSearchCommand.*;
 import static io.reservationservice.api.business.dto.inport.SeatSearchCommand.*;
 import static io.reservationservice.api.business.dto.inport.TemporaryReservationSearchCommand.*;
@@ -135,7 +136,7 @@ public class SimpleReservationCrudService implements ReservationCrudService {
 	@Override
 	@Transactional
 	public void cancelExpiredTemporalReservations() {
-		temporaryReservationRepository.findMultipleByCondition(searchByExpireAt(now(), "before"))
+		temporaryReservationRepository.findMultipleByCondition(searchByExpireAt(now(), BEFORE))
 		.forEach(temporaryReservation -> {
 			temporaryReservation.doCancelSeat();
 			temporaryReservation.cancelConfirm();

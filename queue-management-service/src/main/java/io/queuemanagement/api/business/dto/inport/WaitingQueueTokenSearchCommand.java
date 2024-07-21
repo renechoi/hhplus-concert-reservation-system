@@ -1,5 +1,8 @@
 package io.queuemanagement.api.business.dto.inport;
 
+import static io.queuemanagement.api.business.dto.inport.DateSearchCommand.DateSearchCondition.*;
+import static io.queuemanagement.api.business.dto.inport.DateSearchCommand.DateSearchTarget.*;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -20,7 +23,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class WaitingQueueTokenSearchCommand extends AbstractCommonRequestInfo {
+public class WaitingQueueTokenSearchCommand extends AbstractCommonRequestInfo implements DateSearchCommand{
 	private Long waitingQueueTokenId;
 	private String userId;
 	private String tokenValue;
@@ -31,15 +34,18 @@ public class WaitingQueueTokenSearchCommand extends AbstractCommonRequestInfo {
 
 	private LocalDateTime createdAt;
 
-	private String dateSearchCondition; // "after", "before", "on"
+	private DateSearchCondition dateSearchCondition;
+	private DateSearchTarget dateSearchTarget;
 
-	private Integer top; //
-	private String orderBy; // e.g. "requestAt"
-	private String orderDirection; // "asc" or "desc"
+	private Integer top;
+	private String orderBy;
+	private String orderDirection;
 
 
-	public static WaitingQueueTokenSearchCommandBuilder active(){
-		return WaitingQueueTokenSearchCommand.builder().validUntil(LocalDateTime.now()).dateSearchCondition("after");
+
+
+	public static WaitingQueueTokenSearchCommandBuilder active() {
+		return WaitingQueueTokenSearchCommand.builder().validUntil(LocalDateTime.now()).dateSearchCondition(AFTER).dateSearchTarget(VALID_UNTIL);
 	}
 
 
@@ -86,11 +92,13 @@ public class WaitingQueueTokenSearchCommand extends AbstractCommonRequestInfo {
 			.build();
 	}
 
-	public static WaitingQueueTokenSearchCommand searchByStatusesAndValidUntil(List<QueueStatus> statuses, LocalDateTime validUntil, String dateSearchCondition) {
+
+	public static WaitingQueueTokenSearchCommand searchByStatusesAndValidUntil(List<QueueStatus> statuses, LocalDateTime validUntil, DateSearchCondition dateSearchCondition) {
 		return WaitingQueueTokenSearchCommand.builder()
 			.statuses(statuses)
 			.validUntil(validUntil)
 			.dateSearchCondition(dateSearchCondition)
+			.dateSearchTarget(DateSearchTarget.VALID_UNTIL)
 			.build();
 	}
 }

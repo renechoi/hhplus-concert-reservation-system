@@ -17,7 +17,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ReservationSearchCommand {
+public class ReservationSearchCommand implements DateSearchCommand{
 	private Long reservationId;
 	private Long userId;
 	private ConcertOption concertOption;
@@ -30,7 +30,7 @@ public class ReservationSearchCommand {
 	private LocalDateTime createdAt;
 	private LocalDateTime requestAt;
 
-	private String dateSearchCondition; // "after", "before", "on"
+	private DateSearchCondition dateSearchCondition;
 
 	public static ReservationSearchCommand searchByUserIdAndConcertOptionId(Long userId, Long concertOptionId) {
 		return ReservationSearchCommand.builder().userId(userId).concertOptionId(concertOptionId).build();
