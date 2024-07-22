@@ -31,7 +31,7 @@ public class WaitingQueueTokenCounterCoreRepository implements WaitingQueueToken
 	}
 
 	@Override
-	public WaitingQueueTokenCounter getCounterWithThrows() {
+	public WaitingQueueTokenCounter getCounter() {
 		return waitingQueueTokenCounterJpaRepository.findById(1L).orElseThrow().toDomain();
 	}
 

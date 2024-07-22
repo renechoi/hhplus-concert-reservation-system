@@ -3,7 +3,7 @@ package io.paymentservice.api.balance.business.dto.event;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-import io.paymentservice.api.balance.business.domainentity.TransactionReason;
+import io.paymentservice.api.balance.business.entity.TransactionReason;
 
 /**
  * @author : Rene Choi

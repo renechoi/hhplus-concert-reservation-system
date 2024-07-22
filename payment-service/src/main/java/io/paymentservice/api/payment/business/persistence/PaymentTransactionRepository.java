@@ -2,7 +2,7 @@ package io.paymentservice.api.payment.business.persistence;
 
 import java.util.List;
 
-import io.paymentservice.api.payment.business.domainentity.PaymentTransaction;
+import io.paymentservice.api.payment.business.entity.PaymentTransaction;
 
 /**
  * @author : Rene Choi
@@ -13,6 +13,6 @@ public interface PaymentTransactionRepository {
 
 	List<PaymentTransaction> findListByUserId(Long userId);
 
-	PaymentTransaction findByIdWithThrows(Long transactionId);
+	PaymentTransaction findById(Long transactionId);
 
 }

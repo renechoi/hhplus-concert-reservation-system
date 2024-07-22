@@ -1,10 +1,10 @@
 package io.paymentservice.api.balance.business.dto.inport;
 
-import static io.paymentservice.api.balance.business.domainentity.TransactionReason.*;
+import static io.paymentservice.api.balance.business.entity.TransactionReason.*;
 
 import java.math.BigDecimal;
 
-import io.paymentservice.api.balance.business.domainentity.TransactionReason;
+import io.paymentservice.api.balance.business.entity.TransactionReason;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

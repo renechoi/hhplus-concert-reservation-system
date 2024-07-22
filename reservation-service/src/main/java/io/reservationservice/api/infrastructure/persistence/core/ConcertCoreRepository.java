@@ -23,7 +23,7 @@ public class ConcertCoreRepository implements ConcertRepository {
 	}
 
 	@Override
-	public Concert findByIdWithThrows(Long concertId) {
+	public Concert findById(Long concertId) {
 		return concertJpaRepository.findById(concertId).orElseThrow(ConcertNotFoundException::new);
 	}
 }

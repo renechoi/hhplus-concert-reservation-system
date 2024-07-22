@@ -1,8 +1,9 @@
 package io.queuemanagement.api.interfaces.scheduler;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 
 import io.queuemanagement.api.application.facade.QueueManagementFacade;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +24,7 @@ public class TokenScheduler {
 	@Scheduled(fixedRateString = "${scheduler.queueTransferRate}")
 	// @SchedulerLock(name = "processScheduledQueueTransfer", lockAtMostFor = "PT5S", lockAtLeastFor = "PT2S")
 	public void processScheduledQueueTransfer() {
-		queueManagementFacade.processScheduledQueueTransfer();
+		queueManagementFacade.processQueueTransfer();
 	}
 
 	/**

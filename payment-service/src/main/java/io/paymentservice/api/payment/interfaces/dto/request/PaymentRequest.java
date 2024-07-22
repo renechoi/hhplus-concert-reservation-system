@@ -2,7 +2,7 @@ package io.paymentservice.api.payment.interfaces.dto.request;
 
 import java.math.BigDecimal;
 
-import io.paymentservice.api.payment.business.domainentity.PaymentMethod;
+import io.paymentservice.api.payment.business.entity.PaymentMethod;
 import io.paymentservice.api.payment.business.dto.inport.PaymentCommand;
 import io.paymentservice.common.mapper.ObjectMapperBasedVoMapper;
 import jakarta.validation.constraints.NotNull;

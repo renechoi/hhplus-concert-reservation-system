@@ -14,7 +14,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import io.paymentservice.api.balance.business.domainentity.Balance;
+import io.paymentservice.api.balance.business.entity.Balance;
 import io.paymentservice.api.balance.business.dto.inport.BalanceUseCommand;
 import io.paymentservice.api.balance.business.dto.outport.BalanceUseInfo;
 import io.paymentservice.api.balance.business.persistence.BalanceRepository;
@@ -50,7 +50,7 @@ public class SimpleBalanceUseManagerTest {
 	void use_ShouldDeductAmountAndSave() {
 		// given
 		BalanceUseCommand command = BalanceUseCommand.paymentCommand(1L, BigDecimal.valueOf(500));
-		when(balanceRepository.findByUserIdWithThrows(1L)).thenReturn(balance);
+		when(balanceRepository.findByUserId(1L)).thenReturn(balance);
 		when(balanceRepository.save(any(Balance.class))).thenReturn(balance);
 
 		// when
@@ -61,7 +61,7 @@ public class SimpleBalanceUseManagerTest {
 		assertEquals(1L, result.userId());
 		assertEquals(BigDecimal.valueOf(500), result.amount());
 
-		verify(balanceRepository, times(1)).findByUserIdWithThrows(1L);
+		verify(balanceRepository, times(1)).findByUserId(1L);
 		verify(balanceRepository, times(1)).save(balance);
 	}
 
@@ -70,12 +70,12 @@ public class SimpleBalanceUseManagerTest {
 	void use_ShouldThrowExceptionWhenInsufficientBalance() {
 		// given
 		BalanceUseCommand command = BalanceUseCommand.paymentCommand(1L, BigDecimal.valueOf(1500));
-		when(balanceRepository.findByUserIdWithThrows(1L)).thenReturn(balance);
+		when(balanceRepository.findByUserId(1L)).thenReturn(balance);
 
 		// when & then
 		assertThrows(BalanceUseUnAvailableException.class, () -> simpleBalanceUseManager.use(command));
 
-		verify(balanceRepository, times(1)).findByUserIdWithThrows(1L);
+		verify(balanceRepository, times(1)).findByUserId(1L);
 		verify(balanceRepository, times(0)).save(any(Balance.class));
 	}
 }

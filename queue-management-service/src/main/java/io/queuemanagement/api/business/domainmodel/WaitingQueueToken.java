@@ -4,7 +4,10 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 import io.queuemanagement.api.business.dto.inport.WaitingQueueTokenGenerateCommand;
+import io.queuemanagement.api.business.dto.outport.WaitingQueueTokenGeneralInfo;
+import io.queuemanagement.api.business.persistence.WaitingQueueTokenRetrievalRepository;
 import io.queuemanagement.common.annotation.DomainModel;
+import io.queuemanagement.common.mapper.ObjectMapperBasedVoMapper;
 import io.queuemanagement.util.YmlLoader;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -39,6 +42,14 @@ public class WaitingQueueToken implements DomainRecordable{
 			.build();
 	}
 
+	public  ProcessingQueueToken toProcessingToken(){
+		return ObjectMapperBasedVoMapper.convert(this, ProcessingQueueToken.class).withProcessing();
+	}
+
+	public WaitingQueueToken withValidUntilAndPositionValue(int seconds, Long position) {
+		return withValidUntil(seconds).withPositionValue(position);
+	}
+
 	public WaitingQueueToken withValidUntil(int seconds) {
 		this.validUntil = LocalDateTime.now().plusSeconds(seconds);
 		return this;
@@ -63,5 +74,10 @@ public class WaitingQueueToken implements DomainRecordable{
 	public WaitingQueueToken withExpired() {
 		this.status = QueueStatus.EXPIRED;
 		return this;
+	}
+
+	public WaitingQueueToken calculatePosition(Long minTokenId) {
+		Long position = this.waitingQueueTokenId - minTokenId + 1;
+		return this.withPositionValue(position);
 	}
 }

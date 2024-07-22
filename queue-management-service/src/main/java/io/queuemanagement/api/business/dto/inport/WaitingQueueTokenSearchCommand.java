@@ -59,7 +59,7 @@ public class WaitingQueueTokenSearchCommand extends AbstractCommonRequestInfo im
 	}
 
 
-	public static WaitingQueueTokenSearchCommand searchActiveByUserIdAndOrderByRequestAtAsc(String userId) {
+	public static WaitingQueueTokenSearchCommand userIdAndOrderByRequestAtAsc(String userId) {
 		return active()
 			.userId(userId)
 			.orderBy("requestAt")
@@ -69,7 +69,7 @@ public class WaitingQueueTokenSearchCommand extends AbstractCommonRequestInfo im
 	}
 
 
-	public static WaitingQueueTokenSearchCommand searchMinTokenId() {
+	public static WaitingQueueTokenSearchCommand minTokenId() {
 		return WaitingQueueTokenSearchCommand.builder()
 			.orderBy("waitingQueueTokenId")
 			.orderDirection("asc")
@@ -77,7 +77,7 @@ public class WaitingQueueTokenSearchCommand extends AbstractCommonRequestInfo im
 			.build();
 	}
 
-	public static WaitingQueueTokenSearchCommand searchByStatusAndOrderByRequestAtAsc( QueueStatus queueStatus) {
+	public static WaitingQueueTokenSearchCommand statusAndOrderByRequestAtAsc( QueueStatus queueStatus) {
 		return WaitingQueueTokenSearchCommand.builder()
 			.status(queueStatus)
 			.orderBy("requestAt")
@@ -85,7 +85,7 @@ public class WaitingQueueTokenSearchCommand extends AbstractCommonRequestInfo im
 			.build();
 	}
 
-	public static WaitingQueueTokenSearchCommand searchConditionByUserIdAndStatus(String userId, QueueStatus queueStatus) {
+	public static WaitingQueueTokenSearchCommand conditionOnUserIdAndStatus(String userId, QueueStatus queueStatus) {
 		return WaitingQueueTokenSearchCommand.builder()
 			.userId(userId)
 			.status(queueStatus)
@@ -93,7 +93,7 @@ public class WaitingQueueTokenSearchCommand extends AbstractCommonRequestInfo im
 	}
 
 
-	public static WaitingQueueTokenSearchCommand searchByStatusesAndValidUntil(List<QueueStatus> statuses, LocalDateTime validUntil, DateSearchCondition dateSearchCondition) {
+	public static WaitingQueueTokenSearchCommand statusesAndValidUntil(List<QueueStatus> statuses, LocalDateTime validUntil, DateSearchCondition dateSearchCondition) {
 		return WaitingQueueTokenSearchCommand.builder()
 			.statuses(statuses)
 			.validUntil(validUntil)

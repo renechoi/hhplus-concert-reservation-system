@@ -1,11 +1,11 @@
 package io.paymentservice.api.payment.business.dto.outport;
 
-import static io.paymentservice.api.payment.business.domainentity.PaymentStatus.*;
+import static io.paymentservice.api.payment.business.entity.PaymentStatus.*;
 
 import java.math.BigDecimal;
 
-import io.paymentservice.api.payment.business.domainentity.PaymentStatus;
-import io.paymentservice.api.payment.business.domainentity.PaymentTransaction;
+import io.paymentservice.api.payment.business.entity.PaymentStatus;
+import io.paymentservice.api.payment.business.entity.PaymentTransaction;
 import io.paymentservice.api.payment.business.dto.inport.PaymentCommand;
 import io.paymentservice.common.mapper.ObjectMapperBasedVoMapper;
 

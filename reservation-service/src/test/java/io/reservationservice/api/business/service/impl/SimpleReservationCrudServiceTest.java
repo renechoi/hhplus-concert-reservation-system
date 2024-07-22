@@ -61,8 +61,8 @@ public class SimpleReservationCrudServiceTest {
 		ConcertOption concertOption = mock(ConcertOption.class);
 		Seat seat = mock(Seat.class);
 
-		when(concertOptionRepository.findByIdWithThrows(anyLong())).thenReturn(concertOption);
-		when(seatRepository.findSingleByConditionWithThrows(any())).thenReturn(seat);
+		when(concertOptionRepository.findById(anyLong())).thenReturn(concertOption);
+		when(seatRepository.findSingleBy(any())).thenReturn(seat);
 		when(seat.isOccupied()).thenReturn(false);
 		when(seatRepository.save(any())).thenReturn(seat);
 		TemporaryReservation temporaryReservation = mock(TemporaryReservation.class);
@@ -73,8 +73,8 @@ public class SimpleReservationCrudServiceTest {
 
 		// Then
 		assertNotNull(result);
-		verify(concertOptionRepository).findByIdWithThrows(command.getConcertOptionId());
-		verify(seatRepository).findSingleByConditionWithThrows(any());
+		verify(concertOptionRepository).findById(command.getConcertOptionId());
+		verify(seatRepository).findSingleBy(any());
 	}
 
 	@Test
@@ -90,8 +90,8 @@ public class SimpleReservationCrudServiceTest {
 		ConcertOption concertOption = mock(ConcertOption.class);
 		Seat seat = mock(Seat.class);
 
-		when(concertOptionRepository.findByIdWithThrows(anyLong())).thenReturn(concertOption);
-		when(seatRepository.findSingleByConditionWithThrows(any())).thenReturn(seat);
+		when(concertOptionRepository.findById(anyLong())).thenReturn(concertOption);
+		when(seatRepository.findSingleBy(any())).thenReturn(seat);
 		when(seat.isOccupied()).thenReturn(true);
 
 		// When
@@ -101,8 +101,8 @@ public class SimpleReservationCrudServiceTest {
 
 		// Then
 		assertEquals(GlobalResponseCode.SEAT_ALREADY_RESERVED, exception.getCode());
-		verify(concertOptionRepository).findByIdWithThrows(command.getConcertOptionId());
-		verify(seatRepository).findSingleByConditionWithThrows(any());
+		verify(concertOptionRepository).findById(command.getConcertOptionId());
+		verify(seatRepository).findSingleBy(any());
 	}
 
 	@Test
@@ -114,7 +114,7 @@ public class SimpleReservationCrudServiceTest {
 		TemporaryReservation temporaryReservation = mock(TemporaryReservation.class);
 		Reservation reservation = mock(Reservation.class);
 
-		when(temporaryReservationRepository.findByIdWithThrows(anyLong())).thenReturn(temporaryReservation);
+		when(temporaryReservationRepository.findById(anyLong())).thenReturn(temporaryReservation);
 		when(temporaryReservation.toConfirmedReservation()).thenReturn(reservation);
 		when(reservationRepository.save(any())).thenReturn(reservation);
 
@@ -123,7 +123,7 @@ public class SimpleReservationCrudServiceTest {
 
 		// Then
 		assertNotNull(result);
-		verify(temporaryReservationRepository).findByIdWithThrows(temporaryReservationId);
+		verify(temporaryReservationRepository).findById(temporaryReservationId);
 		verify(temporaryReservation).confirm();
 		verify(reservationRepository).save(reservation);
 	}
@@ -136,13 +136,13 @@ public class SimpleReservationCrudServiceTest {
 
 		TemporaryReservation temporaryReservation = mock(TemporaryReservation.class);
 
-		when(temporaryReservationRepository.findByIdWithThrows(anyLong())).thenReturn(temporaryReservation);
+		when(temporaryReservationRepository.findById(anyLong())).thenReturn(temporaryReservation);
 
 		// When
 		simpleReservationCrudService.cancelTemporaryReservation(temporaryReservationId);
 
 		// Then
-		verify(temporaryReservationRepository).findByIdWithThrows(temporaryReservationId);
+		verify(temporaryReservationRepository).findById(temporaryReservationId);
 		verify(temporaryReservation).doCancelSeat();
 		verify(temporaryReservation).cancelConfirm();
 	}

@@ -2,7 +2,7 @@ package io.paymentservice.api.balance.business.dto.outport;
 
 import java.util.List;
 
-import io.paymentservice.api.balance.business.domainentity.BalanceTransaction;
+import io.paymentservice.api.balance.business.entity.BalanceTransaction;
 
 /**
  * @author : Rene Choi

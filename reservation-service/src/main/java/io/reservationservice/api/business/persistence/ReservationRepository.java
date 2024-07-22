@@ -12,6 +12,6 @@ import io.reservationservice.api.business.dto.inport.ReservationSearchCommand;
 public interface ReservationRepository {
 	Reservation save(Reservation reservation);
 
-	List<Reservation> findMultipleByCondition(ReservationSearchCommand reservationSearchCommand);
+	List<Reservation> findMultipleBy(ReservationSearchCommand reservationSearchCommand);
 
 }

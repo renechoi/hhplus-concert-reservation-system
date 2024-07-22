@@ -14,7 +14,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import io.paymentservice.api.balance.business.domainentity.Balance;
+import io.paymentservice.api.balance.business.entity.Balance;
 import io.paymentservice.api.balance.business.dto.inport.BalanceChargeCommand;
 import io.paymentservice.api.balance.business.dto.outport.BalanceChargeInfo;
 import io.paymentservice.api.balance.business.persistence.BalanceRepository;

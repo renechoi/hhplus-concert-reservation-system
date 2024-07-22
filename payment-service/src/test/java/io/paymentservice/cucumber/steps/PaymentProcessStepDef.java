@@ -1,6 +1,6 @@
 package io.paymentservice.cucumber.steps;
 
-import static io.paymentservice.api.payment.business.domainentity.PaymentStatus.*;
+import static io.paymentservice.api.payment.business.entity.PaymentStatus.*;
 import static io.paymentservice.testhelpers.apiexecutor.PaymentApiExecutor.*;
 import static io.paymentservice.testhelpers.contextholder.PaymentContextHolder.*;
 import static io.paymentservice.testhelpers.parser.PaymentResponseParser.*;

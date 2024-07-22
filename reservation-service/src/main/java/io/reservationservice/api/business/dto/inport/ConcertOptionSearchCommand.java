@@ -34,7 +34,7 @@ public class ConcertOptionSearchCommand implements DateSearchCommand{
 	private DateSearchCondition dateSearchCondition;
 	private DateSearchTarget dateSearchTarget;
 
-	public static ConcertOptionSearchCommand searchByConcertIdWithFutureConcertDates(Long concertId) {
+	public static ConcertOptionSearchCommand concertIdWithFutureConcertDates(Long concertId) {
 		return ConcertOptionSearchCommand.builder()
 			.concertId(concertId)
 			.concertDate(LocalDateTime.now())

@@ -4,7 +4,7 @@ import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import io.paymentservice.api.payment.business.domainentity.PaymentTransaction;
+import io.paymentservice.api.payment.business.entity.PaymentTransaction;
 
 /**
  * @author : Rene Choi

@@ -1,5 +1,7 @@
 package io.paymentservice.api.payment.business.operators.processor;
 
+import static java.util.stream.Collectors.*;
+
 import java.util.List;
 
 import org.springframework.stereotype.Component;
@@ -21,10 +23,10 @@ public class PaymentHistoryReader {
 	private final PaymentTransactionRepository paymentTransactionRepository;
 
 	public PaymentInfos retrievePaymentHistory(Long userId) {
-		List<PaymentInfo> paymentInfos = paymentTransactionRepository.findListByUserId(userId)
+		return paymentTransactionRepository.findListByUserId(userId)
 			.stream()
 			.map(PaymentInfo::from)
-			.toList();
-		return new PaymentInfos(paymentInfos);
+			.collect(collectingAndThen(toList(), PaymentInfos::new))
+			.withValidated();
 	}
 }

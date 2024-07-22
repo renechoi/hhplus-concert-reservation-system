@@ -12,7 +12,7 @@ public interface WaitingQueueTokenCounterCrudRepository {
 	void save(WaitingQueueTokenCounter counter);
 	Optional<WaitingQueueTokenCounter> findByIdOptional(Long id);
 
-	WaitingQueueTokenCounter getCounterWithThrows();
+	WaitingQueueTokenCounter getCounter();
 
 	WaitingQueueTokenCounter getOrInitializeCounter();
 }

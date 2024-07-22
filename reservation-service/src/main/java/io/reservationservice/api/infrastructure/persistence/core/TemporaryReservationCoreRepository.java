@@ -26,12 +26,12 @@ public class TemporaryReservationCoreRepository implements TemporaryReservationR
 	}
 
 	@Override
-	public TemporaryReservation findByIdWithThrows(Long temporaryReservationId) {
+	public TemporaryReservation findById(Long temporaryReservationId) {
 		return temporalReservationJpaRepository.findById(temporaryReservationId).orElseThrow(TemporaryReservationNotFoundException::new);
 	}
 
 	@Override
-	public List<TemporaryReservation> findMultipleByCondition(TemporaryReservationSearchCommand searchCommand) {
+	public List<TemporaryReservation> findMultipleBy(TemporaryReservationSearchCommand searchCommand) {
 		return temporalReservationJpaRepository.findMultipleByCondition(searchCommand);
 	}
 

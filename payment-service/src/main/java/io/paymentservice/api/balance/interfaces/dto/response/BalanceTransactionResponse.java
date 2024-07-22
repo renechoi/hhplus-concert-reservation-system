@@ -3,7 +3,7 @@ package io.paymentservice.api.balance.interfaces.dto.response;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-import io.paymentservice.api.balance.business.domainentity.TransactionType;
+import io.paymentservice.api.balance.business.entity.TransactionType;
 import io.paymentservice.api.balance.business.dto.outport.BalanceTransactionInfo;
 import io.paymentservice.common.mapper.ObjectMapperBasedVoMapper;
 

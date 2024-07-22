@@ -4,7 +4,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Repository;
 
-import io.paymentservice.api.payment.business.domainentity.PaymentTransaction;
+import io.paymentservice.api.payment.business.entity.PaymentTransaction;
 import io.paymentservice.api.payment.business.persistence.PaymentTransactionRepository;
 import io.paymentservice.api.payment.infrastructure.orm.PaymentTransactionJpaRepository;
 import io.paymentservice.common.exception.definitions.PaymentTransactionNotFoundException;
@@ -30,7 +30,7 @@ public class PaymentTransactionCoreRepository  implements PaymentTransactionRepo
 	}
 
 	@Override
-	public PaymentTransaction findByIdWithThrows(Long transactionId) {
+	public PaymentTransaction findById(Long transactionId) {
 		return paymentTransactionJpaRepository.findById(transactionId).orElseThrow(PaymentTransactionNotFoundException::new);
 	}
 }

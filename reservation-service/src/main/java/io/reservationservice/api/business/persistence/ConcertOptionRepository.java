@@ -12,7 +12,7 @@ import io.reservationservice.api.business.dto.inport.ConcertOptionSearchCommand;
 public interface ConcertOptionRepository {
 	ConcertOption save(ConcertOption entityWithConcert);
 
-	ConcertOption findByIdWithThrows(Long concertOptionId);
+	ConcertOption findById(Long concertOptionId);
 
-	List<ConcertOption> findMultipleByCondition(ConcertOptionSearchCommand searchCommand);
+	List<ConcertOption> findMultipleBy(ConcertOptionSearchCommand searchCommand);
 }

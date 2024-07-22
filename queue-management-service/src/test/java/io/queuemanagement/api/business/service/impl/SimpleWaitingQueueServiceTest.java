@@ -54,13 +54,13 @@ public class SimpleWaitingQueueServiceTest {
 		WaitingQueueTokenGenerateCommand command = new WaitingQueueTokenGenerateCommand(userId);
 		WaitingQueueTokenGenerateInfo expectedInfo = new WaitingQueueTokenGenerateInfo(userId, "token123", null, 0, null, null);
 
-		when(waitingQueueTokenDuplicateChecker.checkForDuplicate(userId))
+		when(waitingQueueTokenDuplicateChecker.checkDuplicate(userId))
 			.thenReturn(Optional.of(expectedInfo));
 
 		WaitingQueueTokenGenerateInfo result = simpleWaitingQueueService.generateAndEnqueue(command);
 
 		assertEquals(expectedInfo, result);
-		verify(waitingQueueTokenDuplicateChecker, times(1)).checkForDuplicate(userId);
+		verify(waitingQueueTokenDuplicateChecker, times(1)).checkDuplicate(userId);
 		verify(waitingQueueTokenCounterCrudRepository, times(0)).getOrInitializeCounter();
 	}
 
@@ -76,7 +76,7 @@ public class SimpleWaitingQueueServiceTest {
 			.build();
 		WaitingQueueTokenGeneralInfo expectedInfo = WaitingQueueTokenGeneralInfo.from(token);
 
-		when(waitingQueueTokenRetrievalRepository.findSingleByConditionWithThrows(any(WaitingQueueTokenSearchCommand.class)))
+		when(waitingQueueTokenRetrievalRepository.findSingleBy(any(WaitingQueueTokenSearchCommand.class)))
 			.thenReturn(token);
 
 		WaitingQueueTokenGeneralInfo result = simpleWaitingQueueService.retrieveByAiAtOnceCalculation(userId);

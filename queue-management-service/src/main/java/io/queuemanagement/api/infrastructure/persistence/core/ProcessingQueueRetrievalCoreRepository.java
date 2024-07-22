@@ -30,17 +30,17 @@ public class ProcessingQueueRetrievalCoreRepository implements ProcessingQueueRe
 	}
 
 	@Override
-	public ProcessingQueueToken findSingleByConditionWithThrows(ProcessingQueueTokenSearchCommand searchCommand) {
+	public ProcessingQueueToken findSingleBy(ProcessingQueueTokenSearchCommand searchCommand) {
 		return processingQueueTokenJpaRepository.findSingleByCondition(searchCommand).orElseThrow(ProcessingQueueTokenNotFoundException::new).toDomain();
 	}
 
 	@Override
-	public Optional<ProcessingQueueToken> findSingleByConditionOptional(ProcessingQueueTokenSearchCommand searchCommand) {
+	public Optional<ProcessingQueueToken> findOptionalSingleBy(ProcessingQueueTokenSearchCommand searchCommand) {
 		return processingQueueTokenJpaRepository.findSingleByCondition(searchCommand).map(ProcessingQueueTokenEntity::toDomain);
 	}
 
 	@Override
-	public List<ProcessingQueueToken> findAllByCondition(ProcessingQueueTokenSearchCommand searchCommand) {
+	public List<ProcessingQueueToken> findAllBy(ProcessingQueueTokenSearchCommand searchCommand) {
 		return processingQueueTokenJpaRepository.findAllByCondition(searchCommand)
 			.stream()
 			.map(ProcessingQueueTokenEntity::toDomain)

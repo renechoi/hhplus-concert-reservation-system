@@ -3,7 +3,7 @@ package io.paymentservice.api.balance.business.operators.balanceusemanager;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import io.paymentservice.api.balance.business.domainentity.Balance;
+import io.paymentservice.api.balance.business.entity.Balance;
 import io.paymentservice.api.balance.business.dto.inport.BalanceUseCommand;
 import io.paymentservice.api.balance.business.dto.outport.BalanceUseInfo;
 import io.paymentservice.api.balance.business.persistence.BalanceRepository;
@@ -23,7 +23,7 @@ public class SimpleBalanceUseManager implements BalanceUseManager {
 	@Override
 	@Transactional
 	public BalanceUseInfo use(BalanceUseCommand command) {
-		Balance balance = balanceRepository.findByUserIdWithThrows(command.getUserId());
+		Balance balance = balanceRepository.findByUserId(command.getUserId());
 		balance.use(command.getAmount(), command.getTransactionReason());
 		return BalanceUseInfo.from(balanceRepository.save(balance));
 	}

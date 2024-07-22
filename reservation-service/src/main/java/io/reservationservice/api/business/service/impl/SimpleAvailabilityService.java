@@ -3,9 +3,6 @@ package io.reservationservice.api.business.service.impl;
 import static io.reservationservice.api.business.dto.inport.ConcertOptionSearchCommand.*;
 import static io.reservationservice.api.business.dto.inport.SeatSearchCommand.*;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -38,7 +35,7 @@ public class SimpleAvailabilityService implements AvailabilityService {
 	@Override
 	@Transactional(readOnly = true)
 	public AvailableDateInfos getAvailableDates(Long concertId) {
-		List<ConcertOption> concertOptions = concertOptionRepository.findMultipleByCondition(searchByConcertIdWithFutureConcertDates(concertId));
+		List<ConcertOption> concertOptions = concertOptionRepository.findMultipleBy(concertIdWithFutureConcertDates(concertId));
 		return AvailableDateInfos.from(concertOptions.stream().map(AvailableDateInfo::from).collect(Collectors.toList()));
 	}
 
@@ -47,7 +44,7 @@ public class SimpleAvailabilityService implements AvailabilityService {
 	@Override
 	@Transactional(readOnly = true)
 	public AvailableSeatsInfos getAvailableSeats(Long concertOptionId, Long requestAt) {
-		List<Seat> seats = seatRepository.findMultipleByCondition(searchByConcertOptionId(concertOptionId));
+		List<Seat> seats = seatRepository.findMultipleBy(concertOptionId(concertOptionId));
 
 		List<AvailableSeatsInfo> availableSeats = seats.stream()
 			.filter(seat -> seat.isAvailableAtRequestTime(requestAt))

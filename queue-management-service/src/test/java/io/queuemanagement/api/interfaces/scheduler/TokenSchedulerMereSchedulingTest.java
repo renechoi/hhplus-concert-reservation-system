@@ -36,7 +36,7 @@ class TokenSchedulerMereSchedulingTest {
 	void testProcessScheduledQueueTransfer() {
 		Awaitility.await()
 			.atMost(2, TimeUnit.SECONDS)
-			.untilAsserted(() -> verify(queueManagementFacade, atLeastOnce()).processScheduledQueueTransfer());
+			.untilAsserted(() -> verify(queueManagementFacade, atLeastOnce()).processQueueTransfer());
 	}
 
 	@Test

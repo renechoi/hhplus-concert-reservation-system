@@ -2,7 +2,7 @@ package io.paymentservice.api.balance.business.persistence;
 
 import java.util.Optional;
 
-import io.paymentservice.api.balance.business.domainentity.Balance;
+import io.paymentservice.api.balance.business.entity.Balance;
 
 /**
  * @author : Rene Choi
@@ -13,5 +13,5 @@ public interface BalanceRepository {
 
 	Balance save(Balance balance);
 
-	Balance findByUserIdWithThrows(Long userId);
+	Balance findByUserId(Long userId);
 }

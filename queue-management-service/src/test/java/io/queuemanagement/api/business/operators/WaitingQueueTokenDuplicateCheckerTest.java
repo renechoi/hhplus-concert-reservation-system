@@ -1,6 +1,5 @@
 package io.queuemanagement.api.business.operators;
 
-import static io.queuemanagement.api.business.dto.inport.WaitingQueueTokenSearchCommand.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -70,10 +69,10 @@ public class WaitingQueueTokenDuplicateCheckerTest {
 			.status(QueueStatus.WAITING)
 			.build();
 
-		when(waitingQueueTokenRetrievalRepository.findSingleByConditionOptional(refEq(searchCommand)))
+		when(waitingQueueTokenRetrievalRepository.findOptionalSingleBy(refEq(searchCommand)))
 			.thenReturn(Optional.of(waitingQueueToken));
 
-		Optional<WaitingQueueTokenGenerateInfo> result = waitingQueueTokenDuplicateChecker.checkForDuplicate("testUser");
+		Optional<WaitingQueueTokenGenerateInfo> result = waitingQueueTokenDuplicateChecker.checkDuplicate("testUser");
 
 		assertEquals(WaitingQueueTokenGenerateInfo.from(waitingQueueToken), result.get());
 	}
@@ -86,12 +85,12 @@ public class WaitingQueueTokenDuplicateCheckerTest {
 			.status(QueueStatus.WAITING)
 			.build();
 
-		when(waitingQueueTokenRetrievalRepository.findSingleByConditionOptional(refEq(waitingSearchCommand)))
+		when(waitingQueueTokenRetrievalRepository.findOptionalSingleBy(refEq(waitingSearchCommand)))
 			.thenReturn(Optional.empty());
-		when(processingQueueRetrievalRepository.findSingleByConditionOptional(any()))
+		when(processingQueueRetrievalRepository.findOptionalSingleBy(any()))
 			.thenReturn(Optional.of(processingQueueToken));
 
-		Optional<WaitingQueueTokenGenerateInfo> result = waitingQueueTokenDuplicateChecker.checkForDuplicate("testUser");
+		Optional<WaitingQueueTokenGenerateInfo> result = waitingQueueTokenDuplicateChecker.checkDuplicate("testUser");
 
 		assertEquals(WaitingQueueTokenGenerateInfo.from(processingQueueToken), result.get());
 	}
@@ -104,12 +103,12 @@ public class WaitingQueueTokenDuplicateCheckerTest {
 			.status(QueueStatus.WAITING)
 			.build();
 
-		when(waitingQueueTokenRetrievalRepository.findSingleByConditionOptional(refEq(waitingSearchCommand)))
+		when(waitingQueueTokenRetrievalRepository.findOptionalSingleBy(refEq(waitingSearchCommand)))
 			.thenReturn(Optional.empty());
-		when(processingQueueRetrievalRepository.findSingleByConditionOptional(any()))
+		when(processingQueueRetrievalRepository.findOptionalSingleBy(any()))
 			.thenReturn(Optional.empty());
 
-		Optional<WaitingQueueTokenGenerateInfo> result = waitingQueueTokenDuplicateChecker.checkForDuplicate("testUser");
+		Optional<WaitingQueueTokenGenerateInfo> result = waitingQueueTokenDuplicateChecker.checkDuplicate("testUser");
 
 		assertEquals(Optional.empty(), result);
 	}

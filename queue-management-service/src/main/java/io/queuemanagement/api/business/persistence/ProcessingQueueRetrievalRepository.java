@@ -1,6 +1,5 @@
 package io.queuemanagement.api.business.persistence;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -15,9 +14,9 @@ import io.queuemanagement.api.business.dto.inport.ProcessingQueueTokenSearchComm
 public interface ProcessingQueueRetrievalRepository {
 	long countByStatus(QueueStatus queueStatus);
 
-	ProcessingQueueToken findSingleByConditionWithThrows(ProcessingQueueTokenSearchCommand searchCommand);
+	ProcessingQueueToken findSingleBy(ProcessingQueueTokenSearchCommand searchCommand);
 
-	Optional<ProcessingQueueToken> findSingleByConditionOptional(ProcessingQueueTokenSearchCommand searchCommand);
+	Optional<ProcessingQueueToken> findOptionalSingleBy(ProcessingQueueTokenSearchCommand searchCommand);
 
-	List<ProcessingQueueToken> findAllByCondition(ProcessingQueueTokenSearchCommand searchCommand);
+	List<ProcessingQueueToken> findAllBy(ProcessingQueueTokenSearchCommand searchCommand);
 }

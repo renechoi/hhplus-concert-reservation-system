@@ -4,7 +4,7 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Repository;
 
-import io.paymentservice.api.balance.business.domainentity.Balance;
+import io.paymentservice.api.balance.business.entity.Balance;
 import io.paymentservice.api.balance.business.persistence.BalanceRepository;
 import io.paymentservice.api.balance.infrastructure.persistence.orm.BalanceJpaRepository;
 import io.paymentservice.common.exception.definitions.BalanceNotFoundException;
@@ -30,7 +30,7 @@ public class BalanceCoreRepository implements BalanceRepository {
 	}
 
 	@Override
-	public Balance findByUserIdWithThrows(Long userId) {
+	public Balance findByUserId(Long userId) {
 		return balanceJpaRepository.findByUserId(userId).orElseThrow(BalanceNotFoundException::new);
 	}
 }

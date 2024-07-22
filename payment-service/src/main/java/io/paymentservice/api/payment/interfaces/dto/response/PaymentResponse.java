@@ -2,7 +2,7 @@ package io.paymentservice.api.payment.interfaces.dto.response;
 
 import java.math.BigDecimal;
 
-import io.paymentservice.api.payment.business.domainentity.PaymentStatus;
+import io.paymentservice.api.payment.business.entity.PaymentStatus;
 import io.paymentservice.api.payment.business.dto.outport.PaymentInfo;
 import io.paymentservice.common.mapper.ObjectMapperBasedVoMapper;
 

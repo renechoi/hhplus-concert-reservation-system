@@ -1,6 +1,6 @@
 package io.paymentservice.api.payment.interfaces.controller;
 
-import static io.paymentservice.api.payment.business.domainentity.PaymentStatus.*;
+import static io.paymentservice.api.payment.business.entity.PaymentStatus.*;
 import static io.paymentservice.testhelpers.apiexecutor.PaymentApiExecutor.*;
 import static io.paymentservice.testhelpers.apiexecutor.BalanceApiExecutor.*;
 import static io.paymentservice.testhelpers.contextholder.PaymentContextHolder.*;
@@ -22,8 +22,8 @@ import org.springframework.boot.test.mock.mockito.SpyBean;
 
 import io.paymentservice.api.balance.interfaces.dto.request.BalanceChargeRequest;
 import io.paymentservice.api.payment.CommonAcceptanceTest;
-import io.paymentservice.api.payment.business.domainentity.PaymentMethod;
-import io.paymentservice.api.payment.business.domainentity.PaymentTransaction;
+import io.paymentservice.api.payment.business.entity.PaymentMethod;
+import io.paymentservice.api.payment.business.entity.PaymentTransaction;
 import io.paymentservice.api.payment.business.persistence.PaymentTransactionRepository;
 import io.paymentservice.api.payment.interfaces.dto.request.PaymentRequest;
 import io.restassured.response.ExtractableResponse;

@@ -1,6 +1,7 @@
 package io.queuemanagement.api.business.domainmodel;
 
 import io.queuemanagement.common.annotation.DomainModel;
+import io.queuemanagement.common.exception.definitions.WaitingQueueMaxLimitExceededException;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -42,6 +43,13 @@ public class WaitingQueueTokenCounter {
 
 	public WaitingQueueTokenCounter withDecreasedCount(long decreasedCount) {
 		this.count = Math.max(this.count - decreasedCount, 0);
+		return this;
+	}
+
+	public WaitingQueueTokenCounter withAvailabilityVerified(long maxWaitingTokens) {
+		if (isNotAvailable(maxWaitingTokens)) {
+			throw new WaitingQueueMaxLimitExceededException();
+		}
 		return this;
 	}
 }

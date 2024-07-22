@@ -1,12 +1,13 @@
 package io.paymentservice.api.balance.business.operators.eventlistener;
 
+import static io.paymentservice.api.balance.business.entity.BalanceTransaction.*;
 import static org.springframework.transaction.event.TransactionPhase.*;
 
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionalEventListener;
 
-import io.paymentservice.api.balance.business.domainentity.BalanceTransaction;
-import io.paymentservice.api.balance.business.domainentity.TransactionType;
+import io.paymentservice.api.balance.business.entity.BalanceTransaction;
+import io.paymentservice.api.balance.business.entity.TransactionType;
 import io.paymentservice.api.balance.business.dto.event.BalanceChargeEvent;
 import io.paymentservice.api.balance.business.dto.event.BalanceUseEvent;
 import io.paymentservice.api.balance.business.persistence.BalanceTransactionRepository;
@@ -24,23 +25,11 @@ public class BalanceTransactionEventListener {
 
 	@TransactionalEventListener(phase = BEFORE_COMMIT)
 	public void handleBalanceChargedEvent(BalanceChargeEvent event) {
-		BalanceTransaction transaction = BalanceTransaction.builder()
-			.userId(event.userId())
-			.amount(event.amount())
-			.transactionType(TransactionType.CHARGE)
-			.transactionReason(event.transactionReason())
-			.build();
-		transactionRepository.save(transaction);
+		transactionRepository.save(createChargedEvent(event));
 	}
 
 	@TransactionalEventListener(phase = BEFORE_COMMIT)
 	public void handleBalanceUsedEvent(BalanceUseEvent event) {
-		BalanceTransaction transaction = BalanceTransaction.builder()
-			.userId(event.userId())
-			.amount(event.amount())
-			.transactionType(TransactionType.USE)
-			.transactionReason(event.transactionReason())
-			.build();
-		transactionRepository.save(transaction);
+		transactionRepository.save(BalanceTransaction.createUsedEvent(event));
 	}
 }

@@ -36,11 +36,7 @@ public class SimplePaymentService implements PaymentService {
 
 	@Override
 	public PaymentInfos retrievePaymentHistory(Long userId) {
-		PaymentInfos paymentInfos = paymentHistoryReader.retrievePaymentHistory(userId);
-		if (paymentInfos.isEmpty()) {
-			throw new PaymentHistoryNotFoundException();
-		}
-		return paymentInfos;
+		return paymentHistoryReader.retrievePaymentHistory(userId);
 	}
 
 

@@ -35,7 +35,7 @@ public class TemporaryReservationSearchCommand implements DateSearchCommand {
 	private DateSearchCondition dateSearchCondition;
 	private DateSearchTarget dateSearchTarget;
 
-	public static TemporaryReservationSearchCommand searchTemporaryReservationByUserIdAndConcertOptionId(Long userId, Long concertOptionId) {
+	public static TemporaryReservationSearchCommand temporalReservationByUserIdAndConcertOptionId(Long userId, Long concertOptionId) {
 		return TemporaryReservationSearchCommand.builder().userId(userId).concertOptionId(concertOptionId).build();
 	}
 

@@ -1,6 +1,6 @@
 package io.paymentservice.cucumber.steps;
 
-import static io.paymentservice.api.payment.business.domainentity.PaymentStatus.*;
+import static io.paymentservice.api.payment.business.entity.PaymentStatus.*;
 import static io.paymentservice.testhelpers.apiexecutor.PaymentApiExecutor.*;
 import static io.paymentservice.testhelpers.contextholder.PaymentContextHolder.*;
 import static io.paymentservice.testhelpers.parser.PaymentResponseParser.*;
@@ -14,7 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import io.cucumber.datatable.DataTable;
 import io.cucumber.java8.En;
-import io.paymentservice.api.payment.business.domainentity.PaymentTransaction;
+import io.paymentservice.api.payment.business.entity.PaymentTransaction;
 import io.paymentservice.api.payment.infrastructure.orm.PaymentTransactionJpaRepository;
 import io.paymentservice.api.payment.interfaces.dto.response.PaymentResponse;
 import io.paymentservice.api.payment.interfaces.dto.response.PaymentResponses;

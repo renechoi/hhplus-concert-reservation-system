@@ -18,7 +18,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import io.reservationservice.api.business.domainentity.ConcertOption;
 import io.reservationservice.api.business.domainentity.Seat;
-import io.reservationservice.api.business.dto.inport.DateSearchCommand;
 import io.reservationservice.api.business.dto.outport.AvailableDateInfos;
 import io.reservationservice.api.business.dto.outport.AvailableSeatsInfos;
 import io.reservationservice.api.business.persistence.ConcertOptionRepository;
@@ -51,7 +50,7 @@ class SimpleAvailabilityServiceTest {
 			ConcertOption.builder().concertOptionId(2L).concertDate(LocalDateTime.now().plusDays(2)).title("Concert 2").build()
 		);
 
-		when(concertOptionRepository.findMultipleByCondition(argThat(command ->
+		when(concertOptionRepository.findMultipleBy(argThat(command ->
 			command.getConcertId().equals(concertId) && AFTER.equals(command.getDateSearchCondition())
 		))).thenReturn(concertOptions);
 
@@ -60,7 +59,7 @@ class SimpleAvailabilityServiceTest {
 
 		// then
 		assertEquals(2, availableDates.availableDateInfos().size());
-		verify(concertOptionRepository, times(1)).findMultipleByCondition(argThat(command ->
+		verify(concertOptionRepository, times(1)).findMultipleBy(argThat(command ->
 			command.getConcertId().equals(concertId) && AFTER.equals(command.getDateSearchCondition())
 		));
 	}
@@ -75,7 +74,7 @@ class SimpleAvailabilityServiceTest {
 			Seat.builder().seatId(2L).concertOption(ConcertOption.builder().concertOptionId(concertOptionId).concertDate(LocalDateTime.now().plusDays(2)).build()).seatNumber(2L).occupied(false).build()
 		);
 
-		when(seatRepository.findMultipleByCondition(searchByConcertOptionId(concertOptionId)))
+		when(seatRepository.findMultipleBy(concertOptionId(concertOptionId)))
 			.thenReturn(seats);
 
 		AvailableSeatsInfos availableSeats = simpleAvailabilityService.getAvailableSeats(concertOptionId, requestAt);

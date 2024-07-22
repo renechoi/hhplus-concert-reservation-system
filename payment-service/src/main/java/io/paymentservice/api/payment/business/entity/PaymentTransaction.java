@@ -1,6 +1,7 @@
-package io.paymentservice.api.payment.business.domainentity;
+package io.paymentservice.api.payment.business.entity;
 
-import static io.paymentservice.api.payment.business.domainentity.PaymentStatus.*;
+import static io.paymentservice.api.payment.business.entity.PaymentStatus.*;
+import static io.paymentservice.common.model.GlobalResponseCode.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -8,6 +9,7 @@ import java.time.LocalDateTime;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import io.paymentservice.common.exception.definitions.PaymentCancelUnAvailableException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
@@ -63,5 +65,12 @@ public class PaymentTransaction {
 
 	public boolean isCancelled() {
 		return this.paymentStatus == PaymentStatus.CANCELLED;
+	}
+
+	public PaymentTransaction assertNotCanceled() {
+		if (this.isCancelled()) {
+			throw new PaymentCancelUnAvailableException(PAYMENT_ALREADY_CANCELED, transactionId);
+		}
+		return this;
 	}
 }

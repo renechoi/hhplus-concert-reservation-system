@@ -1,6 +1,6 @@
 package io.paymentservice.api.balance.business.operators.balancecharger;
 
-import static io.paymentservice.api.balance.business.domainentity.Balance.*;
+import static io.paymentservice.api.balance.business.entity.Balance.*;
 
 import java.util.Optional;
 

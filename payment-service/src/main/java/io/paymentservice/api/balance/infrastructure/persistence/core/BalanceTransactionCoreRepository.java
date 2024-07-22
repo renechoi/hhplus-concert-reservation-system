@@ -4,7 +4,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Repository;
 
-import io.paymentservice.api.balance.business.domainentity.BalanceTransaction;
+import io.paymentservice.api.balance.business.entity.BalanceTransaction;
 import io.paymentservice.api.balance.business.persistence.BalanceTransactionRepository;
 import io.paymentservice.api.balance.infrastructure.persistence.orm.BalanceTransactionJpaRepository;
 import lombok.RequiredArgsConstructor;

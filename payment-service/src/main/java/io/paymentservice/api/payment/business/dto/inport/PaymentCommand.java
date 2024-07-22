@@ -2,8 +2,8 @@ package io.paymentservice.api.payment.business.dto.inport;
 
 import java.math.BigDecimal;
 
-import io.paymentservice.api.payment.business.domainentity.PaymentMethod;
-import io.paymentservice.api.payment.business.domainentity.PaymentTransaction;
+import io.paymentservice.api.payment.business.entity.PaymentMethod;
+import io.paymentservice.api.payment.business.entity.PaymentTransaction;
 import io.paymentservice.common.mapper.ObjectMapperBasedVoMapper;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

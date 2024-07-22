@@ -22,12 +22,12 @@ public class SeatSearchCommand {
 
 
 
-	public static SeatSearchCommand searchByConcertOptionAndSeatNumber(ConcertOption concertOption, Long seatNumber) {
+	public static SeatSearchCommand concertOptionAndSeatNumber(ConcertOption concertOption, Long seatNumber) {
 		return SeatSearchCommand.builder().concertOption(concertOption).seatNumber(seatNumber).build();
 	}
 
 
-	public static SeatSearchCommand searchByConcertOptionId(Long concertOptionId) {
+	public static SeatSearchCommand concertOptionId(Long concertOptionId) {
 		return SeatSearchCommand.builder().ConcertOptionId(concertOptionId).build();
 	}
 }

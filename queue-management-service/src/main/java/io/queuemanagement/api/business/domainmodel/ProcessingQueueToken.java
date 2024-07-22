@@ -31,7 +31,7 @@ public class ProcessingQueueToken  {
 		return ObjectMapperBasedVoMapper.convert(token, ProcessingQueueToken.class).withProcessing();
 	}
 
-	private ProcessingQueueToken withProcessing() {
+	public ProcessingQueueToken withProcessing() {
 		this.status = QueueStatus.PROCESSING;
 		return this;
 	}

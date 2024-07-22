@@ -30,12 +30,12 @@ public class WaitingQueueTokenDuplicateChecker {
 	 * 대기열 토큰 중복 체크 -> 정책에 따라서 대기열에 이미 존재하는 경우, 처리열에 이미 존재하는 경우 어떻게 할지를 결정한다
 	 * 현재의 구현은 대기열 혹은 처리열에 이미 존재하는 경우, 해당 토큰을 반환하도록 구현되어 있다
 	 */
-	public Optional<WaitingQueueTokenGenerateInfo> checkForDuplicate(String userId) {
+	public Optional<WaitingQueueTokenGenerateInfo> checkDuplicate(String userId) {
 		return waitingQueueTokenRetrievalRepository
-			.findSingleByConditionOptional(searchConditionByUserIdAndStatus(userId, QueueStatus.WAITING))
+			.findOptionalSingleBy(conditionOnUserIdAndStatus(userId, QueueStatus.WAITING))
 			.map(WaitingQueueTokenGenerateInfo::from)
 			.or(() -> processingQueueRetrievalRepository
-				.findSingleByConditionOptional(searchByUserIdAndStatus(userId, PROCESSING))
+				.findOptionalSingleBy(userIdAndStatus(userId, PROCESSING))
 				.map(WaitingQueueTokenGenerateInfo::from));
 
 	}

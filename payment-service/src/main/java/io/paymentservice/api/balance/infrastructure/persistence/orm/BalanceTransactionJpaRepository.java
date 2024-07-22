@@ -4,7 +4,7 @@ import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import io.paymentservice.api.balance.business.domainentity.BalanceTransaction;
+import io.paymentservice.api.balance.business.entity.BalanceTransaction;
 
 /**
  * @author : Rene Choi

@@ -33,19 +33,19 @@ public class ProcessingQueueTokenSearchCommand extends AbstractCommonRequestInfo
 	private DateSearchTarget dateSearchTarget;
 
 
-	public static ProcessingQueueTokenSearchCommand createSearchConditionByTokenAndUserIdAndStatus(String queueToken, String userId, QueueStatus queueStatus) {
+	public static ProcessingQueueTokenSearchCommand tokenAndUserIdAndStatus(String queueToken, String userId, QueueStatus queueStatus) {
 		return ProcessingQueueTokenSearchCommand.builder().tokenValue(queueToken).userId(userId).status(queueStatus).build();
 	}
 
-	public static ProcessingQueueTokenSearchCommand searchByUserIdAndStatus(String userId, QueueStatus queueStatus) {
+	public static ProcessingQueueTokenSearchCommand userIdAndStatus(String userId, QueueStatus queueStatus) {
 		return ProcessingQueueTokenSearchCommand.builder().userId(userId).status(queueStatus).build();
 	}
 
-	public static ProcessingQueueTokenSearchCommand createSearchConditionByTokenAndStatus(String queueToken,  QueueStatus queueStatus) {
+	public static ProcessingQueueTokenSearchCommand tokenAndStatus(String queueToken,  QueueStatus queueStatus) {
 		return ProcessingQueueTokenSearchCommand.builder().tokenValue(queueToken).status(queueStatus).build();
 	}
 
-	public static ProcessingQueueTokenSearchCommand searchByStatusAndValidUntil(QueueStatus queueStatus, LocalDateTime validUntil, DateSearchCondition dateSearchCondition) {
+	public static ProcessingQueueTokenSearchCommand statusAndValidUntil(QueueStatus queueStatus, LocalDateTime validUntil, DateSearchCondition dateSearchCondition) {
 		return ProcessingQueueTokenSearchCommand.builder().status(queueStatus).validUntil(validUntil).dateSearchTarget(DateSearchTarget.VALID_UNTIL).dateSearchCondition(dateSearchCondition).build();
 	}
 }

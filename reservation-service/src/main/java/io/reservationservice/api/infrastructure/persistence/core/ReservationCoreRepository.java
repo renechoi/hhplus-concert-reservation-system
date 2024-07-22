@@ -25,7 +25,7 @@ public class ReservationCoreRepository implements ReservationRepository {
 	}
 
 	@Override
-	public List<Reservation> findMultipleByCondition(ReservationSearchCommand reservationSearchCommand) {
+	public List<Reservation> findMultipleBy(ReservationSearchCommand reservationSearchCommand) {
 		return reservationJpaRepository.findMultipleByCondition(reservationSearchCommand);
 	}
 

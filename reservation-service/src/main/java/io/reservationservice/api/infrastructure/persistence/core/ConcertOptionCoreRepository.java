@@ -27,12 +27,12 @@ public class ConcertOptionCoreRepository implements ConcertOptionRepository {
 	}
 
 	@Override
-	public ConcertOption findByIdWithThrows(Long concertOptionId) {
+	public ConcertOption findById(Long concertOptionId) {
 		return concertOptionJpaRepository.findById(concertOptionId).orElseThrow(ConcertOptionNotFoundException::new);
 	}
 
 	@Override
-	public List<ConcertOption> findMultipleByCondition(ConcertOptionSearchCommand searchCommand) {
+	public List<ConcertOption> findMultipleBy(ConcertOptionSearchCommand searchCommand) {
 		return concertOptionJpaRepository.findMultipleByCondition(searchCommand);
 	}
 }

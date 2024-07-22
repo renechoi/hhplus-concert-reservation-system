@@ -1,4 +1,4 @@
-package io.paymentservice.api.balance.business.domainentity;
+package io.paymentservice.api.balance.business.entity;
 
 import static org.junit.jupiter.api.Assertions.*;
 

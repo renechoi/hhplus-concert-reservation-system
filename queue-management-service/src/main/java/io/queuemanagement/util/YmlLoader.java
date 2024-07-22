@@ -142,7 +142,7 @@ public class YmlLoader {
 		return Integer.parseInt(loader.configMap.getOrDefault("waiting-queue.policy.max-limit", "10000"));
 	}
 
-	public static int getMaxProcessingTokens() {
+	public static int processingTokensMaxLimit() {
 		YmlLoader loader = YmlLoader.ymlLoader();
 		return Integer.parseInt(loader.configMap.getOrDefault("processing-queue.policy.max-limit", "10000"));
 	}

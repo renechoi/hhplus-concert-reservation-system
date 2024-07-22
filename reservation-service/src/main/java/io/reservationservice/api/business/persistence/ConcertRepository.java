@@ -9,5 +9,5 @@ import io.reservationservice.api.business.domainentity.Concert;
 public interface ConcertRepository {
 	Concert save(Concert entity);
 
-	Concert findByIdWithThrows(Long concertId);
+	Concert findById(Long concertId);
 }

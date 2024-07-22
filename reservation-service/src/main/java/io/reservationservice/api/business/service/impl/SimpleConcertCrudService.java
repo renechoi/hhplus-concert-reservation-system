@@ -9,7 +9,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import io.reservationservice.api.business.domainentity.Concert;
 import io.reservationservice.api.business.domainentity.ConcertOption;
-import io.reservationservice.api.business.domainentity.Seat;
 import io.reservationservice.api.business.dto.inport.ConcertCreateCommand;
 import io.reservationservice.api.business.dto.inport.ConcertOptionCreateCommand;
 import io.reservationservice.api.business.dto.outport.ConcertCreateInfo;
@@ -39,7 +38,7 @@ public class SimpleConcertCrudService implements ConcertCrudService {
 
 	@Transactional
 	public ConcertOptionCreateInfo createConcertOption(Long concertId, ConcertOptionCreateCommand command) {
-		Concert concert = concertRepository.findByIdWithThrows(concertId);
+		Concert concert = concertRepository.findById(concertId);
 		ConcertOption concertOption = command.toEntityWithConcert(concert);
 		concertOptionRepository.save(concertOption);
 

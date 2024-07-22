@@ -18,7 +18,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import io.queuemanagement.api.business.domainmodel.ProcessingQueueToken;
 import io.queuemanagement.api.business.dto.outport.ProcessingQueueTokenGeneralInfo;
 import io.queuemanagement.api.business.persistence.ProcessingQueueRetrievalRepository;
-import io.queuemanagement.api.infrastructure.persistence.orm.ProcessingQueueTokenJpaRepository;
 
 /**
  * @author : Rene Choi
@@ -55,7 +54,7 @@ public class SimpleProcessingQueueTokenServiceTest {
 		String tokenValue = "token123";
 		String userId = "user123";
 
-		when(processingQueueRetrievalRepository.findSingleByConditionWithThrows(createSearchConditionByTokenAndUserIdAndStatus(tokenValue, userId, PROCESSING)))
+		when(processingQueueRetrievalRepository.findSingleBy(tokenAndUserIdAndStatus(tokenValue, userId, PROCESSING)))
 			.thenReturn(mockProcessingQueueToken);
 
 		ProcessingQueueTokenGeneralInfo result = simpleProcessingQueueTokenService.checkProcessingQueueTokenAvailability(tokenValue, userId);
@@ -64,7 +63,7 @@ public class SimpleProcessingQueueTokenServiceTest {
 		assertEquals(mockProcessingQueueToken.getProcessingQueueTokenId(), result.processingQueueTokenId());
 		assertEquals(mockProcessingQueueToken.getTokenValue(), result.tokenValue());
 		assertEquals(mockProcessingQueueToken.getUserId(), result.userId());
-		verify(processingQueueRetrievalRepository, times(1)).findSingleByConditionWithThrows(createSearchConditionByTokenAndUserIdAndStatus(tokenValue, userId, PROCESSING));
+		verify(processingQueueRetrievalRepository, times(1)).findSingleBy(tokenAndUserIdAndStatus(tokenValue, userId, PROCESSING));
 	}
 
 	@Test
@@ -72,7 +71,7 @@ public class SimpleProcessingQueueTokenServiceTest {
 	void testCheckProcessingQueueTokenAvailability_withToken() {
 		String tokenValue = "token123";
 
-		when(processingQueueRetrievalRepository.findSingleByConditionWithThrows(createSearchConditionByTokenAndStatus(tokenValue, PROCESSING)))
+		when(processingQueueRetrievalRepository.findSingleBy(tokenAndStatus(tokenValue, PROCESSING)))
 			.thenReturn(mockProcessingQueueToken);
 
 		ProcessingQueueTokenGeneralInfo result = simpleProcessingQueueTokenService.checkProcessingQueueTokenAvailability(tokenValue);
@@ -81,6 +80,6 @@ public class SimpleProcessingQueueTokenServiceTest {
 		assertEquals(mockProcessingQueueToken.getProcessingQueueTokenId(), result.processingQueueTokenId());
 		assertEquals(mockProcessingQueueToken.getTokenValue(), result.tokenValue());
 		assertEquals(mockProcessingQueueToken.getUserId(), result.userId());
-		verify(processingQueueRetrievalRepository, times(1)).findSingleByConditionWithThrows(createSearchConditionByTokenAndStatus(tokenValue, PROCESSING));
+		verify(processingQueueRetrievalRepository, times(1)).findSingleBy(tokenAndStatus(tokenValue, PROCESSING));
 	}
 }

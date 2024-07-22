@@ -1,4 +1,4 @@
-package io.paymentservice.api.payment.business.domainentity;
+package io.paymentservice.api.payment.business.entity;
 
 /**
  * @author : Rene Choi

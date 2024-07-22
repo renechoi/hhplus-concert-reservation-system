@@ -1,7 +1,5 @@
 package io.queuemanagement.api.application.facade;
 
-import org.springframework.scheduling.annotation.Scheduled;
-
 import io.queuemanagement.api.business.service.QueueManagementService;
 import io.queuemanagement.common.annotation.Facade;
 import lombok.RequiredArgsConstructor;
@@ -15,8 +13,8 @@ import lombok.RequiredArgsConstructor;
 public class QueueManagementFacade {
 	private final QueueManagementService queueManagementService;
 
-	public void processScheduledQueueTransfer() {
-		queueManagementService.processScheduledQueueTransfer();
+	public void processQueueTransfer() {
+		queueManagementService.processQueueTransfer();
 	}
 
 	public void expireQueueTokens() {

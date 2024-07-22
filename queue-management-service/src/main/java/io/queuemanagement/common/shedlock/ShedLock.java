@@ -23,7 +23,7 @@ import lombok.Setter;
 @Table(name = "shedlock")
 public class ShedLock {
 	@Id
-	@Column(name = "name", length = 120, nullable = false, unique = true)
+	@Column(name = "name", length = 200, nullable = false, unique = true)
 	private String name;
 
 	@Column(name = "lock_until", columnDefinition = "TIMESTAMP(3)", nullable = true)
@@ -32,6 +32,6 @@ public class ShedLock {
 	@Column(name = "locked_at", columnDefinition = "TIMESTAMP(3)", nullable = true)
 	private LocalDateTime lockedAt;
 
-	@Column(name = "locked_by", length = 255, nullable = false)
+	@Column(name = "locked_by", length = 200, nullable = false)
 	private String lockedBy;
 }

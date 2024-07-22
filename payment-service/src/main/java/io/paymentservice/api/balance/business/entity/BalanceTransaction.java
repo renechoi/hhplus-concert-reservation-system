@@ -1,4 +1,4 @@
-package io.paymentservice.api.balance.business.domainentity;
+package io.paymentservice.api.balance.business.entity;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -6,6 +6,8 @@ import java.time.LocalDateTime;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import io.paymentservice.api.balance.business.dto.event.BalanceChargeEvent;
+import io.paymentservice.api.balance.business.dto.event.BalanceUseEvent;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
@@ -50,4 +52,22 @@ public class BalanceTransaction {
 	@Column(updatable = false)
 	private LocalDateTime createdAt;
 
+	public static BalanceTransaction createChargedEvent(BalanceChargeEvent event) {
+		return BalanceTransaction
+			.builder()
+			.userId(event.userId())
+			.amount(event.amount())
+			.transactionType(TransactionType.CHARGE)
+			.transactionReason(event.transactionReason())
+			.build();
+	}
+
+	public static BalanceTransaction createUsedEvent(BalanceUseEvent event) {
+		return BalanceTransaction.builder()
+			.userId(event.userId())
+			.amount(event.amount())
+			.transactionType(TransactionType.USE)
+			.transactionReason(event.transactionReason())
+			.build();
+	}
 }
