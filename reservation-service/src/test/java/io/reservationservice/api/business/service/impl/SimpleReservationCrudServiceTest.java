@@ -50,7 +50,7 @@ public class SimpleReservationCrudServiceTest {
 
 	@Test
 	@DisplayName("임시 예약 생성 성공 테스트")
-	public void testCreateTemporaryReservationSuccess() {
+	public void testCreateTemporalReservationSuccess() {
 		// Given
 		ReservationCreateCommand command = ReservationCreateCommand.builder()
 			.concertOptionId(1L)
@@ -63,7 +63,6 @@ public class SimpleReservationCrudServiceTest {
 
 		when(concertOptionRepository.findById(anyLong())).thenReturn(concertOption);
 		when(seatRepository.findSingleByCondition(any())).thenReturn(seat);
-		when(seat.isOccupied()).thenReturn(false);
 		when(seatRepository.save(any())).thenReturn(seat);
 		TemporalReservation temporalReservation = mock(TemporalReservation.class);
 		when(temporalReservationRepository.save(any())).thenReturn(temporalReservation);
@@ -76,6 +75,7 @@ public class SimpleReservationCrudServiceTest {
 		verify(concertOptionRepository).findById(command.getConcertOptionId());
 		verify(seatRepository).findSingleByCondition(any());
 	}
+
 
 	@Test
 	@DisplayName("좌석이 이미 예약된 경우 임시 예약 생성 실패 테스트")
@@ -92,12 +92,10 @@ public class SimpleReservationCrudServiceTest {
 
 		when(concertOptionRepository.findById(anyLong())).thenReturn(concertOption);
 		when(seatRepository.findSingleByCondition(any())).thenReturn(seat);
-		when(seat.isOccupied()).thenReturn(true);
+		doThrow(new ReservationUnAvailableException(GlobalResponseCode.SEAT_ALREADY_RESERVED)).when(seat).doReserve();
 
 		// When
-		ReservationUnAvailableException exception = assertThrows(ReservationUnAvailableException.class, () -> {
-			simpleReservationCrudService.createTemporalReservation(command);
-		});
+		ReservationUnAvailableException exception = assertThrows(ReservationUnAvailableException.class, () -> simpleReservationCrudService.createTemporalReservation(command));
 
 		// Then
 		assertEquals(GlobalResponseCode.SEAT_ALREADY_RESERVED, exception.getCode());
