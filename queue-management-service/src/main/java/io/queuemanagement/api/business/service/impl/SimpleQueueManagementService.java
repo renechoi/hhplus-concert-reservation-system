@@ -45,7 +45,7 @@ public class SimpleQueueManagementService implements QueueManagementService {
 		}
 
 		waitingQueueTokenRetrievalRepository
-			.findAllBy(statusAndOrderByRequestAtAsc(WAITING))
+			.findAllByCondition(statusAndOrderByRequestAtAsc(WAITING))
 			.stream()
 			.limit(availableSlots)
 			.toList()
@@ -61,7 +61,7 @@ public class SimpleQueueManagementService implements QueueManagementService {
 	@Override
 	public void expireProcessingQueueTokens() {
 		processingQueueRetrievalRepository
-			.findAllBy(statusAndValidUntil(PROCESSING,  now(), BEFORE))
+			.findAllByCondition(statusAndValidUntil(PROCESSING,  now(), BEFORE))
 			.forEach(token -> processingQueueStoreRepository.store(token.withExpired()));
 	}
 
@@ -69,7 +69,7 @@ public class SimpleQueueManagementService implements QueueManagementService {
 	@Transactional
 	public void expireWaitingQueueTokens() {
 		waitingQueueTokenRetrievalRepository
-			.findAllBy(statusesAndValidUntil(List.of(WAITING, PROCESSING), now(), BEFORE))
+			.findAllByCondition(statusesAndValidUntil(List.of(WAITING, PROCESSING), now(), BEFORE))
 			.forEach(token -> waitingQueueTokenManagementRepository.updateStatus(token.withExpired()));
 	}
 
@@ -77,14 +77,14 @@ public class SimpleQueueManagementService implements QueueManagementService {
 	@Override
 	public void completeProcessingQueueToken(String userId) {
 		processingQueueStoreRepository.store(
-			processingQueueRetrievalRepository.findSingleBy(userIdAndStatus(userId, PROCESSING)).withCompleted());
+			processingQueueRetrievalRepository.findSingleByCondition(userIdAndStatus(userId, PROCESSING)).withCompleted());
 	}
 
 	@Override
 	@Transactional
 	public void completeWaitingQueueTokenByUserId(String userId) {
 		waitingQueueTokenRetrievalRepository
-			.findAllBy(conditionOnUserIdAndStatus(userId, PROCESSING))
+			.findAllByCondition(conditionOnUserIdAndStatus(userId, PROCESSING))
 			.forEach(item -> waitingQueueTokenManagementRepository.updateStatus(item.withCompleted()));
 	}
 }

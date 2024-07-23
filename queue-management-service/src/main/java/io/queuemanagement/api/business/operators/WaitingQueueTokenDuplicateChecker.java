@@ -32,10 +32,10 @@ public class WaitingQueueTokenDuplicateChecker {
 	 */
 	public Optional<WaitingQueueTokenGenerateInfo> checkDuplicate(String userId) {
 		return waitingQueueTokenRetrievalRepository
-			.findOptionalSingleBy(conditionOnUserIdAndStatus(userId, QueueStatus.WAITING))
+			.findOptionalSingleByCondition(conditionOnUserIdAndStatus(userId, QueueStatus.WAITING))
 			.map(WaitingQueueTokenGenerateInfo::from)
 			.or(() -> processingQueueRetrievalRepository
-				.findOptionalSingleBy(userIdAndStatus(userId, PROCESSING))
+				.findOptionalSingleByCondition(userIdAndStatus(userId, PROCESSING))
 				.map(WaitingQueueTokenGenerateInfo::from));
 
 	}

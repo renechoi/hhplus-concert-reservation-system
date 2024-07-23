@@ -14,9 +14,9 @@ import io.queuemanagement.api.business.dto.inport.ProcessingQueueTokenSearchComm
 public interface ProcessingQueueRetrievalRepository {
 	long countByStatus(QueueStatus queueStatus);
 
-	ProcessingQueueToken findSingleBy(ProcessingQueueTokenSearchCommand searchCommand);
+	ProcessingQueueToken findSingleByCondition(ProcessingQueueTokenSearchCommand searchCommand);
 
-	Optional<ProcessingQueueToken> findOptionalSingleBy(ProcessingQueueTokenSearchCommand searchCommand);
+	Optional<ProcessingQueueToken> findOptionalSingleByCondition(ProcessingQueueTokenSearchCommand searchCommand);
 
-	List<ProcessingQueueToken> findAllBy(ProcessingQueueTokenSearchCommand searchCommand);
+	List<ProcessingQueueToken> findAllByCondition(ProcessingQueueTokenSearchCommand searchCommand);
 }

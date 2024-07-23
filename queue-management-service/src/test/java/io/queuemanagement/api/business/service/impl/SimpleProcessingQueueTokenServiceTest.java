@@ -54,7 +54,7 @@ public class SimpleProcessingQueueTokenServiceTest {
 		String tokenValue = "token123";
 		String userId = "user123";
 
-		when(processingQueueRetrievalRepository.findSingleBy(tokenAndUserIdAndStatus(tokenValue, userId, PROCESSING)))
+		when(processingQueueRetrievalRepository.findSingleByCondition(tokenAndUserIdAndStatus(tokenValue, userId, PROCESSING)))
 			.thenReturn(mockProcessingQueueToken);
 
 		ProcessingQueueTokenGeneralInfo result = simpleProcessingQueueTokenService.checkProcessingQueueTokenAvailability(tokenValue, userId);
@@ -63,7 +63,7 @@ public class SimpleProcessingQueueTokenServiceTest {
 		assertEquals(mockProcessingQueueToken.getProcessingQueueTokenId(), result.processingQueueTokenId());
 		assertEquals(mockProcessingQueueToken.getTokenValue(), result.tokenValue());
 		assertEquals(mockProcessingQueueToken.getUserId(), result.userId());
-		verify(processingQueueRetrievalRepository, times(1)).findSingleBy(tokenAndUserIdAndStatus(tokenValue, userId, PROCESSING));
+		verify(processingQueueRetrievalRepository, times(1)).findSingleByCondition(tokenAndUserIdAndStatus(tokenValue, userId, PROCESSING));
 	}
 
 	@Test
@@ -71,7 +71,7 @@ public class SimpleProcessingQueueTokenServiceTest {
 	void testCheckProcessingQueueTokenAvailability_withToken() {
 		String tokenValue = "token123";
 
-		when(processingQueueRetrievalRepository.findSingleBy(tokenAndStatus(tokenValue, PROCESSING)))
+		when(processingQueueRetrievalRepository.findSingleByCondition(tokenAndStatus(tokenValue, PROCESSING)))
 			.thenReturn(mockProcessingQueueToken);
 
 		ProcessingQueueTokenGeneralInfo result = simpleProcessingQueueTokenService.checkProcessingQueueTokenAvailability(tokenValue);
@@ -80,6 +80,6 @@ public class SimpleProcessingQueueTokenServiceTest {
 		assertEquals(mockProcessingQueueToken.getProcessingQueueTokenId(), result.processingQueueTokenId());
 		assertEquals(mockProcessingQueueToken.getTokenValue(), result.tokenValue());
 		assertEquals(mockProcessingQueueToken.getUserId(), result.userId());
-		verify(processingQueueRetrievalRepository, times(1)).findSingleBy(tokenAndStatus(tokenValue, PROCESSING));
+		verify(processingQueueRetrievalRepository, times(1)).findSingleByCondition(tokenAndStatus(tokenValue, PROCESSING));
 	}
 }

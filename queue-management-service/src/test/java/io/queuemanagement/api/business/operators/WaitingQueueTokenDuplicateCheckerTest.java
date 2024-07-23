@@ -69,7 +69,7 @@ public class WaitingQueueTokenDuplicateCheckerTest {
 			.status(QueueStatus.WAITING)
 			.build();
 
-		when(waitingQueueTokenRetrievalRepository.findOptionalSingleBy(refEq(searchCommand)))
+		when(waitingQueueTokenRetrievalRepository.findOptionalSingleByCondition(refEq(searchCommand)))
 			.thenReturn(Optional.of(waitingQueueToken));
 
 		Optional<WaitingQueueTokenGenerateInfo> result = waitingQueueTokenDuplicateChecker.checkDuplicate("testUser");
@@ -85,9 +85,9 @@ public class WaitingQueueTokenDuplicateCheckerTest {
 			.status(QueueStatus.WAITING)
 			.build();
 
-		when(waitingQueueTokenRetrievalRepository.findOptionalSingleBy(refEq(waitingSearchCommand)))
+		when(waitingQueueTokenRetrievalRepository.findOptionalSingleByCondition(refEq(waitingSearchCommand)))
 			.thenReturn(Optional.empty());
-		when(processingQueueRetrievalRepository.findOptionalSingleBy(any()))
+		when(processingQueueRetrievalRepository.findOptionalSingleByCondition(any()))
 			.thenReturn(Optional.of(processingQueueToken));
 
 		Optional<WaitingQueueTokenGenerateInfo> result = waitingQueueTokenDuplicateChecker.checkDuplicate("testUser");
@@ -103,9 +103,9 @@ public class WaitingQueueTokenDuplicateCheckerTest {
 			.status(QueueStatus.WAITING)
 			.build();
 
-		when(waitingQueueTokenRetrievalRepository.findOptionalSingleBy(refEq(waitingSearchCommand)))
+		when(waitingQueueTokenRetrievalRepository.findOptionalSingleByCondition(refEq(waitingSearchCommand)))
 			.thenReturn(Optional.empty());
-		when(processingQueueRetrievalRepository.findOptionalSingleBy(any()))
+		when(processingQueueRetrievalRepository.findOptionalSingleByCondition(any()))
 			.thenReturn(Optional.empty());
 
 		Optional<WaitingQueueTokenGenerateInfo> result = waitingQueueTokenDuplicateChecker.checkDuplicate("testUser");

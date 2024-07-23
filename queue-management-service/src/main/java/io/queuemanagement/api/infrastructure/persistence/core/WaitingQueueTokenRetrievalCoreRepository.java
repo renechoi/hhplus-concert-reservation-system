@@ -24,17 +24,17 @@ public class WaitingQueueTokenRetrievalCoreRepository implements WaitingQueueTok
 	private final WaitingQueueTokenJpaRepository waitingQueueTokenJpaRepository;
 
 	@Override
-	public WaitingQueueToken findSingleBy(WaitingQueueTokenSearchCommand searchCommand) {
+	public WaitingQueueToken findSingleByCondition(WaitingQueueTokenSearchCommand searchCommand) {
 		return waitingQueueTokenJpaRepository.findSingleByCondition(searchCommand).orElseThrow(WaitingQueueTokenNotFoundException::new).toDomain();
 	}
 
 	@Override
-	public Optional<WaitingQueueToken> findOptionalSingleBy(WaitingQueueTokenSearchCommand searchCommand) {
+	public Optional<WaitingQueueToken> findOptionalSingleByCondition(WaitingQueueTokenSearchCommand searchCommand) {
 		return waitingQueueTokenJpaRepository.findSingleByCondition(searchCommand).map(WaitingQueueTokenEntity::toDomain);
 	}
 
 	@Override
-	public List<WaitingQueueToken> findAllBy(WaitingQueueTokenSearchCommand searchCommand) {
+	public List<WaitingQueueToken> findAllByCondition(WaitingQueueTokenSearchCommand searchCommand) {
 		return waitingQueueTokenJpaRepository.findAllByCondition(searchCommand).stream().map(WaitingQueueTokenEntity::toDomain).collect(Collectors.toList());
 	}
 }

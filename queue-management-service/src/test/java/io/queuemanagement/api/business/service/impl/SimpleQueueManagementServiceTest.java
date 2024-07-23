@@ -61,7 +61,7 @@ public class SimpleQueueManagementServiceTest {
 	@DisplayName("만료된 처리 대기열 토큰을 만료 상태로 업데이트")
 	public void testExpireProcessingQueueTokens() {
 		ProcessingQueueToken token = mock(ProcessingQueueToken.class);
-		when(processingQueueRetrievalRepository.findAllBy(statusAndValidUntil(QueueStatus.PROCESSING, any(), BEFORE)))
+		when(processingQueueRetrievalRepository.findAllByCondition(statusAndValidUntil(QueueStatus.PROCESSING, any(), BEFORE)))
 			.thenReturn(List.of(token));
 
 		simpleQueueManagementService.expireProcessingQueueTokens();
@@ -73,7 +73,7 @@ public class SimpleQueueManagementServiceTest {
 	@DisplayName("만료된 대기열 토큰을 만료 상태로 업데이트")
 	public void testExpireWaitingQueueTokens() {
 		WaitingQueueToken token = mock(WaitingQueueToken.class);
-		when(waitingQueueTokenRetrievalRepository.findAllBy(statusesAndValidUntil(List.of(WAITING, PROCESSING), any(), BEFORE)))
+		when(waitingQueueTokenRetrievalRepository.findAllByCondition(statusesAndValidUntil(List.of(WAITING, PROCESSING), any(), BEFORE)))
 			.thenReturn(List.of(token));
 
 		simpleQueueManagementService.expireWaitingQueueTokens();
@@ -85,7 +85,7 @@ public class SimpleQueueManagementServiceTest {
 	@DisplayName("사용자의 처리 대기열 토큰을 완료 상태로 업데이트")
 	public void testCompleteProcessingQueueToken() {
 		ProcessingQueueToken token = mock(ProcessingQueueToken.class);
-		when(processingQueueRetrievalRepository.findSingleBy(any())).thenReturn(token);
+		when(processingQueueRetrievalRepository.findSingleByCondition(any())).thenReturn(token);
 
 		simpleQueueManagementService.completeProcessingQueueToken("userId");
 
@@ -96,7 +96,7 @@ public class SimpleQueueManagementServiceTest {
 	@DisplayName("사용자의 대기열 토큰을 완료 상태로 업데이트")
 	public void testCompleteWaitingQueueTokenByUserId() {
 		WaitingQueueToken token = mock(WaitingQueueToken.class);
-		when(waitingQueueTokenRetrievalRepository.findAllBy(conditionOnUserIdAndStatus("userId", any()))).thenReturn(List.of(token));
+		when(waitingQueueTokenRetrievalRepository.findAllByCondition(conditionOnUserIdAndStatus("userId", any()))).thenReturn(List.of(token));
 
 		simpleQueueManagementService.completeWaitingQueueTokenByUserId("userId");
 

@@ -29,17 +29,22 @@ public class WaitingQueueTokenApiStepDef implements En {
 		Given("다음과 같은 유저 정보가 주어지고 대기열 토큰 생성을 요청하면 성공 응답을 받는다", this::givenUserInfoWithDataTableAndGenerateTokenWithSuccessResponse);
 		Given("다음과 같은 필수 필드가 누락된 유저 정보가 주어지고 대기열 토큰 생성을 요청하면 실패 응답을 받는다", this::givenUserInfoWithMissingFieldsAndGenerateTokenWithFailureResponse);
 		Given("다음과 같은 유저 정보가 주어지고 대기열 토큰 생성을 요청하면 실패 응답을 받는다", this::givenUserInfoAndGenerateTokenWithFailureResponse);
-
-		And("생성된 대기열 토큰의 성공 응답을 조회하면 아래와 같은 정보가 확인되어야 한다", this::verifyTokenInfo);
+		Given("다음과 같은 다수의 유저 정보가 주어지고 대기열 토큰 생성을 동시에 요청하면 성공 응답을 받는다", this::givenConcurrencyMultipleUsersInfoAndGenerateTokensWithSuccessResponse);
 
 
 
 		Given("다음과 같은 유저 아이디로 대기열 토큰 조회를 요청하면 성공 응답을 받는다", this::givenUserIdAndRetrieveTokenWithSuccessResponse);
+		Given("다음과 같은 유저 정보가 주어지고 대기열 토큰 생성을 여러 번 동시에 요청하면 성공 응답을 받는다", this::givenSingleUserInfoAndGenerateTokenMultipleTimesWithSuccessResponse);
+		Then("생성된 각 대기열 토큰의 성공 응답을 조회하면 아래와 같은 정보가 확인되어야 한다", this::verifyMultipleTokensInfo);
+
+
+
 		Then("조회된 대기열 토큰의 정보가 아래와 같이 확인되어야 한다", this::verifyRetrievedTokenInfo);
-
-
-
+		And("생성된 대기열 토큰의 성공 응답을 조회하면 아래와 같은 정보가 확인되어야 한다", this::verifyTokenInfo);
 		When("다음과 같은 유저 아이디로 대기열 토큰 조회를 요청하고 제시된 응답을 받는다", this::retrieveTokenWithExpectedStatusCode);
+		Then("생성된 대기열 토큰의 성공 응답을 조회하면 하나의 토큰만 생성되어야 한다", this::verifySingleTokenInfo);
+		And("중복된 대기열 토큰 요청에 대해서는 실패 응답을 받아야 한다", this::verifyDuplicateTokenRequestFailureResponse);
+
 
 
 
@@ -52,6 +57,14 @@ public class WaitingQueueTokenApiStepDef implements En {
 
 		putWaitingQueueTokenGenerationResponse(parseWaitingQueueTokenGenerationResponse(generateWaitingQueueToken(tokenGenerateRequest)));
 		putWaitingQueueTokenGenerateRequest(tokenGenerateRequest);
+	}
+
+
+	private void givenConcurrencyMultipleUsersInfoAndGenerateTokensWithSuccessResponse(DataTable dataTable) {
+		// todo -> 동시 요청 로직으로 변경
+		List<Map<String, String>> usersInfoList = dataTable.asMaps();
+
+
 	}
 
 
@@ -93,6 +106,8 @@ public class WaitingQueueTokenApiStepDef implements En {
 
 
 
+
+
 	private void givenUserIdAndRetrieveTokenWithSuccessResponse(DataTable dataTable) {
 		Map<String, String> userIdMap = dataTable.asMaps().get(0);
 		String  userId = userIdMap.get("userId");
@@ -109,4 +124,38 @@ public class WaitingQueueTokenApiStepDef implements En {
 
 		assertTrue(matchFound, "기대한 대기열 토큰 정보가 일치하지 않습니다.");
 	}
+
+
+
+
+
+
+
+	private void verifyMultipleTokensInfo(DataTable dataTable) {
+
+	}
+
+	private void givenSingleUserInfoAndGenerateTokenMultipleTimesWithSuccessResponse(DataTable dataTable) {
+		Map<String, String> userInfoMap = dataTable.asMaps().get(0);
+
+		List<WaitingQueueTokenGenerateRequest> tokenGenerateRequests = List.of(
+			applyCustomMappings(updateFields(new WaitingQueueTokenGenerateRequest(), userInfoMap), userInfoMap),
+			applyCustomMappings(updateFields(new WaitingQueueTokenGenerateRequest(), userInfoMap), userInfoMap)
+		);
+
+		tokenGenerateRequests.parallelStream().forEach(request -> {
+			putWaitingQueueTokenGenerationResponse(parseWaitingQueueTokenGenerationResponse(generateWaitingQueueToken(request)));
+			putWaitingQueueTokenGenerateRequest(request);
+		});
+	}
+
+	private void verifySingleTokenInfo(DataTable dataTable) {
+
+	}
+
+	private void verifyDuplicateTokenRequestFailureResponse(DataTable dataTable) {
+
+	}
+
+
 }

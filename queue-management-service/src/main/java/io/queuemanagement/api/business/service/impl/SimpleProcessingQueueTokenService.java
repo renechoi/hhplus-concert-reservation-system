@@ -24,7 +24,7 @@ public class SimpleProcessingQueueTokenService implements ProcessingQueueTokenSe
 	@Override
 	public ProcessingQueueTokenGeneralInfo checkProcessingQueueTokenAvailability(String tokenValue, String userId) {
 		ProcessingQueueToken processingQueueToken = processingQueueRetrievalRepository
-			.findSingleBy(tokenAndUserIdAndStatus(tokenValue, userId, PROCESSING));
+			.findSingleByCondition(tokenAndUserIdAndStatus(tokenValue, userId, PROCESSING));
 
 		return ProcessingQueueTokenGeneralInfo.from(processingQueueToken);
 	}
@@ -32,7 +32,7 @@ public class SimpleProcessingQueueTokenService implements ProcessingQueueTokenSe
 	@Override
 	public ProcessingQueueTokenGeneralInfo checkProcessingQueueTokenAvailability(String tokenValue) {
 		ProcessingQueueToken processingQueueToken = processingQueueRetrievalRepository
-			.findSingleBy(tokenAndStatus(tokenValue, PROCESSING));
+			.findSingleByCondition(tokenAndStatus(tokenValue, PROCESSING));
 
 		return ProcessingQueueTokenGeneralInfo.from(processingQueueToken);
 	}

@@ -76,7 +76,7 @@ public class SimpleWaitingQueueServiceTest {
 			.build();
 		WaitingQueueTokenGeneralInfo expectedInfo = WaitingQueueTokenGeneralInfo.from(token);
 
-		when(waitingQueueTokenRetrievalRepository.findSingleBy(any(WaitingQueueTokenSearchCommand.class)))
+		when(waitingQueueTokenRetrievalRepository.findSingleByCondition(any(WaitingQueueTokenSearchCommand.class)))
 			.thenReturn(token);
 
 		WaitingQueueTokenGeneralInfo result = simpleWaitingQueueService.retrieveByAiAtOnceCalculation(userId);

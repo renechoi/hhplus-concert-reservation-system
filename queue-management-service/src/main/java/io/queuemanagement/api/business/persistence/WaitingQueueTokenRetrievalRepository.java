@@ -12,10 +12,10 @@ import io.queuemanagement.api.business.dto.inport.WaitingQueueTokenSearchCommand
  */
 public interface WaitingQueueTokenRetrievalRepository {
 
-	WaitingQueueToken findSingleBy(WaitingQueueTokenSearchCommand searchCommand);
+	WaitingQueueToken findSingleByCondition(WaitingQueueTokenSearchCommand searchCommand);
 
-	Optional<WaitingQueueToken> findOptionalSingleBy(WaitingQueueTokenSearchCommand searchCommand);
+	Optional<WaitingQueueToken> findOptionalSingleByCondition(WaitingQueueTokenSearchCommand searchCommand);
 
-	List<WaitingQueueToken> findAllBy(WaitingQueueTokenSearchCommand searchCommand);
+	List<WaitingQueueToken> findAllByCondition(WaitingQueueTokenSearchCommand searchCommand);
 
 }

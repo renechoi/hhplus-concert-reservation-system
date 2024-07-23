@@ -52,8 +52,8 @@ public class SimpleWaitingQueueService implements WaitingQueueService {
 	@Override
 	@Transactional(readOnly = true)
 	public WaitingQueueTokenGeneralInfo retrieveByAiAtOnceCalculation(String userId) {
-		WaitingQueueToken token = waitingQueueTokenRetrievalRepository.findSingleBy(userIdAndOrderByRequestAtAsc(userId));
-		Long minTokenId = waitingQueueTokenRetrievalRepository.findSingleBy(minTokenId()).getWaitingQueueTokenId();
+		WaitingQueueToken token = waitingQueueTokenRetrievalRepository.findSingleByCondition(userIdAndOrderByRequestAtAsc(userId));
+		Long minTokenId = waitingQueueTokenRetrievalRepository.findSingleByCondition(minTokenId()).getWaitingQueueTokenId();
 		return WaitingQueueTokenGeneralInfo.from(token.calculatePosition(minTokenId));
 
 	}
