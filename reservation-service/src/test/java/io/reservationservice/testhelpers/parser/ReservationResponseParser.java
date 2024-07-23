@@ -1,7 +1,7 @@
 package io.reservationservice.testhelpers.parser;
 
 import io.reservationservice.api.application.dto.response.ReservationStatusResponses;
-import io.reservationservice.api.application.dto.response.TemporaryReservationCreateResponse;
+import io.reservationservice.api.application.dto.response.TemporalReservationCreateResponse;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
 
@@ -10,8 +10,8 @@ import io.restassured.response.Response;
  * @since : 2024/07/08
  */
 public class ReservationResponseParser {
-	public static TemporaryReservationCreateResponse parseReservationCreateResponse(ExtractableResponse<Response> response) {
-		return response.as(TemporaryReservationCreateResponse.class);
+	public static TemporalReservationCreateResponse parseReservationCreateResponse(ExtractableResponse<Response> response) {
+		return response.as(TemporalReservationCreateResponse.class);
 	}
 
 

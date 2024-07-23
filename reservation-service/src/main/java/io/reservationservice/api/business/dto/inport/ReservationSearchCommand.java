@@ -25,7 +25,7 @@ public class ReservationSearchCommand implements DateSearchCommand{
 	private Seat seat;
 	private Long seatId;
 	private Boolean isCanceled;
-	private LocalDateTime temporaryReservationReserveAt;
+	private LocalDateTime temporalReservationReserveAt;
 	private LocalDateTime reserveAt;
 	private LocalDateTime createdAt;
 	private LocalDateTime requestAt;

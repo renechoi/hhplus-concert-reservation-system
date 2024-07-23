@@ -50,7 +50,7 @@ public class Reservation {
 
 
 
-	private LocalDateTime temporaryReservationReserveAt;
+	private LocalDateTime temporalReservationReserveAt;
 	private LocalDateTime reserveAt;
 
 	@CreatedDate

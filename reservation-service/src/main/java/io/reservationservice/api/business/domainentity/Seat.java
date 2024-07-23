@@ -1,5 +1,7 @@
 package io.reservationservice.api.business.domainentity;
 
+import static io.reservationservice.common.model.GlobalResponseCode.*;
+
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -8,6 +10,7 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import io.reservationservice.api.business.dto.inport.ReservationCreateCommand;
+import io.reservationservice.common.exception.definitions.ReservationUnAvailableException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
@@ -50,9 +53,6 @@ public class Seat {
 	@Setter
 	private LocalDateTime createdAt;
 
-	public static Seat createSeatWithConcertOptionAndCommand(ConcertOption concertOption, ReservationCreateCommand command) {
-		return Seat.builder().concertOption(concertOption).seatNumber(command.getSeatNumber()).occupied(false).build();
-	}
 
 	public static Seat createSeatWithConcertOptionAndNumber(ConcertOption concertOption, Long seatNumber) {
 		return Seat.builder().concertOption(concertOption).seatNumber(seatNumber).occupied(false).build();
@@ -67,6 +67,9 @@ public class Seat {
 	}
 
 	public Seat doReserve() {
+		if (isOccupied()) {
+			throw new ReservationUnAvailableException(SEAT_ALREADY_RESERVED);
+		}
 		this.occupied = true;
 		return this;
 	}
@@ -84,5 +87,11 @@ public class Seat {
 	public boolean isAvailableAtRequestTime(Long requestAt) {
 		LocalDateTime date = Instant.ofEpochMilli(requestAt).atZone(ZoneOffset.UTC).toLocalDateTime();
 		return isAvailable(date);
+	}
+
+	public void occupy() {
+		if (isOccupied()) {
+			throw new ReservationUnAvailableException(SEAT_ALREADY_RESERVED);
+		}
 	}
 }

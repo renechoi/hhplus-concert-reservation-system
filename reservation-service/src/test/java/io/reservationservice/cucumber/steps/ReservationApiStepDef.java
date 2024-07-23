@@ -9,16 +9,12 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.jupiter.api.Assertions;
-
 import io.cucumber.datatable.DataTable;
 import io.cucumber.java8.En;
 import io.reservationservice.api.application.dto.request.ReservationCreateRequest;
 import io.reservationservice.api.application.dto.response.ReservationStatusResponses;
-import io.reservationservice.api.application.dto.response.SeatCreateResponse;
 import io.reservationservice.api.application.dto.response.SeatResponse;
-import io.reservationservice.api.application.dto.response.TemporaryReservationCreateResponse;
-import io.reservationservice.api.business.domainentity.Seat;
+import io.reservationservice.api.application.dto.response.TemporalReservationCreateResponse;
 
 /**
  * @author : Rene Choi
@@ -43,7 +39,7 @@ public class ReservationApiStepDef implements En {
 
 		ReservationCreateRequest request = updateFields(new ReservationCreateRequest(), reservationData);
 
-		TemporaryReservationCreateResponse response = parseReservationCreateResponse(createReservationWithCreated(request));
+		TemporalReservationCreateResponse response = parseReservationCreateResponse(createReservationWithCreated(request));
 		putReservationCreateResponse(response);
 	}
 
@@ -58,7 +54,7 @@ public class ReservationApiStepDef implements En {
 
 	private void verifyReservationCreation(DataTable dataTable) {
 		List<Map<String, String>> expectedReservations = dataTable.asMaps(String.class, String.class);
-		TemporaryReservationCreateResponse actualResponse = getMostRecentReservationCreateResponse();
+		TemporalReservationCreateResponse actualResponse = getMostRecentReservationCreateResponse();
 		assertNotNull(actualResponse, "생성된 예약의 응답이 존재하지 않습니다.");
 
 		boolean matchFound = expectedReservations.stream().anyMatch(expectedReservation ->

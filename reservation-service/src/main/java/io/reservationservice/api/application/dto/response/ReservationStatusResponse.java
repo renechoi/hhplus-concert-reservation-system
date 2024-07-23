@@ -2,11 +2,9 @@ package io.reservationservice.api.application.dto.response;
 
 import java.time.LocalDateTime;
 
-import io.reservationservice.api.business.domainentity.Reservation;
-import io.reservationservice.api.business.domainentity.TemporaryReservation;
 import io.reservationservice.api.business.dto.outport.ReservationInfo;
 import io.reservationservice.api.business.dto.outport.ReservationStatusInfo;
-import io.reservationservice.api.business.dto.outport.TemporaryReservationInfo;
+import io.reservationservice.api.business.dto.outport.TemporalReservationInfo;
 
 /**
  * @author : Rene Choi
@@ -38,16 +36,16 @@ public record ReservationStatusResponse(
 		);
 	}
 
-	public static ReservationStatusResponse from(TemporaryReservationInfo temporaryReservation) {
+	public static ReservationStatusResponse from(TemporalReservationInfo temporalReservationInfo) {
 		return new ReservationStatusResponse(
-			temporaryReservation.temporaryReservationId(),
-			temporaryReservation.userId(),
-			ConcertOptionResponse.from(temporaryReservation.concertOption()),
-			SeatResponse.from(temporaryReservation.seat()),
-			temporaryReservation.reserveAt(),
-			temporaryReservation.createdAt(),
-			temporaryReservation.isConfirmed(),
-			temporaryReservation.isCanceled(),
+			temporalReservationInfo.temporalReservationId(),
+			temporalReservationInfo.userId(),
+			ConcertOptionResponse.from(temporalReservationInfo.concertOption()),
+			SeatResponse.from(temporalReservationInfo.seat()),
+			temporalReservationInfo.reserveAt(),
+			temporalReservationInfo.createdAt(),
+			temporalReservationInfo.isConfirmed(),
+			temporalReservationInfo.isCanceled(),
 			true
 		);
 	}

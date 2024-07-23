@@ -34,7 +34,7 @@ public class SeatCoreRepository implements SeatRepository {
 	}
 
 	@Override
-	public Seat findSingleBy(SeatSearchCommand searchCommand) {
+	public Seat findSingleByCondition(SeatSearchCommand searchCommand) {
 		return seatJpaRepository.findSingleByCondition(searchCommand).orElseThrow(() -> new ReservationUnAvailableException(SEAT_NOT_FOUND));
 	}
 

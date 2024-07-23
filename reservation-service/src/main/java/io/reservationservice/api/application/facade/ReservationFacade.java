@@ -4,7 +4,7 @@ import io.reservationservice.api.application.dto.request.ReservationConfirmReque
 import io.reservationservice.api.application.dto.request.ReservationCreateRequest;
 import io.reservationservice.api.application.dto.response.ReservationConfirmResponse;
 import io.reservationservice.api.application.dto.response.ReservationStatusResponses;
-import io.reservationservice.api.application.dto.response.TemporaryReservationCreateResponse;
+import io.reservationservice.api.application.dto.response.TemporalReservationCreateResponse;
 import io.reservationservice.api.business.service.ReservationCrudService;
 import io.reservationservice.common.annotation.Facade;
 import lombok.RequiredArgsConstructor;
@@ -19,13 +19,13 @@ public class ReservationFacade {
 
 	private final ReservationCrudService reservationCrudService;
 
-	public TemporaryReservationCreateResponse createTemporaryReservation(ReservationCreateRequest request) {
-		return TemporaryReservationCreateResponse.from(reservationCrudService.createTemporaryReservation(request.toCommand()));
+	public TemporalReservationCreateResponse createTemporalReservation(ReservationCreateRequest request) {
+		return TemporalReservationCreateResponse.from(reservationCrudService.createTemporalReservation(request.toCommand()));
 	}
 
 
 	public ReservationConfirmResponse confirmReservation(ReservationConfirmRequest request) {
-		return ReservationConfirmResponse.from(reservationCrudService.confirmReservation(request.getTemporaryReservationId()));
+		return ReservationConfirmResponse.from(reservationCrudService.confirmReservation(request.getTemporalReservationId()));
 	}
 
 	public ReservationStatusResponses getReservationStatus(Long userId, Long concertOptionId) {

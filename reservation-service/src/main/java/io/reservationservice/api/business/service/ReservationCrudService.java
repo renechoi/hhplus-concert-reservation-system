@@ -1,22 +1,19 @@
 package io.reservationservice.api.business.service;
 
-import org.springframework.transaction.annotation.Transactional;
-
-import io.reservationservice.api.application.dto.response.ReservationStatusResponses;
 import io.reservationservice.api.business.dto.inport.ReservationCreateCommand;
 import io.reservationservice.api.business.dto.outport.ReservationConfirmInfo;
 import io.reservationservice.api.business.dto.outport.ReservationStatusInfos;
-import io.reservationservice.api.business.dto.outport.TemporaryReservationCreateInfo;
+import io.reservationservice.api.business.dto.outport.TemporalReservationCreateInfo;
 
 /**
  * @author : Rene Choi
  * @since : 2024/07/07
  */
 public interface ReservationCrudService {
-	TemporaryReservationCreateInfo createTemporaryReservation(ReservationCreateCommand command);
-	ReservationConfirmInfo confirmReservation(Long temporaryReservationId);
+	TemporalReservationCreateInfo createTemporalReservation(ReservationCreateCommand command);
+	ReservationConfirmInfo confirmReservation(Long temporalReservationId);
 	ReservationStatusInfos getReservationStatus(Long userId, Long concertOptionId);
-	void cancelTemporaryReservation(Long temporaryReservationId);
+	void cancelTemporalReservation(Long temporalReservationId);
 	void cancelExpiredTemporalReservations();
 
 }

@@ -19,8 +19,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class TemporaryReservationSearchCommand implements DateSearchCommand {
-	private Long temporaryReservationId;
+public class TemporalReservationSearchCommand implements DateSearchCommand {
+	private Long temporalReservationId;
 	private Long userId;
 	private ConcertOption concertOption;
 	private Long concertOptionId;
@@ -35,12 +35,12 @@ public class TemporaryReservationSearchCommand implements DateSearchCommand {
 	private DateSearchCondition dateSearchCondition;
 	private DateSearchTarget dateSearchTarget;
 
-	public static TemporaryReservationSearchCommand temporalReservationByUserIdAndConcertOptionId(Long userId, Long concertOptionId) {
-		return TemporaryReservationSearchCommand.builder().userId(userId).concertOptionId(concertOptionId).build();
+	public static TemporalReservationSearchCommand temporalReservationByUserIdAndConcertOptionId(Long userId, Long concertOptionId) {
+		return TemporalReservationSearchCommand.builder().userId(userId).concertOptionId(concertOptionId).build();
 	}
 
-	public static TemporaryReservationSearchCommand searchByExpireAt(LocalDateTime searchTime, DateSearchCondition dateSearchCondition) {
-		return TemporaryReservationSearchCommand.builder().expireAt(searchTime).dateSearchTarget(EXPIRE_AT).dateSearchCondition(dateSearchCondition).build();
+	public static TemporalReservationSearchCommand expireAt(LocalDateTime searchTime, DateSearchCondition dateSearchCondition) {
+		return TemporalReservationSearchCommand.builder().expireAt(searchTime).dateSearchTarget(EXPIRE_AT).dateSearchCondition(dateSearchCondition).build();
 
 	}
 }

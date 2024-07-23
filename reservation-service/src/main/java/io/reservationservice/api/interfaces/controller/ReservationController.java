@@ -13,7 +13,7 @@ import io.reservationservice.api.application.dto.request.ReservationConfirmReque
 import io.reservationservice.api.application.dto.request.ReservationCreateRequest;
 import io.reservationservice.api.application.dto.response.ReservationConfirmResponse;
 import io.reservationservice.api.application.dto.response.ReservationStatusResponses;
-import io.reservationservice.api.application.dto.response.TemporaryReservationCreateResponse;
+import io.reservationservice.api.application.dto.response.TemporalReservationCreateResponse;
 import io.reservationservice.api.application.facade.ReservationFacade;
 import io.reservationservice.common.model.CommonApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -33,8 +33,8 @@ public class ReservationController {
 
 	@PostMapping
 	@Operation(summary = "예약 요청 - 임시 예약을 수행함")
-	public CommonApiResponse<TemporaryReservationCreateResponse> createTemporaryReservation(@RequestBody ReservationCreateRequest request) {
-		return created(reservationFacade.createTemporaryReservation(request));
+	public CommonApiResponse<TemporalReservationCreateResponse> createTemporalReservation(@RequestBody ReservationCreateRequest request) {
+		return created(reservationFacade.createTemporalReservation(request));
 	}
 
 

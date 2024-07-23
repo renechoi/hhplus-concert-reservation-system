@@ -1,7 +1,6 @@
 package io.reservationservice.api.infrastructure.persistence.querydsl;
 
 import java.time.LocalDateTime;
-import java.util.Optional;
 
 import org.springframework.stereotype.Component;
 
@@ -10,7 +9,6 @@ import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.DateTimePath;
 
 import io.reservationservice.api.business.domainentity.QReservation;
-import io.reservationservice.api.business.dto.inport.DateSearchCommand;
 import io.reservationservice.api.business.dto.inport.DateSearchCommand.DateSearchCondition;
 import io.reservationservice.api.business.dto.inport.ReservationSearchCommand;
 import io.reservationservice.util.QueryDslBooleanExpressionBuilder;
@@ -37,7 +35,7 @@ public class ReservationQueryFilter implements QueryFilter<ReservationSearchComm
 			.notNullAnd(reservation.isCanceled::eq, searchCommand.getIsCanceled())
 
 			.and(createDatePredicate(searchCommand.getDateSearchCondition(), searchCommand.getReserveAt(), reservation.reserveAt))
-			.and(createDatePredicate(searchCommand.getDateSearchCondition(), searchCommand.getTemporaryReservationReserveAt(), reservation.temporaryReservationReserveAt))
+			.and(createDatePredicate(searchCommand.getDateSearchCondition(), searchCommand.getTemporalReservationReserveAt(), reservation.temporalReservationReserveAt))
 			.and(createDatePredicate(searchCommand.getDateSearchCondition(), searchCommand.getCreatedAt(), reservation.createdAt))
 			.and(createDatePredicate(searchCommand.getDateSearchCondition(), searchCommand.getRequestAt(), reservation.requestAt));
 

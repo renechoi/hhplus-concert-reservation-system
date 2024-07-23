@@ -5,7 +5,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import io.reservationservice.api.application.dto.request.ReservationCreateRequest;
 import io.reservationservice.api.application.dto.response.ReservationStatusResponses;
-import io.reservationservice.api.application.dto.response.TemporaryReservationCreateResponse;
+import io.reservationservice.api.application.dto.response.TemporalReservationCreateResponse;
 
 /**
  * @author : Rene Choi
@@ -13,7 +13,7 @@ import io.reservationservice.api.application.dto.response.TemporaryReservationCr
  */
 
 public class ReservationContextHolder implements TestDtoContextHolder {
-	private static final ConcurrentHashMap<Long, TemporaryReservationCreateResponse> reservationResponseMap = new ConcurrentHashMap<>();
+	private static final ConcurrentHashMap<Long, TemporalReservationCreateResponse> reservationResponseMap = new ConcurrentHashMap<>();
 	private static final ConcurrentHashMap<Long, ReservationCreateRequest> reservationRequestMap = new ConcurrentHashMap<>();
 	private static final ConcurrentHashMap<Long, ReservationStatusResponses> reservationStatusResponseMap = new ConcurrentHashMap<>();
 	private static final AtomicReference<Long> mostRecentReservationId = new AtomicReference<>();
@@ -38,16 +38,16 @@ public class ReservationContextHolder implements TestDtoContextHolder {
 		return reservationRequestMap.get(reservationId);
 	}
 
-	public static void putReservationCreateResponse(Long reservationId, TemporaryReservationCreateResponse response) {
+	public static void putReservationCreateResponse(Long reservationId, TemporalReservationCreateResponse response) {
 		reservationResponseMap.put(reservationId, response);
 		mostRecentReservationId.set(reservationId);
 	}
 
-	public static void putReservationCreateResponse(TemporaryReservationCreateResponse response) {
-		putReservationCreateResponse(response.temporaryReservationId(), response);
+	public static void putReservationCreateResponse(TemporalReservationCreateResponse response) {
+		putReservationCreateResponse(response.temporalReservationId(), response);
 	}
 
-	public static TemporaryReservationCreateResponse getReservationResponse(Long reservationId) {
+	public static TemporalReservationCreateResponse getReservationResponse(Long reservationId) {
 		return reservationResponseMap.get(reservationId);
 	}
 
@@ -55,7 +55,7 @@ public class ReservationContextHolder implements TestDtoContextHolder {
 		return mostRecentReservationId.get();
 	}
 
-	public static TemporaryReservationCreateResponse getMostRecentReservationCreateResponse() {
+	public static TemporalReservationCreateResponse getMostRecentReservationCreateResponse() {
 		Long recentReservationId = mostRecentReservationId.get();
 		return recentReservationId != null ? getReservationResponse(recentReservationId) : null;
 	}

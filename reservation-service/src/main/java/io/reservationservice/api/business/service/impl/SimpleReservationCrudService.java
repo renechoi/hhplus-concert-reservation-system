@@ -1,40 +1,33 @@
 package io.reservationservice.api.business.service.impl;
 
+import static io.reservationservice.api.business.domainentity.TemporalReservation.*;
 import static io.reservationservice.api.business.dto.inport.DateSearchCommand.DateSearchCondition.*;
 import static io.reservationservice.api.business.dto.inport.ReservationSearchCommand.*;
 import static io.reservationservice.api.business.dto.inport.SeatSearchCommand.*;
-import static io.reservationservice.api.business.dto.inport.TemporaryReservationSearchCommand.*;
-import static io.reservationservice.common.model.GlobalResponseCode.*;
-import static io.reservationservice.util.YmlLoader.*;
+import static io.reservationservice.api.business.dto.inport.TemporalReservationSearchCommand.*;
 import static java.time.LocalDateTime.*;
 import static java.util.stream.Collectors.*;
-import static org.springframework.util.CollectionUtils.*;
 
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.CollectionUtils;
 
 import io.reservationservice.api.business.domainentity.ConcertOption;
 import io.reservationservice.api.business.domainentity.Reservation;
 import io.reservationservice.api.business.domainentity.Seat;
-import io.reservationservice.api.business.domainentity.TemporaryReservation;
+import io.reservationservice.api.business.domainentity.TemporalReservation;
 import io.reservationservice.api.business.dto.inport.ReservationCreateCommand;
 import io.reservationservice.api.business.dto.outport.ReservationConfirmInfo;
 import io.reservationservice.api.business.dto.outport.ReservationStatusInfo;
 import io.reservationservice.api.business.dto.outport.ReservationStatusInfos;
-import io.reservationservice.api.business.dto.outport.TemporaryReservationCreateInfo;
+import io.reservationservice.api.business.dto.outport.TemporalReservationCreateInfo;
 import io.reservationservice.api.business.persistence.ConcertOptionRepository;
 import io.reservationservice.api.business.persistence.ReservationRepository;
 import io.reservationservice.api.business.persistence.SeatRepository;
-import io.reservationservice.api.business.persistence.TemporaryReservationRepository;
+import io.reservationservice.api.business.persistence.TemporalReservationRepository;
 import io.reservationservice.api.business.service.ReservationCrudService;
-import io.reservationservice.common.exception.definitions.ReservationUnAvailableException;
-import io.reservationservice.common.model.GlobalResponseCode;
 import lombok.RequiredArgsConstructor;
 
 /**
@@ -46,7 +39,7 @@ import lombok.RequiredArgsConstructor;
 public class SimpleReservationCrudService implements ReservationCrudService {
 
 	private final ReservationRepository reservationRepository;
-	private final TemporaryReservationRepository temporaryReservationRepository;
+	private final TemporalReservationRepository temporalReservationRepository;
 	private final ConcertOptionRepository concertOptionRepository;
 	private final SeatRepository seatRepository;
 
@@ -63,48 +56,37 @@ public class SimpleReservationCrudService implements ReservationCrudService {
 	 */
 	@Override
 	@Transactional
-	public TemporaryReservationCreateInfo createTemporaryReservation(ReservationCreateCommand command) {
+	public TemporalReservationCreateInfo createTemporalReservation(ReservationCreateCommand command) {
 		ConcertOption concertOption = concertOptionRepository.findById(command.getConcertOptionId());
-
-		Seat seat = seatRepository.findSingleBy(concertOptionAndSeatNumber(concertOption, command.getSeatNumber()));
-
-		// todo -> seat에서 userId 반정규화 필요성?
-		if (seat.isOccupied()) {
-			throw new ReservationUnAvailableException(SEAT_ALREADY_RESERVED);
-		}
-
+		Seat seat = seatRepository.findSingleByCondition(concertOptionAndSeatNumber(concertOption, command.getSeatNumber()));
 		seatRepository.save(seat.doReserve());
-
-		return TemporaryReservationCreateInfo.from(temporaryReservationRepository.save(TemporaryReservation.of(command, concertOption, seat, calculateExpireAt())));
+		return TemporalReservationCreateInfo.from(temporalReservationRepository.save(create(command, concertOption, seat)));
 	}
 
-	private static LocalDateTime calculateExpireAt() {
-		return now().plusSeconds(ymlLoader().getTemporaryReservationExpireSeconds());
-	}
 
 	/**
 	 * 임시 예약을 확정된 예약으로 변환
 	 *
-	 * @param temporaryReservationId 임시 예약 ID
+	 * @param temporalReservationId 임시 예약 ID
 	 * @return 확정된 예약 엔티티
 	 */
 	@Override
 	@Transactional
-	public ReservationConfirmInfo confirmReservation(Long temporaryReservationId) {
-		TemporaryReservation temporaryReservation = temporaryReservationRepository.findById(temporaryReservationId);
-		temporaryReservation.confirm();
-		return ReservationConfirmInfo.from(reservationRepository.save(temporaryReservation.toConfirmedReservation()));
+	public ReservationConfirmInfo confirmReservation(Long temporalReservationId) {
+		TemporalReservation temporalReservation = temporalReservationRepository.findById(temporalReservationId);
+		temporalReservation.confirm();
+		return ReservationConfirmInfo.from(reservationRepository.save(temporalReservation.toConfirmedReservation()));
 	}
 
 	@Override
 	@Transactional(readOnly = true)
 	public ReservationStatusInfos getReservationStatus(Long userId, Long concertOptionId) {
-		List<Reservation> reservations = reservationRepository.findMultipleBy(userIdAndConcertOptionId(userId, concertOptionId));
+		List<Reservation> reservations = reservationRepository.findMultipleByCondition(userIdAndConcertOptionId(userId, concertOptionId));
 
-		List<TemporaryReservation> temporaryReservations = temporaryReservationRepository
-			.findMultipleBy(temporalReservationByUserIdAndConcertOptionId(userId, concertOptionId));
+		List<TemporalReservation> temporalReservations = temporalReservationRepository
+			.findMultipleByCondtion(temporalReservationByUserIdAndConcertOptionId(userId, concertOptionId));
 
-		return Stream.concat(reservations.stream().map(ReservationStatusInfo::from), temporaryReservations.stream().map(ReservationStatusInfo::from))
+		return Stream.concat(reservations.stream().map(ReservationStatusInfo::from), temporalReservations.stream().map(ReservationStatusInfo::from))
 			.collect(collectingAndThen(toList(), ReservationStatusInfos::new))
 			.withValidated();
 	}
@@ -112,23 +94,23 @@ public class SimpleReservationCrudService implements ReservationCrudService {
 	/**
 	 * 임시 예약 취소
 	 *
-	 * @param temporaryReservationId 임시 예약 ID
+	 * @param temporalReservationId 임시 예약 ID
 	 */
 	@Override
 	@Transactional
-	public void cancelTemporaryReservation(Long temporaryReservationId) {
-		TemporaryReservation temporaryReservation = temporaryReservationRepository.findById(temporaryReservationId);
-		temporaryReservation.doCancelSeat();
-		temporaryReservation.cancelConfirm();
+	public void cancelTemporalReservation(Long temporalReservationId) {
+		TemporalReservation temporalReservation = temporalReservationRepository.findById(temporalReservationId);
+		temporalReservation.doCancelSeat();
+		temporalReservation.cancelConfirm();
 	}
 
 	@Override
 	@Transactional
 	public void cancelExpiredTemporalReservations() {
-		temporaryReservationRepository.findMultipleBy(searchByExpireAt(now(), BEFORE))
-			.forEach(temporaryReservation -> {
-				temporaryReservation.doCancelSeat();
-				temporaryReservation.cancelConfirm();
+		temporalReservationRepository.findMultipleByCondtion(expireAt(now(), BEFORE))
+			.forEach(temporalReservation -> {
+				temporalReservation.doCancelSeat();
+				temporalReservation.cancelConfirm();
 			});
 	}
 

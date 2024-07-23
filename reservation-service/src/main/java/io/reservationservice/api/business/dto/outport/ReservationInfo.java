@@ -3,7 +3,7 @@ package io.reservationservice.api.business.dto.outport;
 import java.time.LocalDateTime;
 
 import io.reservationservice.api.business.domainentity.Reservation;
-import io.reservationservice.api.business.domainentity.TemporaryReservation;
+import io.reservationservice.api.business.domainentity.TemporalReservation;
 
 /**
  * @author : Rene Choi
@@ -35,15 +35,15 @@ public record ReservationInfo(
 		);
 	}
 
-	public static ReservationInfo from(TemporaryReservation temporaryReservation) {
+	public static ReservationInfo from(TemporalReservation temporalReservation) {
 		return new ReservationInfo(
-			temporaryReservation.getTemporaryReservationId(),
-			temporaryReservation.getUserId(),
-			ConcertOptionInfo.from(temporaryReservation.getConcertOption()),
-			SeatInfo.from(temporaryReservation.getSeat()),
-			temporaryReservation.getReserveAt(),
-			temporaryReservation.getCreatedAt(),
-			temporaryReservation.getIsConfirmed(),
+			temporalReservation.getTemporalReservationId(),
+			temporalReservation.getUserId(),
+			ConcertOptionInfo.from(temporalReservation.getConcertOption()),
+			SeatInfo.from(temporalReservation.getSeat()),
+			temporalReservation.getReserveAt(),
+			temporalReservation.getCreatedAt(),
+			temporalReservation.getIsConfirmed(),
 			false,
 			true
 		);

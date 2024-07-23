@@ -1,5 +1,6 @@
 package io.reservationservice.api.business.domainentity;
 
+import static io.reservationservice.util.YmlLoader.*;
 import static java.time.LocalDateTime.*;
 
 import java.time.LocalDateTime;
@@ -32,10 +33,10 @@ import lombok.Setter;
 @NoArgsConstructor
 @Getter
 @EntityListeners({AuditingEntityListener.class})
-public class TemporaryReservation {
+public class TemporalReservation {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long temporaryReservationId;
+	private Long temporalReservationId;
 
 	private Long userId;
 
@@ -63,12 +64,12 @@ public class TemporaryReservation {
 
 	private Boolean isCanceled;
 
-	public static TemporaryReservationBuilder defaultBuilder(){
-		return TemporaryReservation.builder().reserveAt(now()).isConfirmed(false);
+	public static TemporalReservationBuilder defaultBuilder(){
+		return TemporalReservation.builder().reserveAt(now()).isConfirmed(false);
 	}
 
-	public static TemporaryReservation of(ReservationCreateCommand command, ConcertOption concertOption, Seat seat, LocalDateTime expireAt) {
-		return defaultBuilder().userId(command.getUserId()).requestAt(command.getRequestAt()).concertOption(concertOption).seat(seat).expireAt(expireAt).build();
+	public static TemporalReservation create(ReservationCreateCommand command, ConcertOption concertOption, Seat seat) {
+		return defaultBuilder().userId(command.getUserId()).requestAt(command.getRequestAt()).concertOption(concertOption).seat(seat).expireAt(calculateExpireAt()).build();
 	}
 
 	public void confirm() {
@@ -85,7 +86,7 @@ public class TemporaryReservation {
 			.userId(this.userId)
 			.concertOption(this.concertOption)
 			.seat(this.seat)
-			.temporaryReservationReserveAt(this.reserveAt)
+			.temporalReservationReserveAt(this.reserveAt)
 			.reserveAt(now())
 			.build();
 
@@ -94,5 +95,10 @@ public class TemporaryReservation {
 	public Seat doCancelSeat() {
 		this.seat.cancelReservation();
 		return this.getSeat();
+	}
+
+
+	private static LocalDateTime calculateExpireAt() {
+		return now().plusSeconds(ymlLoader().getTemporalReservationExpireSeconds());
 	}
 }

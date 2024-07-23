@@ -6,13 +6,13 @@ import io.reservationservice.common.model.GlobalResponseCode;
  * @author : Rene Choi
  * @since : 2024/07/06
  */
-public class TemporaryReservationNotFoundException extends ItemNotFoundException {
+public class TemporalReservationNotFoundException extends ItemNotFoundException {
 
-	public TemporaryReservationNotFoundException() {
+	public TemporalReservationNotFoundException() {
 		super(GlobalResponseCode.NO_CONTENT);
 	}
 
-	public TemporaryReservationNotFoundException(GlobalResponseCode code) {
+	public TemporalReservationNotFoundException(GlobalResponseCode code) {
 		super(code);
 	}
 }

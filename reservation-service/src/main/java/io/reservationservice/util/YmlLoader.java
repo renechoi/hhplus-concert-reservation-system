@@ -144,7 +144,7 @@ public class YmlLoader {
 		return Long.parseLong(loader.configMap.getOrDefault(key, "1000"));
 	}
 
-	public long getTemporaryReservationExpireSeconds() {
+	public long getTemporalReservationExpireSeconds() {
 		YmlLoader loader = YmlLoader.ymlLoader();
 		return Long.parseLong(loader.configMap.getOrDefault("reservation.temporary.expire-seconds", "300"));
 	}
