@@ -10,10 +10,10 @@ import io.redisservice.api.business.service.command.LockCommand;
  */
 public record LockInfo(
 	String lockKey,
-	long waitTime,
-	long leaseTime,
+	Long waitTime,
+	Long leaseTime,
 	TimeUnit timeUnit,
-	boolean isLocked
+	Boolean isLocked
 ) {
 
 	public static LockInfo createLockInfo(LockCommand lockCommand, boolean isLocked) {

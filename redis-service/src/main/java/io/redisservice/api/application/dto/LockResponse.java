@@ -12,15 +12,12 @@ import lombok.NoArgsConstructor;
  * @since : 2024/07/23
  */
 
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class LockResponse {
-	private String lockKey;
-	private long waitTime;
-	private long leaseTime;
-	private boolean isLocked;
+public record LockResponse(
+	String lockKey,
+	Long waitTime,
+	Long leaseTime,
+	Boolean isLocked
+) {
 
 	public static LockResponse from(LockInfo lockInfo) {
 		return ObjectMapperBasedVoMapper.convert(lockInfo, LockResponse.class);

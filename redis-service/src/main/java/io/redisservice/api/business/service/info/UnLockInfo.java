@@ -10,7 +10,7 @@ import io.redisservice.api.business.service.command.UnLockCommand;
  */
 public record UnLockInfo(
 	String lockKey,
-	boolean isUnLocked
+	Boolean isUnLocked
 ) {
 	public static UnLockInfo createUnLockInfo(UnLockCommand unLockCommand, boolean isUnlocked) {
 		return new UnLockInfo(unLockCommand.getLockKey(), isUnlocked);

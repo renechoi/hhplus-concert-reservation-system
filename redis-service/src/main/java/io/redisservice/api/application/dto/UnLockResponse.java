@@ -17,7 +17,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class UnLockResponse {
 	private String lockKey;
-	private boolean isUnlocked;
+	private Boolean isUnLocked;
 
 	public static UnLockResponse from(UnLockInfo unLockInfo) {
 		return ObjectMapperBasedVoMapper.convert(unLockInfo, UnLockResponse.class);
