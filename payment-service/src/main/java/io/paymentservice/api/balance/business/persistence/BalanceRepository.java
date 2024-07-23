@@ -2,6 +2,7 @@ package io.paymentservice.api.balance.business.persistence;
 
 import java.util.Optional;
 
+import io.paymentservice.api.balance.business.dto.inport.BalanceSearchCommand;
 import io.paymentservice.api.balance.business.entity.Balance;
 
 /**
@@ -10,6 +11,8 @@ import io.paymentservice.api.balance.business.entity.Balance;
  */
 public interface BalanceRepository {
 	Optional<Balance> findByUserIdOptional(Long userId);
+
+	Balance findSingleWithLock(BalanceSearchCommand balanceSearchCommand);
 
 	Balance save(Balance balance);
 

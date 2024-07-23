@@ -8,6 +8,7 @@ import static io.paymentservice.common.model.GlobalResponseCode.*;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -22,6 +23,7 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 import io.paymentservice.common.exception.definitions.PaymentProcessUnAvailableException;
 import io.paymentservice.common.exception.definitions.ServerException;
 import io.paymentservice.common.model.CommonApiResponse;
+import io.paymentservice.common.model.GlobalResponseCode;
 import lombok.extern.slf4j.Slf4j;
 
 @RestControllerAdvice
@@ -46,6 +48,13 @@ class ApiControllerAdvice extends ResponseEntityExceptionHandler {
             errors.put(error.getField(), error.getDefaultMessage());
         }
         return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
+    }
+
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<CommonApiResponse<Object>> handleDataIntegrityViolationException(DataIntegrityViolationException ex) {
+        log.error("DataIntegrityViolationException: {}", ex.getMessage());
+        return new ResponseEntity<>(new CommonApiResponse<>(PAYMENT_PROCESSING_FAILED, "중복 결제가 감지되었습니다."), HttpStatus.BAD_REQUEST);
     }
 
 

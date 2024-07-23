@@ -2,6 +2,7 @@ package io.paymentservice.api.payment.business.service.impl;
 
 import org.springframework.stereotype.Service;
 
+import io.paymentservice.api.payment.business.aspect.PaymentTransactionAspect;
 import io.paymentservice.api.payment.business.dto.inport.PaymentCommand;
 import io.paymentservice.api.payment.business.dto.outport.PaymentInfo;
 import io.paymentservice.api.payment.business.dto.outport.PaymentInfos;
@@ -24,6 +25,9 @@ public class SimplePaymentService implements PaymentService {
 	private final PaymentHistoryReader paymentHistoryReader;
 	private final PaymentCanceller paymentCanceller;
 
+	/**
+	 * @see {@link PaymentTransactionAspect}
+	 */
 	@Override
 	public PaymentInfo processPayment(PaymentCommand paymentCommand) {
 		return paymentProcessor.process(paymentCommand);

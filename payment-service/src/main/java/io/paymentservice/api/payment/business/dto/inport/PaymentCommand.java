@@ -21,6 +21,7 @@ import lombok.NoArgsConstructor;
 public class PaymentCommand {
 
 	private Long userId;
+	private String targetId; // 예약, 상품, 서비스 등 다양한 분야를 포괄할 수 있는 식별자
 	private BigDecimal amount;
 	private PaymentMethod paymentMethod;
 

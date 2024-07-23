@@ -18,6 +18,8 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -34,6 +36,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Getter
 @EntityListeners(AuditingEntityListener.class)
+@Table(name = "PaymentTransaction", uniqueConstraints = {
+	@UniqueConstraint(columnNames = {"targetId", "userId", "amount", "paymentMethod"})
+})
 public class PaymentTransaction {
 
 	@Id
@@ -41,6 +46,8 @@ public class PaymentTransaction {
 	private Long transactionId;
 
 	private Long userId;
+
+	private String targetId; // 예약, 상품, 서비스 등 다양한 분야를 포괄할 수 있는 식별자
 
 	private BigDecimal amount;
 

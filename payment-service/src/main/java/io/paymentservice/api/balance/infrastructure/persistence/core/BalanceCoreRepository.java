@@ -4,6 +4,7 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Repository;
 
+import io.paymentservice.api.balance.business.dto.inport.BalanceSearchCommand;
 import io.paymentservice.api.balance.business.entity.Balance;
 import io.paymentservice.api.balance.business.persistence.BalanceRepository;
 import io.paymentservice.api.balance.infrastructure.persistence.orm.BalanceJpaRepository;
@@ -22,6 +23,11 @@ public class BalanceCoreRepository implements BalanceRepository {
 	@Override
 	public Optional<Balance> findByUserIdOptional(Long userId) {
 		return balanceJpaRepository.findByUserId(userId);
+	}
+
+	@Override
+	public Balance findSingleWithLock(BalanceSearchCommand balanceSearchCommand) {
+		return balanceJpaRepository.findSingleWithLock(balanceSearchCommand).orElseThrow(BalanceNotFoundException::new);
 	}
 
 	@Override
