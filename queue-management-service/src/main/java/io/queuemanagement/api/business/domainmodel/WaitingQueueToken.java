@@ -1,14 +1,13 @@
 package io.queuemanagement.api.business.domainmodel;
 
+import static io.queuemanagement.util.YmlLoader.*;
+
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 import io.queuemanagement.api.business.dto.inport.WaitingQueueTokenGenerateCommand;
-import io.queuemanagement.api.business.dto.outport.WaitingQueueTokenGeneralInfo;
-import io.queuemanagement.api.business.persistence.WaitingQueueTokenRetrievalRepository;
 import io.queuemanagement.common.annotation.DomainModel;
 import io.queuemanagement.common.mapper.ObjectMapperBasedVoMapper;
-import io.queuemanagement.util.YmlLoader;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -33,6 +32,11 @@ public class WaitingQueueToken implements DomainRecordable{
 
 	private LocalDateTime requestAt;
 
+
+	public WaitingQueueToken init(WaitingQueueTokenCounter waitingQueueTokenCounter) {
+		return withValidUntil(getMaxWaitingTokens()).withPositionValue(waitingQueueTokenCounter.getCount());
+	}
+
 	public static WaitingQueueToken createToken(WaitingQueueTokenGenerateCommand command) {
 		return WaitingQueueToken.builder()
 			.userId(command.getUserId())
@@ -46,9 +50,6 @@ public class WaitingQueueToken implements DomainRecordable{
 		return ObjectMapperBasedVoMapper.convert(this, ProcessingQueueToken.class).withProcessing();
 	}
 
-	public WaitingQueueToken withValidUntilAndPositionValue(int seconds, Long position) {
-		return withValidUntil(seconds).withPositionValue(position);
-	}
 
 	public WaitingQueueToken withValidUntil(int seconds) {
 		this.validUntil = LocalDateTime.now().plusSeconds(seconds);

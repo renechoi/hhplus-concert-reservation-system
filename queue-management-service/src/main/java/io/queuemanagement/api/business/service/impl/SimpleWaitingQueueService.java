@@ -4,10 +4,13 @@ import static io.queuemanagement.api.business.domainmodel.WaitingQueueToken.*;
 import static io.queuemanagement.api.business.dto.inport.WaitingQueueTokenSearchCommand.*;
 import static io.queuemanagement.util.YmlLoader.*;
 
+import java.util.Optional;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import io.queuemanagement.api.business.domainmodel.WaitingQueueToken;
+import io.queuemanagement.api.business.domainmodel.WaitingQueueTokenCounter;
 import io.queuemanagement.api.business.dto.inport.WaitingQueueTokenGenerateCommand;
 import io.queuemanagement.api.business.dto.outport.WaitingQueueTokenGeneralInfo;
 import io.queuemanagement.api.business.dto.outport.WaitingQueueTokenGenerateInfo;
@@ -33,11 +36,12 @@ public class SimpleWaitingQueueService implements WaitingQueueService {
 	@Override
 	@Transactional
 	public WaitingQueueTokenGenerateInfo generateAndEnqueue(WaitingQueueTokenGenerateCommand command) {
-		return waitingQueueTokenDuplicateChecker
-			.checkDuplicate(command.getUserId())
-			.orElseGet(() -> WaitingQueueTokenGenerateInfo.from(
-				waitingQueueTokenEnqueueRepository.enqueue(
-					createToken(command).withValidUntilAndPositionValue(getTokenExpiryInSeconds(), waitingQueueTokenCounterManager.getAndIncreaseCounter(getMaxWaitingTokens()).getCount()))));
+		return waitingQueueTokenDuplicateChecker.checkDuplicate(command.getUserId())
+			.orElseGet(() -> {
+				WaitingQueueTokenCounter counter = waitingQueueTokenCounterManager.getAndIncreaseCounter(getMaxWaitingTokens());
+				WaitingQueueToken newToken = createToken(command).init(counter);
+				return WaitingQueueTokenGenerateInfo.from(waitingQueueTokenEnqueueRepository.enqueue(newToken));
+			});
 	}
 
 	/**
