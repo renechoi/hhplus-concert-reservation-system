@@ -22,3 +22,13 @@ server:
 
 custom-logging-filter:
   enabled: true
+
+
+slack:
+  channel:
+    name: slack-test
+
+
+redis:
+  host: localhost
+  port: 6379

@@ -67,6 +67,9 @@ dependencies {
     implementation 'org.springframework.cloud:spring-cloud-stream-binder-kafka-streams'
 
 
+    // Redisson for Redis Pub/Sub and Lock
+    implementation 'org.redisson:redisson-spring-boot-starter:3.19.0'
+
 
     // QueryDSL dependencies
     implementation 'com.querydsl:querydsl-jpa:5.0.0:jakarta'
