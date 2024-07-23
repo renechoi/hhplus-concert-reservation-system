@@ -54,13 +54,13 @@ public class SimpleWaitingQueueServiceTest {
 		WaitingQueueTokenGenerateCommand command = new WaitingQueueTokenGenerateCommand(userId);
 		WaitingQueueTokenGenerateInfo expectedInfo = new WaitingQueueTokenGenerateInfo(userId, "token123", null, 0, null, null);
 
-		when(waitingQueueTokenDuplicateChecker.checkDuplicate(userId))
+		when(waitingQueueTokenDuplicateChecker.check(userId))
 			.thenReturn(Optional.of(expectedInfo));
 
 		WaitingQueueTokenGenerateInfo result = simpleWaitingQueueService.generateAndEnqueue(command);
 
 		assertEquals(expectedInfo, result);
-		verify(waitingQueueTokenDuplicateChecker, times(1)).checkDuplicate(userId);
+		verify(waitingQueueTokenDuplicateChecker, times(1)).check(userId);
 		verify(waitingQueueTokenCounterCrudRepository, times(0)).getOrInitializeCounter();
 	}
 

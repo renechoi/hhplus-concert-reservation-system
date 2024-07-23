@@ -30,12 +30,17 @@ public class ProcessingQueueRetrievalCoreRepository implements ProcessingQueueRe
 	}
 
 	@Override
+	public long countAvailableSlots(long maxLimit) {
+		return maxLimit - processingQueueTokenJpaRepository.countByStatus(QueueStatus.PROCESSING);
+	}
+
+	@Override
 	public ProcessingQueueToken findSingleByCondition(ProcessingQueueTokenSearchCommand searchCommand) {
 		return processingQueueTokenJpaRepository.findSingleByCondition(searchCommand).orElseThrow(ProcessingQueueTokenNotFoundException::new).toDomain();
 	}
 
 	@Override
-	public Optional<ProcessingQueueToken> findOptionalSingleByCondition(ProcessingQueueTokenSearchCommand searchCommand) {
+	public Optional<ProcessingQueueToken> findOptionalByCondition(ProcessingQueueTokenSearchCommand searchCommand) {
 		return processingQueueTokenJpaRepository.findSingleByCondition(searchCommand).map(ProcessingQueueTokenEntity::toDomain);
 	}
 

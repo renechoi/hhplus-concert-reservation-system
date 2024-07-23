@@ -14,9 +14,11 @@ import io.queuemanagement.api.business.dto.inport.ProcessingQueueTokenSearchComm
 public interface ProcessingQueueRetrievalRepository {
 	long countByStatus(QueueStatus queueStatus);
 
+	long countAvailableSlots(long maxLimit);
+
 	ProcessingQueueToken findSingleByCondition(ProcessingQueueTokenSearchCommand searchCommand);
 
-	Optional<ProcessingQueueToken> findOptionalSingleByCondition(ProcessingQueueTokenSearchCommand searchCommand);
+	Optional<ProcessingQueueToken> findOptionalByCondition(ProcessingQueueTokenSearchCommand searchCommand);
 
 	List<ProcessingQueueToken> findAllByCondition(ProcessingQueueTokenSearchCommand searchCommand);
 }

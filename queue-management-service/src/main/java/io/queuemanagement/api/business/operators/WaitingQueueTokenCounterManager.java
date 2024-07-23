@@ -13,13 +13,11 @@ import lombok.RequiredArgsConstructor;
 @Component
 @RequiredArgsConstructor
 public class WaitingQueueTokenCounterManager {
-	private final WaitingQueueTokenCounterCrudRepository waitingQueueTokenCounterCrudRepository;
+	private final WaitingQueueTokenCounterCrudRepository waitingQueueRepository;
 
 	public WaitingQueueTokenCounter getAndIncreaseCounter(long maxWaitingTokens) {
-		WaitingQueueTokenCounter counter = waitingQueueTokenCounterCrudRepository.getOrInitializeCounter();
-		counter.withAvailabilityVerified(maxWaitingTokens);
-
-		waitingQueueTokenCounterCrudRepository.save(counter.withIncreasedCount());
+		WaitingQueueTokenCounter counter = waitingQueueRepository.getOrInitializeCounter();
+		waitingQueueRepository.save(counter.increase(maxWaitingTokens));
 		return counter;
 	}
 }

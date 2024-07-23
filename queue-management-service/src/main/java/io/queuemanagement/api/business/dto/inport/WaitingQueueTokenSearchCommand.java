@@ -1,5 +1,6 @@
 package io.queuemanagement.api.business.dto.inport;
 
+import static io.queuemanagement.api.business.domainmodel.QueueStatus.*;
 import static io.queuemanagement.api.business.dto.inport.DateSearchCommand.DateSearchCondition.*;
 import static io.queuemanagement.api.business.dto.inport.DateSearchCommand.DateSearchTarget.*;
 
@@ -59,7 +60,7 @@ public class WaitingQueueTokenSearchCommand extends AbstractCommonRequestInfo im
 	}
 
 
-	public static WaitingQueueTokenSearchCommand userIdAndOrderByRequestAtAsc(String userId) {
+	public static WaitingQueueTokenSearchCommand onLatest(String userId) {
 		return active()
 			.userId(userId)
 			.orderBy("requestAt")
@@ -69,7 +70,7 @@ public class WaitingQueueTokenSearchCommand extends AbstractCommonRequestInfo im
 	}
 
 
-	public static WaitingQueueTokenSearchCommand minTokenId() {
+	public static WaitingQueueTokenSearchCommand onTop() {
 		return WaitingQueueTokenSearchCommand.builder()
 			.orderBy("waitingQueueTokenId")
 			.orderDirection("asc")
@@ -77,27 +78,27 @@ public class WaitingQueueTokenSearchCommand extends AbstractCommonRequestInfo im
 			.build();
 	}
 
-	public static WaitingQueueTokenSearchCommand statusAndOrderByRequestAtAsc( QueueStatus queueStatus) {
+	public static WaitingQueueTokenSearchCommand onTopWaitingToken( ) {
 		return WaitingQueueTokenSearchCommand.builder()
-			.status(queueStatus)
+			.status(WAITING)
 			.orderBy("requestAt")
 			.orderDirection("asc")
 			.build();
 	}
 
-	public static WaitingQueueTokenSearchCommand conditionOnUserIdAndStatus(String userId, QueueStatus queueStatus) {
+	public static WaitingQueueTokenSearchCommand onActiveWaiting(String userId) {
 		return WaitingQueueTokenSearchCommand.builder()
 			.userId(userId)
-			.status(queueStatus)
+			.status(QueueStatus.WAITING)
 			.build();
 	}
 
 
-	public static WaitingQueueTokenSearchCommand statusesAndValidUntil(List<QueueStatus> statuses, LocalDateTime validUntil, DateSearchCondition dateSearchCondition) {
+	public static WaitingQueueTokenSearchCommand onWaitingTokensExpiring( LocalDateTime validUntil) {
 		return WaitingQueueTokenSearchCommand.builder()
-			.statuses(statuses)
+			.statuses(List.of(WAITING, PROCESSING))
 			.validUntil(validUntil)
-			.dateSearchCondition(dateSearchCondition)
+			.dateSearchCondition(BEFORE)
 			.dateSearchTarget(DateSearchTarget.VALID_UNTIL)
 			.build();
 	}

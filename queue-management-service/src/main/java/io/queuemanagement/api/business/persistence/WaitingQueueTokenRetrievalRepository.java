@@ -14,7 +14,7 @@ public interface WaitingQueueTokenRetrievalRepository {
 
 	WaitingQueueToken findSingleByCondition(WaitingQueueTokenSearchCommand searchCommand);
 
-	Optional<WaitingQueueToken> findOptionalSingleByCondition(WaitingQueueTokenSearchCommand searchCommand);
+	Optional<WaitingQueueToken> findOptionalByCondition(WaitingQueueTokenSearchCommand searchCommand);
 
 	List<WaitingQueueToken> findAllByCondition(WaitingQueueTokenSearchCommand searchCommand);
 

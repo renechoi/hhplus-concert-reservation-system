@@ -4,8 +4,6 @@ import static io.queuemanagement.api.business.domainmodel.WaitingQueueToken.*;
 import static io.queuemanagement.api.business.dto.inport.WaitingQueueTokenSearchCommand.*;
 import static io.queuemanagement.util.YmlLoader.*;
 
-import java.util.Optional;
-
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,19 +26,19 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class SimpleWaitingQueueService implements WaitingQueueService {
-	private final WaitingQueueTokenEnqueueRepository waitingQueueTokenEnqueueRepository;
-	private final WaitingQueueTokenCounterManager waitingQueueTokenCounterManager;
-	private final WaitingQueueTokenRetrievalRepository waitingQueueTokenRetrievalRepository;
-	private final WaitingQueueTokenDuplicateChecker waitingQueueTokenDuplicateChecker;
+	private final WaitingQueueTokenEnqueueRepository enqueueRepository;
+	private final WaitingQueueTokenCounterManager counterManager;
+	private final WaitingQueueTokenRetrievalRepository waitingQueueRepository;
+	private final WaitingQueueTokenDuplicateChecker duplicateChecker;
 
 	@Override
 	@Transactional
 	public WaitingQueueTokenGenerateInfo generateAndEnqueue(WaitingQueueTokenGenerateCommand command) {
-		return waitingQueueTokenDuplicateChecker.checkDuplicate(command.getUserId())
+		return duplicateChecker.check(command.getUserId())
 			.orElseGet(() -> {
-				WaitingQueueTokenCounter counter = waitingQueueTokenCounterManager.getAndIncreaseCounter(getMaxWaitingTokens());
+				WaitingQueueTokenCounter counter = counterManager.getAndIncreaseCounter(getMaxWaitingTokens());
 				WaitingQueueToken newToken = createToken(command).init(counter);
-				return WaitingQueueTokenGenerateInfo.from(waitingQueueTokenEnqueueRepository.enqueue(newToken));
+				return WaitingQueueTokenGenerateInfo.from(enqueueRepository.enqueue(newToken));
 			});
 	}
 
@@ -56,10 +54,9 @@ public class SimpleWaitingQueueService implements WaitingQueueService {
 	@Override
 	@Transactional(readOnly = true)
 	public WaitingQueueTokenGeneralInfo retrieveByAiAtOnceCalculation(String userId) {
-		WaitingQueueToken token = waitingQueueTokenRetrievalRepository.findSingleByCondition(userIdAndOrderByRequestAtAsc(userId));
-		Long minTokenId = waitingQueueTokenRetrievalRepository.findSingleByCondition(minTokenId()).getWaitingQueueTokenId();
-		return WaitingQueueTokenGeneralInfo.from(token.calculatePosition(minTokenId));
-
+		WaitingQueueToken token = waitingQueueRepository.findSingleByCondition(onLatest(userId));
+		Long topTokenId = waitingQueueRepository.findSingleByCondition(onTop()).getWaitingQueueTokenId();
+		return WaitingQueueTokenGeneralInfo.from(token.calculatePosition(topTokenId));
 	}
 
 }

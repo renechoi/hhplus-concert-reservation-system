@@ -36,12 +36,12 @@ public class ProcessingQueueToken  {
 		return this;
 	}
 
-	public ProcessingQueueToken withCompleted() {
+	public ProcessingQueueToken complete() {
 		this.status = QueueStatus.COMPLETED;
 		return this;
 	}
 
-	public ProcessingQueueToken withExpired() {
+	public ProcessingQueueToken expire() {
 		this.status = QueueStatus.EXPIRED;
 		return this;
 	}

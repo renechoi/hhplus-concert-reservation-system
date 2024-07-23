@@ -24,7 +24,10 @@ public class WaitingQueueTokenCounter {
 		return WaitingQueueTokenCounter.builder().count(0L).build();
 	}
 
-	public WaitingQueueTokenCounter withIncreasedCount() {
+	public WaitingQueueTokenCounter increase(long maxWaitingTokens) {
+		if (isNotAvailable(maxWaitingTokens)) {
+			throw new WaitingQueueMaxLimitExceededException();
+		}
 		this.count = (this.count == null) ? 1L : this.count + 1;
 		return this;
 	}
@@ -41,7 +44,7 @@ public class WaitingQueueTokenCounter {
 		return this.count < maxWaitingTokens;
 	}
 
-	public WaitingQueueTokenCounter withDecreasedCount(long decreasedCount) {
+	public WaitingQueueTokenCounter decrease(long decreasedCount) {
 		this.count = Math.max(this.count - decreasedCount, 0);
 		return this;
 	}

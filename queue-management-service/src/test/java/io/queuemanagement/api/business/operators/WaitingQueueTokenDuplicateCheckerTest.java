@@ -69,10 +69,10 @@ public class WaitingQueueTokenDuplicateCheckerTest {
 			.status(QueueStatus.WAITING)
 			.build();
 
-		when(waitingQueueTokenRetrievalRepository.findOptionalSingleByCondition(refEq(searchCommand)))
+		when(waitingQueueTokenRetrievalRepository.findOptionalByCondition(refEq(searchCommand)))
 			.thenReturn(Optional.of(waitingQueueToken));
 
-		Optional<WaitingQueueTokenGenerateInfo> result = waitingQueueTokenDuplicateChecker.checkDuplicate("testUser");
+		Optional<WaitingQueueTokenGenerateInfo> result = waitingQueueTokenDuplicateChecker.check("testUser");
 
 		assertEquals(WaitingQueueTokenGenerateInfo.from(waitingQueueToken), result.get());
 	}
@@ -85,12 +85,12 @@ public class WaitingQueueTokenDuplicateCheckerTest {
 			.status(QueueStatus.WAITING)
 			.build();
 
-		when(waitingQueueTokenRetrievalRepository.findOptionalSingleByCondition(refEq(waitingSearchCommand)))
+		when(waitingQueueTokenRetrievalRepository.findOptionalByCondition(refEq(waitingSearchCommand)))
 			.thenReturn(Optional.empty());
-		when(processingQueueRetrievalRepository.findOptionalSingleByCondition(any()))
+		when(processingQueueRetrievalRepository.findOptionalByCondition(any()))
 			.thenReturn(Optional.of(processingQueueToken));
 
-		Optional<WaitingQueueTokenGenerateInfo> result = waitingQueueTokenDuplicateChecker.checkDuplicate("testUser");
+		Optional<WaitingQueueTokenGenerateInfo> result = waitingQueueTokenDuplicateChecker.check("testUser");
 
 		assertEquals(WaitingQueueTokenGenerateInfo.from(processingQueueToken), result.get());
 	}
@@ -103,12 +103,12 @@ public class WaitingQueueTokenDuplicateCheckerTest {
 			.status(QueueStatus.WAITING)
 			.build();
 
-		when(waitingQueueTokenRetrievalRepository.findOptionalSingleByCondition(refEq(waitingSearchCommand)))
+		when(waitingQueueTokenRetrievalRepository.findOptionalByCondition(refEq(waitingSearchCommand)))
 			.thenReturn(Optional.empty());
-		when(processingQueueRetrievalRepository.findOptionalSingleByCondition(any()))
+		when(processingQueueRetrievalRepository.findOptionalByCondition(any()))
 			.thenReturn(Optional.empty());
 
-		Optional<WaitingQueueTokenGenerateInfo> result = waitingQueueTokenDuplicateChecker.checkDuplicate("testUser");
+		Optional<WaitingQueueTokenGenerateInfo> result = waitingQueueTokenDuplicateChecker.check("testUser");
 
 		assertEquals(Optional.empty(), result);
 	}

@@ -34,7 +34,7 @@ public class WaitingQueueToken implements DomainRecordable{
 
 
 	public WaitingQueueToken init(WaitingQueueTokenCounter waitingQueueTokenCounter) {
-		return withValidUntil(getMaxWaitingTokens()).withPositionValue(waitingQueueTokenCounter.getCount());
+		return withValidUntil(getTokenExpiryInSeconds()).withPositionValue(waitingQueueTokenCounter.getCount());
 	}
 
 	public static WaitingQueueToken createToken(WaitingQueueTokenGenerateCommand command) {
@@ -46,7 +46,7 @@ public class WaitingQueueToken implements DomainRecordable{
 			.build();
 	}
 
-	public  ProcessingQueueToken toProcessingToken(){
+	public  ProcessingQueueToken toProcessing(){
 		return ObjectMapperBasedVoMapper.convert(this, ProcessingQueueToken.class).withProcessing();
 	}
 
@@ -62,17 +62,17 @@ public class WaitingQueueToken implements DomainRecordable{
 		return this;
 	}
 
-	public WaitingQueueToken withProccessing() {
+	public WaitingQueueToken proccessed() {
 		this.status = QueueStatus.PROCESSING;
 		return this;
 	}
 
-	public WaitingQueueToken withCompleted() {
+	public WaitingQueueToken complete() {
 		this.status = QueueStatus.COMPLETED;
 		return this;
 	}
 
-	public WaitingQueueToken withExpired() {
+	public WaitingQueueToken expire() {
 		this.status = QueueStatus.EXPIRED;
 		return this;
 	}

@@ -1,5 +1,8 @@
 package io.queuemanagement.api.business.dto.inport;
 
+import static io.queuemanagement.api.business.domainmodel.QueueStatus.*;
+import static io.queuemanagement.api.business.dto.inport.DateSearchCommand.DateSearchCondition.*;
+
 import java.time.LocalDateTime;
 
 import io.queuemanagement.api.business.domainmodel.QueueStatus;
@@ -33,20 +36,20 @@ public class ProcessingQueueTokenSearchCommand extends AbstractCommonRequestInfo
 	private DateSearchTarget dateSearchTarget;
 
 
-	public static ProcessingQueueTokenSearchCommand tokenAndUserIdAndStatus(String queueToken, String userId, QueueStatus queueStatus) {
-		return ProcessingQueueTokenSearchCommand.builder().tokenValue(queueToken).userId(userId).status(queueStatus).build();
+	public static ProcessingQueueTokenSearchCommand onProcessing(String queueToken, String userId) {
+		return ProcessingQueueTokenSearchCommand.builder().tokenValue(queueToken).userId(userId).status(PROCESSING).build();
 	}
 
-	public static ProcessingQueueTokenSearchCommand userIdAndStatus(String userId, QueueStatus queueStatus) {
-		return ProcessingQueueTokenSearchCommand.builder().userId(userId).status(queueStatus).build();
+	public static ProcessingQueueTokenSearchCommand onActiveProcessing(String userId) {
+		return ProcessingQueueTokenSearchCommand.builder().userId(userId).status(PROCESSING).build();
 	}
 
-	public static ProcessingQueueTokenSearchCommand tokenAndStatus(String queueToken,  QueueStatus queueStatus) {
-		return ProcessingQueueTokenSearchCommand.builder().tokenValue(queueToken).status(queueStatus).build();
+	public static ProcessingQueueTokenSearchCommand onProcessing(String queueToken) {
+		return ProcessingQueueTokenSearchCommand.builder().tokenValue(queueToken).status(PROCESSING).build();
 	}
 
-	public static ProcessingQueueTokenSearchCommand statusAndValidUntil(QueueStatus queueStatus, LocalDateTime validUntil, DateSearchCondition dateSearchCondition) {
-		return ProcessingQueueTokenSearchCommand.builder().status(queueStatus).validUntil(validUntil).dateSearchTarget(DateSearchTarget.VALID_UNTIL).dateSearchCondition(dateSearchCondition).build();
+	public static ProcessingQueueTokenSearchCommand onProcessingTokensExpiring(LocalDateTime valiadUntil) {
+		return ProcessingQueueTokenSearchCommand.builder().status(PROCESSING).validUntil(valiadUntil).dateSearchTarget(DateSearchTarget.VALID_UNTIL).dateSearchCondition(BEFORE).build();
 	}
 }
 

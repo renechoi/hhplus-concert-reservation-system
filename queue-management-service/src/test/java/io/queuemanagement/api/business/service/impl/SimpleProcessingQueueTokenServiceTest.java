@@ -16,6 +16,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import io.queuemanagement.api.business.domainmodel.ProcessingQueueToken;
+import io.queuemanagement.api.business.dto.inport.ProcessingQueueTokenSearchCommand;
 import io.queuemanagement.api.business.dto.outport.ProcessingQueueTokenGeneralInfo;
 import io.queuemanagement.api.business.persistence.ProcessingQueueRetrievalRepository;
 
@@ -54,16 +55,16 @@ public class SimpleProcessingQueueTokenServiceTest {
 		String tokenValue = "token123";
 		String userId = "user123";
 
-		when(processingQueueRetrievalRepository.findSingleByCondition(tokenAndUserIdAndStatus(tokenValue, userId, PROCESSING)))
+		when(processingQueueRetrievalRepository.findSingleByCondition(onProcessing(tokenValue, userId)))
 			.thenReturn(mockProcessingQueueToken);
 
-		ProcessingQueueTokenGeneralInfo result = simpleProcessingQueueTokenService.checkProcessingQueueTokenAvailability(tokenValue, userId);
+		ProcessingQueueTokenGeneralInfo result = simpleProcessingQueueTokenService.checkProcessingTokenAvailability(tokenValue, userId);
 
 		assertNotNull(result);
 		assertEquals(mockProcessingQueueToken.getProcessingQueueTokenId(), result.processingQueueTokenId());
 		assertEquals(mockProcessingQueueToken.getTokenValue(), result.tokenValue());
 		assertEquals(mockProcessingQueueToken.getUserId(), result.userId());
-		verify(processingQueueRetrievalRepository, times(1)).findSingleByCondition(tokenAndUserIdAndStatus(tokenValue, userId, PROCESSING));
+		verify(processingQueueRetrievalRepository, times(1)).findSingleByCondition(onProcessing(tokenValue, userId));
 	}
 
 	@Test
@@ -71,15 +72,15 @@ public class SimpleProcessingQueueTokenServiceTest {
 	void testCheckProcessingQueueTokenAvailability_withToken() {
 		String tokenValue = "token123";
 
-		when(processingQueueRetrievalRepository.findSingleByCondition(tokenAndStatus(tokenValue, PROCESSING)))
+		when(processingQueueRetrievalRepository.findSingleByCondition(onProcessing(tokenValue)))
 			.thenReturn(mockProcessingQueueToken);
 
-		ProcessingQueueTokenGeneralInfo result = simpleProcessingQueueTokenService.checkProcessingQueueTokenAvailability(tokenValue);
+		ProcessingQueueTokenGeneralInfo result = simpleProcessingQueueTokenService.checkProcessingTokenAvailability(tokenValue);
 
 		assertNotNull(result);
 		assertEquals(mockProcessingQueueToken.getProcessingQueueTokenId(), result.processingQueueTokenId());
 		assertEquals(mockProcessingQueueToken.getTokenValue(), result.tokenValue());
 		assertEquals(mockProcessingQueueToken.getUserId(), result.userId());
-		verify(processingQueueRetrievalRepository, times(1)).findSingleByCondition(tokenAndStatus(tokenValue, PROCESSING));
+		verify(processingQueueRetrievalRepository, times(1)).findSingleByCondition(onProcessing(tokenValue));
 	}
 }

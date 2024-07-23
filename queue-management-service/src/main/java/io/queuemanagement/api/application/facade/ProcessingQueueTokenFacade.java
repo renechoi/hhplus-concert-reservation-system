@@ -1,10 +1,7 @@
 package io.queuemanagement.api.application.facade;
 
-import org.springframework.scheduling.annotation.Scheduled;
-
 import io.queuemanagement.api.application.dto.response.ProcessingQueueTokenGeneralResponse;
 import io.queuemanagement.api.business.service.ProcessingQueueTokenService;
-import io.queuemanagement.api.business.service.QueueManagementService;
 import io.queuemanagement.common.annotation.Facade;
 import lombok.RequiredArgsConstructor;
 
@@ -19,11 +16,11 @@ public class ProcessingQueueTokenFacade {
 	private final ProcessingQueueTokenService processingQueueTokenService;
 
 	public ProcessingQueueTokenGeneralResponse checkProcessingQueueTokenAvailability(String tokenValue, String userId) {
-		return ProcessingQueueTokenGeneralResponse.from(processingQueueTokenService.checkProcessingQueueTokenAvailability(tokenValue,userId));
+		return ProcessingQueueTokenGeneralResponse.from(processingQueueTokenService.checkProcessingTokenAvailability(tokenValue,userId));
 	}
 
 	public ProcessingQueueTokenGeneralResponse checkProcessingQueueTokenAvailability(String tokenValue) {
-		return ProcessingQueueTokenGeneralResponse.from(processingQueueTokenService.checkProcessingQueueTokenAvailability(tokenValue));
+		return ProcessingQueueTokenGeneralResponse.from(processingQueueTokenService.checkProcessingTokenAvailability(tokenValue));
 	}
 
 

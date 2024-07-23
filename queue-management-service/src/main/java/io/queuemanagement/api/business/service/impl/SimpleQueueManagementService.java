@@ -1,13 +1,9 @@
 package io.queuemanagement.api.business.service.impl;
 
-import static io.queuemanagement.api.business.domainmodel.QueueStatus.*;
-import static io.queuemanagement.api.business.dto.inport.DateSearchCommand.DateSearchCondition.*;
 import static io.queuemanagement.api.business.dto.inport.ProcessingQueueTokenSearchCommand.*;
 import static io.queuemanagement.api.business.dto.inport.WaitingQueueTokenSearchCommand.*;
 import static io.queuemanagement.util.YmlLoader.*;
 import static java.time.LocalDateTime.*;
-
-import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,63 +24,62 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class SimpleQueueManagementService implements QueueManagementService {
-	private final WaitingQueueTokenRetrievalRepository waitingQueueTokenRetrievalRepository;
-	private final WaitingQueueTokenManagementRepository waitingQueueTokenManagementRepository;
-	private final ProcessingQueueRetrievalRepository processingQueueRetrievalRepository;
+	private final WaitingQueueTokenRetrievalRepository waitingQueueRepository;
+	private final WaitingQueueTokenManagementRepository waitingQueueManagementRepository;
+	private final ProcessingQueueRetrievalRepository processingQueueRepository;
 	private final ProcessingQueueEnqueueRepository processingQueueEnqueueRepository;
 	private final ProcessingQueueStoreRepository processingQueueStoreRepository;
-	private final WaitingQueueTokenCounterCrudRepository waitingQueueTokenCounterCrudRepository;
+	private final WaitingQueueTokenCounterCrudRepository waitingQueueCounterRepository;
 
 	@Transactional
 	@Override
 	public void processQueueTransfer() {
-		long availableSlots = processingTokensMaxLimit() - processingQueueRetrievalRepository.countByStatus(PROCESSING);
+		long availableSlots = processingQueueRepository.countAvailableSlots(processingTokensMaxLimit());
 
 		if (availableSlots <= 0) {
 			return;
 		}
 
-		waitingQueueTokenRetrievalRepository
-			.findAllByCondition(statusAndOrderByRequestAtAsc(WAITING))
+		waitingQueueRepository.findAllByCondition(onTopWaitingToken())
 			.stream()
 			.limit(availableSlots)
 			.toList()
-			.forEach(waitingQueueToken -> {
-				processingQueueEnqueueRepository.enqueue(waitingQueueToken.toProcessingToken());
-				waitingQueueTokenManagementRepository.updateStatus(waitingQueueToken.withProccessing());
+			.forEach(waitingToken -> {
+				processingQueueEnqueueRepository.enqueue(waitingToken.toProcessing());
+				waitingQueueManagementRepository.updateStatus(waitingToken.proccessed());
 			});
 
-		waitingQueueTokenCounterCrudRepository.save(waitingQueueTokenCounterCrudRepository.getCounter().withDecreasedCount(availableSlots));
+		waitingQueueCounterRepository.save(waitingQueueCounterRepository.getCounter().decrease(availableSlots));
 	}
 
 	@Transactional
 	@Override
 	public void expireProcessingQueueTokens() {
-		processingQueueRetrievalRepository
-			.findAllByCondition(statusAndValidUntil(PROCESSING,  now(), BEFORE))
-			.forEach(token -> processingQueueStoreRepository.store(token.withExpired()));
+		processingQueueRepository
+			.findAllByCondition(onProcessingTokensExpiring(now()))
+			.forEach(token -> processingQueueStoreRepository.store(token.expire()));
 	}
 
 	@Override
 	@Transactional
 	public void expireWaitingQueueTokens() {
-		waitingQueueTokenRetrievalRepository
-			.findAllByCondition(statusesAndValidUntil(List.of(WAITING, PROCESSING), now(), BEFORE))
-			.forEach(token -> waitingQueueTokenManagementRepository.updateStatus(token.withExpired()));
+		waitingQueueRepository
+			.findAllByCondition(onWaitingTokensExpiring(now()))
+			.forEach(token -> waitingQueueManagementRepository.updateStatus(token.expire()));
 	}
 
 	@Transactional
 	@Override
 	public void completeProcessingQueueToken(String userId) {
 		processingQueueStoreRepository.store(
-			processingQueueRetrievalRepository.findSingleByCondition(userIdAndStatus(userId, PROCESSING)).withCompleted());
+			processingQueueRepository.findSingleByCondition(onActiveProcessing(userId)).complete());
 	}
 
 	@Override
 	@Transactional
 	public void completeWaitingQueueTokenByUserId(String userId) {
-		waitingQueueTokenRetrievalRepository
-			.findAllByCondition(conditionOnUserIdAndStatus(userId, PROCESSING))
-			.forEach(item -> waitingQueueTokenManagementRepository.updateStatus(item.withCompleted()));
+		waitingQueueRepository
+			.findAllByCondition(onActiveWaiting(userId))
+			.forEach(item -> waitingQueueManagementRepository.updateStatus(item.complete()));
 	}
 }

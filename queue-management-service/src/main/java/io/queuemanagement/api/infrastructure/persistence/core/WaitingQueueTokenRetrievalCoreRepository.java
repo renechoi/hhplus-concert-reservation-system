@@ -29,7 +29,7 @@ public class WaitingQueueTokenRetrievalCoreRepository implements WaitingQueueTok
 	}
 
 	@Override
-	public Optional<WaitingQueueToken> findOptionalSingleByCondition(WaitingQueueTokenSearchCommand searchCommand) {
+	public Optional<WaitingQueueToken> findOptionalByCondition(WaitingQueueTokenSearchCommand searchCommand) {
 		return waitingQueueTokenJpaRepository.findSingleByCondition(searchCommand).map(WaitingQueueTokenEntity::toDomain);
 	}
 

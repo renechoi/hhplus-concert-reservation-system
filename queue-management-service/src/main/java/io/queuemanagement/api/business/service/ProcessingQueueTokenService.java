@@ -8,7 +8,7 @@ import io.queuemanagement.api.business.dto.outport.ProcessingQueueTokenGeneralIn
  */
 public interface ProcessingQueueTokenService {
 
-	ProcessingQueueTokenGeneralInfo checkProcessingQueueTokenAvailability(String queueToken, String userId);
+	ProcessingQueueTokenGeneralInfo checkProcessingTokenAvailability(String queueToken, String userId);
 
-	ProcessingQueueTokenGeneralInfo checkProcessingQueueTokenAvailability(String tokenValue);
+	ProcessingQueueTokenGeneralInfo checkProcessingTokenAvailability(String tokenValue);
 }
