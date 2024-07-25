@@ -15,7 +15,16 @@ import lombok.RequiredArgsConstructor;
 public class WaitingQueueTokenCounterManager {
 	private final WaitingQueueTokenCounterCrudRepository waitingQueueRepository;
 
-	public WaitingQueueTokenCounter getAndIncreaseCounter(long maxWaitingTokens) {
+	public WaitingQueueTokenCounter getWithLockAndIncreaseCounter(long maxWaitingTokens) {
+		WaitingQueueTokenCounter counter = waitingQueueRepository.getWithLockOrInitializeCounter();
+		waitingQueueRepository.save(counter.increase(maxWaitingTokens));
+		return counter;
+	}
+
+	/**
+	 * 동시성 제어가 되지 었지 않은 코드
+	 */
+	public WaitingQueueTokenCounter getIncreaseCounter(long maxWaitingTokens) {
 		WaitingQueueTokenCounter counter = waitingQueueRepository.getOrInitializeCounter();
 		waitingQueueRepository.save(counter.increase(maxWaitingTokens));
 		return counter;

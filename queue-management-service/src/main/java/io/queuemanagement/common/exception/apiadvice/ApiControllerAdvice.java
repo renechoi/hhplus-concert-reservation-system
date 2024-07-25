@@ -6,6 +6,7 @@ import static io.queuemanagement.common.model.GlobalResponseCode.*;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -43,6 +44,22 @@ class ApiControllerAdvice extends ResponseEntityExceptionHandler {
         return new CommonApiResponse<>(NO_CONTENT, ex.getMessage(),null);
     }
 
+
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<Object> handleDataIntegrityViolationException(DataIntegrityViolationException ex) {
+        log.error("DataIntegrityViolationException: {}", ex.getMessage());
+        String userId = extractUserIdFromException(ex);
+        String errorMessage = "Duplicate entry - " + userId;
+        return new CommonApiResponse<>(DUPLICATE_ENTRY, errorMessage);
+    }
+
+    private String extractUserIdFromException(DataIntegrityViolationException ex) {
+        String message = ex.getMessage();
+        int startIndex = message.indexOf("Duplicate entry '") + "Duplicate entry '".length();
+        int endIndex = message.indexOf('-', startIndex);
+        return message.substring(startIndex, endIndex);
+    }
 
 
     @Override

@@ -37,4 +37,15 @@ public class WaitingQueueTokenRetrievalCoreRepository implements WaitingQueueTok
 	public List<WaitingQueueToken> findAllByCondition(WaitingQueueTokenSearchCommand searchCommand) {
 		return waitingQueueTokenJpaRepository.findAllByCondition(searchCommand).stream().map(WaitingQueueTokenEntity::toDomain).collect(Collectors.toList());
 	}
+
+
+	/**
+	 * 주어진 검색 조건에 따라 대기열 토큰을 조회하고, 비관적 락을 적용하여 동시성 이슈를 방지한다.
+	 * @param searchCommand 검색 조건
+	 * @return 조건에 맞는 대기열 토큰을 Optional로 반환하며, 없을 경우 빈 Optional을 반환
+	 */
+	@Override
+	public Optional<WaitingQueueToken> findOptionalByConditionWithLock(WaitingQueueTokenSearchCommand searchCommand) {
+		return waitingQueueTokenJpaRepository.findOptionalByConditionWithLock(searchCommand).map(WaitingQueueTokenEntity::toDomain);
+	}
 }
