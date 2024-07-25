@@ -92,7 +92,7 @@ public class TemporalReservation {
 
 	}
 
-	public Seat doCancelSeat() {
+	public Seat cancelSeat() {
 		this.seat.cancelReservation();
 		return this.getSeat();
 	}
@@ -100,5 +100,15 @@ public class TemporalReservation {
 
 	private static LocalDateTime calculateExpireAt() {
 		return now().plusSeconds(ymlLoader().getTemporalReservationExpireSeconds());
+	}
+
+	public void expire() {
+		this.cancelSeat();
+		this.cancelConfirm();
+	}
+
+	public void cancel() {
+		this.cancelSeat();
+		this.cancelConfirm();
 	}
 }

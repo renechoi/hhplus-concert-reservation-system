@@ -14,4 +14,6 @@ public interface WaitingQueueTokenQueryDslCustomRepository {
 	Optional<WaitingQueueTokenEntity> findSingleByCondition(WaitingQueueTokenSearchCommand searchCommand);
 
 	List<WaitingQueueTokenEntity> findAllByCondition(WaitingQueueTokenSearchCommand searchCommand);
+
+	Optional<WaitingQueueTokenEntity> findOptionalByConditionWithLock(WaitingQueueTokenSearchCommand searchCommand);
 }

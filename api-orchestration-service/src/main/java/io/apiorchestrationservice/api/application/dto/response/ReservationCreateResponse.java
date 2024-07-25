@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 
 import io.apiorchestrationservice.api.business.dto.outport.ConcertOptionCreateInfo;
 import io.apiorchestrationservice.api.business.dto.outport.SeatCreateInfo;
-import io.apiorchestrationservice.api.business.dto.outport.TemporaryReservationCreateInfo;
+import io.apiorchestrationservice.api.business.dto.outport.TemporalReservationCreateInfo;
 import io.apiorchestrationservice.common.mapper.ObjectMapperBasedVoMapper;
 
 /**
@@ -12,7 +12,7 @@ import io.apiorchestrationservice.common.mapper.ObjectMapperBasedVoMapper;
  * @since : 2024/07/04
  */
 public record ReservationCreateResponse(
-	Long temporaryReservationId,
+	Long temporalReservationId,
 	Long userId,
 	ConcertOptionCreateInfo concertOption,
 	SeatCreateInfo seat,
@@ -23,7 +23,7 @@ public record ReservationCreateResponse(
 ) {
 
 
-	public static ReservationCreateResponse from(TemporaryReservationCreateInfo info) {
+	public static ReservationCreateResponse from(TemporalReservationCreateInfo info) {
 		return ObjectMapperBasedVoMapper.convert(info, ReservationCreateResponse.class);
 	}
 }

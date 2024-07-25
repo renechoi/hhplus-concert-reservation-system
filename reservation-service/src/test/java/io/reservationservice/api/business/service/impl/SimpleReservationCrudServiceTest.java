@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import io.reservationservice.api.business.domainentity.ConcertOption;
@@ -34,7 +35,7 @@ import io.reservationservice.common.model.GlobalResponseCode;
 public class SimpleReservationCrudServiceTest {
 
 	@InjectMocks
-	private SimpleReservationCrudService simpleReservationCrudService;
+	private SimpleReservationCrudService reservationCrudService;
 
 	@Mock
 	private ReservationRepository reservationRepository;
@@ -52,28 +53,36 @@ public class SimpleReservationCrudServiceTest {
 	@DisplayName("임시 예약 생성 성공 테스트")
 	public void testCreateTemporalReservationSuccess() {
 		// Given
+		Long concertOptionId = 1L;
+		Long seatNumber = 1L;
+		Long userId = 1L;
+
 		ReservationCreateCommand command = ReservationCreateCommand.builder()
-			.concertOptionId(1L)
-			.seatNumber(10L)
-			.userId(1L)
+			.concertOptionId(concertOptionId)
+			.seatNumber(seatNumber)
+			.userId(userId)
 			.build();
 
-		ConcertOption concertOption = mock(ConcertOption.class);
-		Seat seat = mock(Seat.class);
+		ConcertOption mockConcertOption = new ConcertOption();
+		Seat mockSeat = Seat.builder()
+			.seatId(1L)
+			.concertOption(mockConcertOption)
+			.seatNumber(seatNumber)
+			.occupied(false)
+			.build();
+		TemporalReservation mockTemporalReservation = new TemporalReservation();
 
-		when(concertOptionRepository.findById(anyLong())).thenReturn(concertOption);
-		when(seatRepository.findSingleByCondition(any())).thenReturn(seat);
-		when(seatRepository.save(any())).thenReturn(seat);
-		TemporalReservation temporalReservation = mock(TemporalReservation.class);
-		when(temporalReservationRepository.save(any())).thenReturn(temporalReservation);
+		when(concertOptionRepository.findByIdWithSLock(concertOptionId)).thenReturn(mockConcertOption);
+		when(seatRepository.findSingleByConditionWithLock(any())).thenReturn(mockSeat);
+		when(temporalReservationRepository.save(any(TemporalReservation.class))).thenReturn(mockTemporalReservation);
 
 		// When
-		TemporalReservationCreateInfo result = simpleReservationCrudService.createTemporalReservation(command);
+		TemporalReservationCreateInfo result = reservationCrudService.createTemporalReservation(command);
 
 		// Then
 		assertNotNull(result);
-		verify(concertOptionRepository).findById(command.getConcertOptionId());
-		verify(seatRepository).findSingleByCondition(any());
+		verify(seatRepository, times(1)).save(any(Seat.class));
+		verify(temporalReservationRepository, times(1)).save(any(TemporalReservation.class));
 	}
 
 
@@ -81,26 +90,26 @@ public class SimpleReservationCrudServiceTest {
 	@DisplayName("좌석이 이미 예약된 경우 임시 예약 생성 실패 테스트")
 	public void testCreateTemporaryReservationSeatOccupied() {
 		// Given
+		Long concertOptionId = 1L;
+		Long seatNumber = 1L;
+		Long userId = 1L;
+
 		ReservationCreateCommand command = ReservationCreateCommand.builder()
-			.concertOptionId(1L)
-			.seatNumber(10L)
-			.userId(1L)
+			.concertOptionId(concertOptionId)
+			.seatNumber(seatNumber)
+			.userId(userId)
 			.build();
 
-		ConcertOption concertOption = mock(ConcertOption.class);
-		Seat seat = mock(Seat.class);
+		Seat seat = Mockito.mock(Seat.class);
 
-		when(concertOptionRepository.findById(anyLong())).thenReturn(concertOption);
-		when(seatRepository.findSingleByCondition(any())).thenReturn(seat);
+		when(seatRepository.findSingleByConditionWithLock(any())).thenReturn(seat);
 		doThrow(new ReservationUnAvailableException(GlobalResponseCode.SEAT_ALREADY_RESERVED)).when(seat).doReserve();
 
 		// When
-		ReservationUnAvailableException exception = assertThrows(ReservationUnAvailableException.class, () -> simpleReservationCrudService.createTemporalReservation(command));
+		ReservationUnAvailableException exception = assertThrows(ReservationUnAvailableException.class, () -> reservationCrudService.createTemporalReservation(command));
 
 		// Then
 		assertEquals(GlobalResponseCode.SEAT_ALREADY_RESERVED, exception.getCode());
-		verify(concertOptionRepository).findById(command.getConcertOptionId());
-		verify(seatRepository).findSingleByCondition(any());
 	}
 
 	@Test
@@ -117,7 +126,7 @@ public class SimpleReservationCrudServiceTest {
 		when(reservationRepository.save(any())).thenReturn(reservation);
 
 		// When
-		ReservationConfirmInfo result = simpleReservationCrudService.confirmReservation(temporaryReservationId);
+		ReservationConfirmInfo result = reservationCrudService.confirmReservation(temporaryReservationId);
 
 		// Then
 		assertNotNull(result);
@@ -137,12 +146,11 @@ public class SimpleReservationCrudServiceTest {
 		when(temporalReservationRepository.findById(anyLong())).thenReturn(temporalReservation);
 
 		// When
-		simpleReservationCrudService.cancelTemporalReservation(temporalReservationId);
+		reservationCrudService.cancelTemporalReservation(temporalReservationId);
 
 		// Then
 		verify(temporalReservationRepository).findById(temporalReservationId);
-		verify(temporalReservation).doCancelSeat();
-		verify(temporalReservation).cancelConfirm();
+		verify(temporalReservation).cancel();
 	}
 
 }

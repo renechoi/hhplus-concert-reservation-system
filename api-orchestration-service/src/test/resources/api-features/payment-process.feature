@@ -26,8 +26,8 @@ Feature: 결제 처리 기능
       | 1      | now       |
 
     Given 가장 최근의 예약에 대한 결제 요청이 다음과 같이 주어졌을 때
-      | userId | amount | paymentMethod |
-      | 1      | 1000   | CREDIT_CARD   |
+      | userId | amount | paymentMethod | paymentTarget | targetId | requestAt |
+      | 1      | 1000   | CREDIT_CARD   | RESERVATION   | 1        |  now      |
 
     When 결제 요청을 처리하고 정상 응답을 받는다
     Then 결제 상태는 COMPLETE여야 한다
@@ -36,11 +36,12 @@ Feature: 결제 처리 기능
     And 결제 내역이 저장되어야 한다
     And 스텝 구분을 위한 딜레이 1초를 기다린다
     And 예약 상태를 확인하면 임시 예약이 아니라 확정 예약으로 확인되어야 한다
+    And 가장 최근의 요청과 동일하게 다시 결제 유효하지 않은 토큰으로 예외 발생해야 한다
 
   Scenario: 잔액 부족으로 인해 결제 실패 시나리오
     Given 결제 요청이 다음과 같이 주어졌을 때
-      | userId | reservationId | amount       | paymentMethod |
-      | 1      | 100           | 999999999999 | CREDIT_CARD   |
+      | userId | reservationId | amount       | paymentMethod | requestAt |
+      | 1      | 100           | 999999999999 | CREDIT_CARD   | now       |
     When 결제 요청을 처리하면 실패 응답을 받는다
     When 사용자의 id가 1인 경우 잔액을 조회 요청하고 정상 응답을 받는다
     Then 최종 사용자의 잔액은 충전 잔액 대비 차감되지 않은 상태여야 한다

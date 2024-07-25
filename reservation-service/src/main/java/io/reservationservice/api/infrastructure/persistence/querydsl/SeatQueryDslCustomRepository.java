@@ -15,4 +15,5 @@ public interface SeatQueryDslCustomRepository {
 
 	List<Seat> findMultipleByCondition(SeatSearchCommand searchCommand);
 
+	Optional<Seat> findSingleByConditionWithLock(SeatSearchCommand searchCommand);
 }

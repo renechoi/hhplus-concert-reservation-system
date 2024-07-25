@@ -14,6 +14,7 @@
     <file type="web" url="file://$PROJECT_DIR$/message-service" />
     <file type="web" url="file://$PROJECT_DIR$/payment-service" />
     <file type="web" url="file://$PROJECT_DIR$/queue-management-service" />
+    <file type="web" url="file://$PROJECT_DIR$/redis-service" />
     <file type="web" url="file://$PROJECT_DIR$/reservation-service" />
   </component>
   <component name="ProjectRootManager" version="2" languageLevel="JDK_17" default="true" project-jdk-name="11" project-jdk-type="JavaSDK">

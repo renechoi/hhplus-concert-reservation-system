@@ -26,6 +26,9 @@ public class SimplePaymentService implements PaymentService {
 	private final PaymentCanceller paymentCanceller;
 
 	/**
+	 * 결제 처리 프로세스
+	 * - 금액 차감 (롤백 로직 포함) -> aspect
+	 * - 중복 결제 불가 -> db unique constraints
 	 * @see {@link PaymentTransactionAspect}
 	 */
 	@Override

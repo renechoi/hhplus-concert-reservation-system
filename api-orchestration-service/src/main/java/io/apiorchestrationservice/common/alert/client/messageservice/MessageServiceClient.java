@@ -1,6 +1,7 @@
 package io.apiorchestrationservice.common.alert.client.messageservice;
 
 import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
@@ -17,5 +18,5 @@ import io.apiorchestrationservice.common.model.CommonApiResponse;
 public interface MessageServiceClient {
 
 	@PostMapping("/message-service/api/message/slack/slack/reserve")
-	CommonApiResponse<Void> reserveSlackMessage(@RequestBody SlackMessageReserveRequest slackMessageReserveRequest);
+	ResponseEntity<Void> reserveSlackMessage(@RequestBody SlackMessageReserveRequest slackMessageReserveRequest);
 }

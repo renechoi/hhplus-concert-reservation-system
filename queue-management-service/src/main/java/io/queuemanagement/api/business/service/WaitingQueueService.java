@@ -11,6 +11,7 @@ import io.queuemanagement.api.business.dto.outport.WaitingQueueTokenGenerateInfo
  * @since : 2024/07/04
  */
 public interface WaitingQueueService {
+
 	WaitingQueueTokenGenerateInfo generateAndEnqueue(WaitingQueueTokenGenerateCommand waitingQueueTokenGenerateCommand);
 
 

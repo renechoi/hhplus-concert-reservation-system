@@ -14,5 +14,7 @@ public interface ConcertOptionRepository {
 
 	ConcertOption findById(Long concertOptionId);
 
-	List<ConcertOption> findMultipleBy(ConcertOptionSearchCommand searchCommand);
+	ConcertOption findByIdWithSLock(Long concertOptionId);
+
+	List<ConcertOption> findMultipleByCondition(ConcertOptionSearchCommand searchCommand);
 }

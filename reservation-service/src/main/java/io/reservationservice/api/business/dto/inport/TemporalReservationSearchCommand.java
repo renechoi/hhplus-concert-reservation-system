@@ -1,5 +1,6 @@
 package io.reservationservice.api.business.dto.inport;
 
+import static io.reservationservice.api.business.dto.inport.DateSearchCommand.DateSearchCondition.*;
 import static io.reservationservice.api.business.dto.inport.DateSearchCommand.DateSearchTarget.*;
 
 import java.time.LocalDateTime;
@@ -35,12 +36,12 @@ public class TemporalReservationSearchCommand implements DateSearchCommand {
 	private DateSearchCondition dateSearchCondition;
 	private DateSearchTarget dateSearchTarget;
 
-	public static TemporalReservationSearchCommand temporalReservationByUserIdAndConcertOptionId(Long userId, Long concertOptionId) {
+	public static TemporalReservationSearchCommand onMatchingTemporalReservaion(Long userId, Long concertOptionId) {
 		return TemporalReservationSearchCommand.builder().userId(userId).concertOptionId(concertOptionId).build();
 	}
 
-	public static TemporalReservationSearchCommand expireAt(LocalDateTime searchTime, DateSearchCondition dateSearchCondition) {
-		return TemporalReservationSearchCommand.builder().expireAt(searchTime).dateSearchTarget(EXPIRE_AT).dateSearchCondition(dateSearchCondition).build();
+	public static TemporalReservationSearchCommand expireAt(LocalDateTime searchTime) {
+		return TemporalReservationSearchCommand.builder().expireAt(searchTime).dateSearchTarget(EXPIRE_AT).dateSearchCondition(BEFORE).build();
 
 	}
 }

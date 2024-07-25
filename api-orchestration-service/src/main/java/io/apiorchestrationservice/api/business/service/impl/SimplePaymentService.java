@@ -20,7 +20,7 @@ public class SimplePaymentService implements PaymentService {
 
 	@Override
 	public PaymentInfo processPayment(PaymentProcessCommand command) {
-		return paymentServiceClientAdapter.processPayment(command);
+		return paymentServiceClientAdapter.processPayment(command.withIdentifiedPaymentTarget());
 	}
 
 	@Override

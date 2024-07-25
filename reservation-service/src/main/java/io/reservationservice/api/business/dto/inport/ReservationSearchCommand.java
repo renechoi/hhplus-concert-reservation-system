@@ -32,7 +32,7 @@ public class ReservationSearchCommand implements DateSearchCommand{
 
 	private DateSearchCondition dateSearchCondition;
 
-	public static ReservationSearchCommand userIdAndConcertOptionId(Long userId, Long concertOptionId) {
+	public static ReservationSearchCommand onMatchingReservation(Long userId, Long concertOptionId) {
 		return ReservationSearchCommand.builder().userId(userId).concertOptionId(concertOptionId).build();
 	}
 }

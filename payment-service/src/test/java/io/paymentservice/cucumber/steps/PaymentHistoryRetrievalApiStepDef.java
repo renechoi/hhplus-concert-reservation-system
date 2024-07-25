@@ -36,6 +36,9 @@ public class PaymentHistoryRetrievalApiStepDef implements En {
 		Given("사용자의 id가 {long}이고 결제 내역이 다음과 같이 존재할 때", this::givenUserWithPaymentHistory);
 		When("사용자의 id가 {long}인 경우 결제 내역을 조회 요청하고 정상 응답을 받는다", this::retrievePaymentHistoryForUser);
 		Then("조회한 결제 내역은 다음과 같아야 한다", this::verifyRetrievedPaymentHistory);
+		Then("조회한 결제 내역에서 한 건은 COMPLETE이고 나머지는 FAILED여야 한다", this::verifyOnePaymentCompleteOthersFailed);
+		Then("조회한 결제 내역은 모두 COMPLETE여야 한다", this::verifyAllPaymentComplete);
+
 		When("사용자의 id가 {long}인 경우 실패한 결제 내역을 조회 요청하고 정상 응답을 받는다", this::retrieveFailedPaymentHistoryForUser);
 		Then("조회한 실패한 결제 내역은 다음과 같아야 한다", this::verifyRetrievedFailedPaymentHistory);
 		When("사용자의 id가 {long}인 경우 결제 내역을 조회 요청하면 {int} 응답을 받는다", this::retrievePaymentHistoryForNonExistentUser);
@@ -69,6 +72,28 @@ public class PaymentHistoryRetrievalApiStepDef implements En {
 		}
 	}
 
+
+	private void verifyOnePaymentCompleteOthersFailed() {
+		PaymentResponses paymentResponses = getMostRecentPaymentHistory();
+		assertNotNull(paymentResponses, "결제 내역이 존재해야 합니다.");
+		List<PaymentResponse> responses = paymentResponses.paymentResponses();
+
+		long completeCount = responses.stream().filter(response -> response.paymentStatus() == COMPLETE).count();
+		long failedCount = responses.stream().filter(response -> response.paymentStatus() == FAILED).count();
+
+		assertEquals(1, completeCount, "한 요청만 COMPLETE여야 합니다.");
+		assertEquals(responses.size() - 1, failedCount, "나머지 요청은 FAILED여야 합니다.");
+	}
+
+	private void verifyAllPaymentComplete() {
+		PaymentResponses paymentResponses = getMostRecentPaymentHistory();
+		assertNotNull(paymentResponses, "결제 내역이 존재해야 합니다.");
+		List<PaymentResponse> responses = paymentResponses.paymentResponses();
+
+		assertTrue(responses.stream().allMatch(response -> response.paymentStatus() == COMPLETE));
+	}
+
+
 	private void retrieveFailedPaymentHistoryForUser(Long userId) {
 		ExtractableResponse<Response> response = retrievePaymentHistoryWithOk(userId);
 		putPaymentHistory(userId, parsePaymentHistoryResponse(response));
@@ -101,6 +126,7 @@ public class PaymentHistoryRetrievalApiStepDef implements En {
 
 	private void verifyEmptyPaymentHistory() {
 		PaymentResponses paymentResponses = getMostRecentPaymentHistory();
-		assertNull(paymentResponses, "PaymentResponses should not null.");
+
+		assertTrue(paymentResponses == null || paymentResponses.paymentResponses().isEmpty(), "PaymentResponses should not null or empty");
 	}
 }

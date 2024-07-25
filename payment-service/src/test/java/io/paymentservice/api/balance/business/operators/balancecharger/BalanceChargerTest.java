@@ -14,6 +14,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import io.paymentservice.api.balance.business.dto.inport.BalanceSearchCommand;
 import io.paymentservice.api.balance.business.entity.Balance;
 import io.paymentservice.api.balance.business.dto.inport.BalanceChargeCommand;
 import io.paymentservice.api.balance.business.dto.outport.BalanceChargeInfo;
@@ -42,7 +43,7 @@ public class BalanceChargerTest {
 		BigDecimal amount = BigDecimal.valueOf(100);
 		BalanceChargeCommand command = new BalanceChargeCommand(userId, amount, null);
 
-		when(balanceRepository.findByUserIdOptional(userId)).thenReturn(Optional.empty());
+		when(balanceRepository.findSingleByConditionOptionalWithLock(BalanceSearchCommand.onUser(command))).thenReturn(Optional.empty());
 		when(balanceRepository.save(any(Balance.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
 		// when
@@ -52,7 +53,7 @@ public class BalanceChargerTest {
 		assertNotNull(result);
 		assertEquals(userId, result.userId());
 		assertEquals(amount, result.amount());
-		verify(balanceRepository).findByUserIdOptional(userId);
+		verify(balanceRepository).findSingleByConditionOptionalWithLock(BalanceSearchCommand.onUser(command));
 		verify(balanceRepository).save(any(Balance.class));
 	}
 
@@ -67,7 +68,7 @@ public class BalanceChargerTest {
 		Balance existingBalance = Balance.builder().userId(userId).amount(initialAmount).build();
 		BalanceChargeCommand command = new BalanceChargeCommand(userId, chargeAmount, null);
 
-		when(balanceRepository.findByUserIdOptional(userId)).thenReturn(Optional.of(existingBalance));
+		when(balanceRepository.findSingleByConditionOptionalWithLock(BalanceSearchCommand.onUser(command))).thenReturn(Optional.of(existingBalance));
 		when(balanceRepository.save(any(Balance.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
 		// when
@@ -77,7 +78,7 @@ public class BalanceChargerTest {
 		assertNotNull(result);
 		assertEquals(userId, result.userId());
 		assertEquals(expectedAmount, result.amount());
-		verify(balanceRepository).findByUserIdOptional(userId);
+		verify(balanceRepository).findSingleByConditionOptionalWithLock(BalanceSearchCommand.onUser(command));
 		verify(balanceRepository).save(existingBalance);
 	}
 
@@ -89,12 +90,12 @@ public class BalanceChargerTest {
 		BigDecimal amount = BigDecimal.valueOf(100);
 		BalanceChargeCommand command = new BalanceChargeCommand(userId, amount, null);
 
-		when(balanceRepository.findByUserIdOptional(userId)).thenReturn(Optional.empty());
+		when(balanceRepository.findSingleByConditionOptionalWithLock(BalanceSearchCommand.onUser(command))).thenReturn(Optional.empty());
 		when(balanceRepository.save(any(Balance.class))).thenReturn(null);
 
 		// when & then
 		assertThrows(BalanceChargeUnAvailableException.class, () -> balanceCharger.charge(command));
-		verify(balanceRepository).findByUserIdOptional(userId);
+		verify(balanceRepository).findSingleByConditionOptionalWithLock(BalanceSearchCommand.onUser(command));
 		verify(balanceRepository).save(any(Balance.class));
 	}
 }

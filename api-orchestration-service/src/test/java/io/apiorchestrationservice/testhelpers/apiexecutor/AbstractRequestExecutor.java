@@ -48,7 +48,15 @@ public abstract class AbstractRequestExecutor {
 			.body(requestBody)
 			.when().post(urlPath)
 			.then().log().all()
-			.statusCode(HttpStatus.OK.value())
+			.extract();
+	}
+
+	protected static <T> ExtractableResponse<Response> doPostWithTokenWithOk(RequestSpecification requestSpecification, String urlPath, T requestBody, String token) {
+		return requestSpecification
+			.header("X-Queue-Token", token)
+			.body(requestBody)
+			.when().post(urlPath)
+			.then().log().all()
 			.extract();
 	}
 

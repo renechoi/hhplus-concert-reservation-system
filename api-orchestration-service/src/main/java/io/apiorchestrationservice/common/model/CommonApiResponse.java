@@ -90,6 +90,10 @@ public class CommonApiResponse<T> extends ResponseEntity<Object> {
 	}
 
 
+	public static <T> CommonApiResponse<T> badRequest(GlobalResponseCode responseCode) {
+		return new CommonApiResponse<>(responseCode);
+	}
+
 	public static <T> CommonApiResponse<T> error(GlobalResponseCode responseCode, Throwable e) {
 		return new CommonApiResponse<>(responseCode.getResultCode(), responseCode.getResultMessage(), responseCode.getHttpStatus(), null);
 	}

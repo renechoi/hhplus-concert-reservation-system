@@ -3,22 +3,20 @@ package io.queuemanagement.api.business.service.impl;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import java.util.Optional;
-
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import io.queuemanagement.api.business.domainmodel.WaitingQueueToken;
+import io.queuemanagement.api.business.domainmodel.WaitingQueueTokenCounter;
 import io.queuemanagement.api.business.dto.inport.WaitingQueueTokenGenerateCommand;
 import io.queuemanagement.api.business.dto.inport.WaitingQueueTokenSearchCommand;
 import io.queuemanagement.api.business.dto.outport.WaitingQueueTokenGeneralInfo;
-import io.queuemanagement.api.business.dto.outport.WaitingQueueTokenGenerateInfo;
-import io.queuemanagement.api.business.operators.WaitingQueueTokenDuplicateChecker;
-import io.queuemanagement.api.business.persistence.WaitingQueueTokenCounterCrudRepository;
+import io.queuemanagement.api.business.operators.WaitingQueueTokenCounterManager;
 import io.queuemanagement.api.business.persistence.WaitingQueueTokenEnqueueRepository;
 import io.queuemanagement.api.business.persistence.WaitingQueueTokenRetrievalRepository;
 
@@ -32,37 +30,40 @@ import io.queuemanagement.api.business.persistence.WaitingQueueTokenRetrievalRep
 public class SimpleWaitingQueueServiceTest {
 
 	@Mock
-	private WaitingQueueTokenEnqueueRepository waitingQueueTokenEnqueueRepository;
+	private WaitingQueueTokenEnqueueRepository enqueueRepository;
+
 
 	@Mock
-	private WaitingQueueTokenCounterCrudRepository waitingQueueTokenCounterCrudRepository;
+	private WaitingQueueTokenRetrievalRepository waitingQueueRepository;
 
-	@Mock
-	private WaitingQueueTokenRetrievalRepository waitingQueueTokenRetrievalRepository;
-
-	@Mock
-	private WaitingQueueTokenDuplicateChecker waitingQueueTokenDuplicateChecker;
 
 
 	@InjectMocks
 	private SimpleWaitingQueueService simpleWaitingQueueService;
+
+
+	@Mock
+	private WaitingQueueTokenCounterManager counterManager;
+
 
 	@Test
 	@DisplayName("토큰 생성 및 큐에 삽입 - 중복 토큰이 있는 경우")
 	void testGenerateAndEnqueue_withDuplicate() {
 		String userId = "user1";
 		WaitingQueueTokenGenerateCommand command = new WaitingQueueTokenGenerateCommand(userId);
-		WaitingQueueTokenGenerateInfo expectedInfo = new WaitingQueueTokenGenerateInfo(userId, "token123", null, 0, null, null);
 
-		when(waitingQueueTokenDuplicateChecker.check(userId))
-			.thenReturn(Optional.of(expectedInfo));
+		WaitingQueueTokenCounter mockCounter = mock(WaitingQueueTokenCounter.class);
+		when(counterManager.getWithLockAndIncreaseCounter(anyLong())).thenReturn(mockCounter);
 
-		WaitingQueueTokenGenerateInfo result = simpleWaitingQueueService.generateAndEnqueue(command);
+		when(enqueueRepository.enqueue(any(WaitingQueueToken.class))).thenThrow(new DataIntegrityViolationException("Unique constraint violation"));
 
-		assertEquals(expectedInfo, result);
-		verify(waitingQueueTokenDuplicateChecker, times(1)).check(userId);
-		verify(waitingQueueTokenCounterCrudRepository, times(0)).getOrInitializeCounter();
+		DataIntegrityViolationException exception = assertThrows(DataIntegrityViolationException.class, () -> {
+			simpleWaitingQueueService.generateAndEnqueue(command);
+		});
+
+		assertEquals("Unique constraint violation", exception.getMessage());
 	}
+
 
 	@Test
 	@DisplayName("대기열 토큰 조회 - 정상 케이스")
@@ -76,7 +77,7 @@ public class SimpleWaitingQueueServiceTest {
 			.build();
 		WaitingQueueTokenGeneralInfo expectedInfo = WaitingQueueTokenGeneralInfo.from(token);
 
-		when(waitingQueueTokenRetrievalRepository.findSingleByCondition(any(WaitingQueueTokenSearchCommand.class)))
+		when(waitingQueueRepository.findSingleByCondition(any(WaitingQueueTokenSearchCommand.class)))
 			.thenReturn(token);
 
 		WaitingQueueTokenGeneralInfo result = simpleWaitingQueueService.retrieveByAiAtOnceCalculation(userId);

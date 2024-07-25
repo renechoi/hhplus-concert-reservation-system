@@ -20,7 +20,7 @@ public class SimpleTokenValidationService implements TokenValidationService {
 	public boolean validateQueueToken(String tokenValue) {
 		return queueManagementClientAdapter
 			.retrieveToken(tokenValue)
-			.map(processingQueueTokenInfo -> processingQueueTokenInfo.hasSameTokenValue(tokenValue))
+			.map(processingQueueTokenInfo -> processingQueueTokenInfo.hasEqual(tokenValue))
 			.orElse(false);
 	}
 }

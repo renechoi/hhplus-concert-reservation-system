@@ -1,6 +1,7 @@
 package io.reservationservice.api.infrastructure.persistence.querydsl;
 
 import java.util.List;
+import java.util.Optional;
 
 import io.reservationservice.api.business.domainentity.ConcertOption;
 import io.reservationservice.api.business.dto.inport.ConcertOptionSearchCommand;
@@ -12,4 +13,5 @@ import io.reservationservice.api.business.dto.inport.ConcertOptionSearchCommand;
 public interface ConcertOptionQueryDslCustomRepository {
 	List<ConcertOption> findMultipleByCondition(ConcertOptionSearchCommand searchCommand);
 
+	Optional<ConcertOption> findByIdWithSLock(Long concertOptionId);
 }

@@ -4,10 +4,10 @@ import org.springframework.stereotype.Service;
 
 import io.apiorchestrationservice.api.business.client.ReservationServiceClientAdapter;
 import io.apiorchestrationservice.api.business.dto.inport.ReservationConfirmCommand;
-import io.apiorchestrationservice.api.business.dto.inport.TemporaryReservationCreateCommand;
+import io.apiorchestrationservice.api.business.dto.inport.TemporalReservationCreateCommand;
 import io.apiorchestrationservice.api.business.dto.outport.ReservationConfirmInfo;
 import io.apiorchestrationservice.api.business.dto.outport.ReservationStatusInfos;
-import io.apiorchestrationservice.api.business.dto.outport.TemporaryReservationCreateInfo;
+import io.apiorchestrationservice.api.business.dto.outport.TemporalReservationCreateInfo;
 import io.apiorchestrationservice.api.business.service.ReservationService;
 import lombok.RequiredArgsConstructor;
 
@@ -21,8 +21,8 @@ public class SimpleReservationService implements ReservationService {
 	private final ReservationServiceClientAdapter reservationServiceClientAdapter;
 
 	@Override
-	public TemporaryReservationCreateInfo createTemporaryReservation(TemporaryReservationCreateCommand command) {
-		return reservationServiceClientAdapter.createTemporaryReservation(command);
+	public TemporalReservationCreateInfo createTemporalReservation(TemporalReservationCreateCommand command) {
+		return reservationServiceClientAdapter.createTemporalReservation(command);
 	}
 
 	@Override

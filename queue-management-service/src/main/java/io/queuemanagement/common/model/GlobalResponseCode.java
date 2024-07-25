@@ -32,6 +32,7 @@ public enum GlobalResponseCode implements ResponseCapable{
 
 
 	// domain
+	DUPLICATE_ENTRY("24030", "duplicate entry", HttpStatus.BAD_REQUEST),
 
 
 	;

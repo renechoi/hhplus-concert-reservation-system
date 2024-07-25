@@ -24,7 +24,7 @@ public class PaymentCanceller {
 
 	@Transactional
 	public PaymentInfo cancel(Long transactionId) {
-		PaymentTransaction transaction = paymentTransactionRepository.findById(transactionId).assertNotCanceled();
+		PaymentTransaction transaction = paymentTransactionRepository.fetch(transactionId).assertNotCanceled();
 
 		balanceCharger.charge(rollbackCommand(transaction.getUserId(), transaction.getAmount()));
 		paymentTransactionRepository.save(transaction.doCancel());

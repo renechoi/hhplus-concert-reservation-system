@@ -36,12 +36,11 @@ public class SimpleQueueManagementService implements QueueManagementService {
 	public void processQueueTransfer() {
 		long availableSlots = processingQueueRepository.countAvailableSlots(processingTokensMaxLimit());
 
-		if (availableSlots <= 0) {
+		if (isNotAvailable(availableSlots)) {
 			return;
 		}
 
-		waitingQueueRepository.findAllByCondition(onTopWaitingToken())
-			.stream()
+		waitingQueueRepository.findAllByCondition(onTopWaitingToken()).stream()
 			.limit(availableSlots)
 			.toList()
 			.forEach(waitingToken -> {
@@ -50,6 +49,10 @@ public class SimpleQueueManagementService implements QueueManagementService {
 			});
 
 		waitingQueueCounterRepository.save(waitingQueueCounterRepository.getCounter().decrease(availableSlots));
+	}
+
+	private boolean isNotAvailable(long availableSlots) {
+		return availableSlots <= 0;
 	}
 
 	@Transactional

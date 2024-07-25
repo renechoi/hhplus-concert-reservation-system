@@ -6,12 +6,18 @@ import static io.paymentservice.testhelpers.parser.BalanceResponseParser.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.math.BigDecimal;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 
 import io.cucumber.java8.En;
 import io.paymentservice.api.balance.interfaces.dto.request.BalanceChargeRequest;
 import io.paymentservice.api.balance.interfaces.dto.response.BalanceChargeResponse;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
+import lombok.SneakyThrows;
 
 /**
  * @author : Rene Choi
@@ -28,6 +34,9 @@ public class BalanceChargeApiStepDef implements En {
 		// 예외 및 제약 조건
 		When("사용자의 id가 {long}이고 충전 금액이 {long}인 경우 잔액을 충전 요청하면 예외가 발생한다", this::chargeBalanceRequestedWithFailureResponse);
 		When("{long} 잔액을 충전 요청하면 예외가 발생한다", this::chargeBalanceExceedsLimitRequestedWithFailureResponse);
+
+		// 동시 요청
+		When("사용자의 id가 {long}이고 충전 금액이 {long}인 잔액 충전 요청을 동시에 {int}번 보낸다", this::sendConcurrentBalanceChargeRequests);
 	}
 
 	private void chargeBalanceRequestedWithSuccessResponse(Long id, Long amount) {
@@ -57,6 +66,44 @@ public class BalanceChargeApiStepDef implements En {
 		Long userId = getMostRecentUserId();
 		ExtractableResponse<Response> response = chargeBalance(userId,  new BalanceChargeRequest(userId, BigDecimal.valueOf(amount)));
 		assertNotEquals(200, response.statusCode());
+	}
+
+
+
+
+	private void sendConcurrentBalanceChargeRequests(Long userId, Long amount, Integer times) throws InterruptedException {
+		ExecutorService executorService = Executors.newFixedThreadPool(times);
+		CountDownLatch latch = new CountDownLatch(1);
+		CountDownLatch doneLatch = new CountDownLatch(times);
+
+		IntStream.range(0, times).forEach(i -> {
+			executorService.submit(() -> {
+				try {
+					latch.await();
+					try {
+						ExtractableResponse<Response> response = chargeBalance(userId, new BalanceChargeRequest(userId, BigDecimal.valueOf(amount)));
+						putChargeResponse(userId, parseBalanceChargeResponse(response));
+					} catch (Exception ignored) {
+					}
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+				} finally {
+					doneLatch.countDown();
+				}
+			});
+		});
+
+		latch.countDown(); // 모든 스레드가 준비될 때까지 기다린 후, 동시에 시작하도록 카운트 다운
+		awaitTermination(executorService, doneLatch);
+	}
+
+	@SneakyThrows
+	private void awaitTermination(ExecutorService executorService, CountDownLatch doneLatch) {
+		doneLatch.await(20, TimeUnit.SECONDS);
+		executorService.shutdown();
+		if (!executorService.awaitTermination(10, TimeUnit.SECONDS)) {
+			executorService.shutdownNow();
+		}
 	}
 
 

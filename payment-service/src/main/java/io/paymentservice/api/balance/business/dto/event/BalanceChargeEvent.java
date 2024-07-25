@@ -11,6 +11,7 @@ import io.paymentservice.api.balance.business.entity.TransactionReason;
  */
 public record BalanceChargeEvent(
 	Long balanceId,
+	Long version,
 	Long userId,
 	BigDecimal amount,
 	TransactionReason transactionReason,
@@ -20,6 +21,6 @@ public record BalanceChargeEvent(
 
 ) {
 	public BalanceChargeEvent with(TransactionReason transactionReason) {
-		return new BalanceChargeEvent(this.balanceId,this.userId,this.amount, transactionReason, this.createdAt, this.updatedAt);
+		return new BalanceChargeEvent(this.balanceId,this.version, this.userId,this.amount, transactionReason, this.createdAt, this.updatedAt);
 	}
 }

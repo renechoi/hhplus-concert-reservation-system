@@ -16,7 +16,7 @@ public record ProcessingQueueTokenInfo(
 	 LocalDateTime validUntil,
 	QueueStatus status
 ) {
-	public boolean hasSameTokenValue(String tokenValue) {
+	public boolean hasEqual(String tokenValue) {
 		return tokenValue.equals(this.tokenValue);
 	}
 }

@@ -15,6 +15,7 @@ public interface SeatRepository {
 
 	Optional<Seat> findSingleByConditionOptional(SeatSearchCommand searchCommand);
 	Seat findSingleByCondition(SeatSearchCommand searchCommand);
+	Seat findSingleByConditionWithLock(SeatSearchCommand searchCommand);
 
-	List<Seat> findMultipleBy(SeatSearchCommand searchCommand);
+	List<Seat> findMultipleByCondition(SeatSearchCommand searchCommand);
 }

@@ -21,7 +21,7 @@ import lombok.NoArgsConstructor;
 @Builder
 public class ReservationConfirmRequest extends AbstractCommonRequestInfo {
 	@NotNull
-	private Long temporaryReservationId;
+	private Long temporalReservationId;
 
 	private Long concertOptionId; // concertoptionId와 userId만 있어도 되지 않을까?
 	private Long userId;

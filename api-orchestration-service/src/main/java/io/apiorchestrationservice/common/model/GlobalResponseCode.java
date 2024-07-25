@@ -24,7 +24,7 @@ public enum GlobalResponseCode implements ResponseCapable{
 	// 예외 응답
 	NO_CONTENT("1005", "no content", HttpStatus.NO_CONTENT),
 	ILLEGAL_ARGUMENT("1006","illegal argument", HttpStatus.BAD_REQUEST),
-
+	DISTRIBUTED_LOCK_ACQUIREMENT_FAILURE("1007","distributed lock acquirement failure", HttpStatus.BAD_REQUEST),
 
 
 	// 실패 응답

@@ -47,7 +47,7 @@ public class ReservationApiStepDef implements En {
 			.orElseThrow(() -> new RuntimeException("No available dates found"));
 		request.setConcertOptionId(concertOptionIdOfAvailableDates);
 
-		ReservationCreateResponse response = parseReservationCreateResponse(createTemporaryReservationWithTokenWithOk(request, getMostRecentToken()));
+		ReservationCreateResponse response = parseReservationCreateResponse(createTemporalReservationWithTokenWithOk(request, getMostRecentToken()));
 		putReservation(response);
 	}
 

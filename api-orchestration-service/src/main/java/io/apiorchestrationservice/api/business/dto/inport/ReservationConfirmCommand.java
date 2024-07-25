@@ -1,5 +1,6 @@
 package io.apiorchestrationservice.api.business.dto.inport;
 
+import io.apiorchestrationservice.api.application.dto.request.PaymentProcessRequest;
 import io.apiorchestrationservice.api.infrastructure.clients.reservation.dto.AbstractCommonRequestInfo;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -17,8 +18,12 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class ReservationConfirmCommand extends AbstractCommonRequestInfo {
-	private Long temporaryReservationId;
+	private Long temporalReservationId;
 
 	private Long concertOptionId; // concertoptionId와 userId만 있어도 되지 않을까?
 	private Long userId;
+
+	public static ReservationConfirmCommand createConfirmCommand(PaymentProcessRequest request) {
+		return ReservationConfirmCommand.builder().temporalReservationId(Long.valueOf(request.getTargetId())).build();
+	}
 }

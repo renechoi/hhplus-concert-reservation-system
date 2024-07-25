@@ -54,7 +54,7 @@ class PaymentRollbackAcceptanceTest extends CommonAcceptanceTest {
 	@Test
 	void 결제_저장_중_실패하여_롤백되는_시나리오() throws Exception {
 		// Given
-		putPaymentRequest(new PaymentRequest(1L, BigDecimal.valueOf(1000), PaymentMethod.CREDIT_CARD));
+		putPaymentRequest(new PaymentRequest(1L, "reservaiton-1", BigDecimal.valueOf(1000), PaymentMethod.CREDIT_CARD));
 		putChargeResponse(1L, parseBalanceChargeResponse(chargeBalanceWithOk(1L, new BalanceChargeRequest(1L, BigDecimal.valueOf(3000)))));
 
 		// When

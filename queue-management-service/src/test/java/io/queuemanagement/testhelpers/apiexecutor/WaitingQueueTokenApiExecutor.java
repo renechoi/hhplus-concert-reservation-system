@@ -28,6 +28,9 @@ public class WaitingQueueTokenApiExecutor extends AbstractRequestExecutor{
 		return doPost(getRequestSpecification(getPort()), TOKEN_API_URL_PATH, request);
 	}
 
+	public static ExtractableResponse<Response> generateWaitingQueueTokenWithCreated(WaitingQueueTokenGenerateRequest request) {
+		return doPostWithCreated(getRequestSpecification(getPort()), TOKEN_API_URL_PATH, request);
+	}
 
 	public static ExtractableResponse<Response> retrieveWaitingQueueToken(String  userId) {
 		return doGet(getRequestSpecification(getPort()), TOKEN_API_URL_PATH + "/" + userId);

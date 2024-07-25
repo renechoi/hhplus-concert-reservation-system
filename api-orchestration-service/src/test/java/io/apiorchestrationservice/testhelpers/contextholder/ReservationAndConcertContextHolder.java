@@ -92,7 +92,7 @@ public class ReservationAndConcertContextHolder implements TestDtoContextHolder 
 	}
 
 	public static void putReservation(ReservationCreateResponse response) {
-		putReservation(response.temporaryReservationId(), response);
+		putReservation(response.temporalReservationId(), response);
 		mostRecentReservationCreateResponse.set(response);
 	}
 

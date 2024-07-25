@@ -9,12 +9,16 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Autowired;
+
 import io.cucumber.datatable.DataTable;
 import io.cucumber.java8.En;
 import io.reservationservice.api.application.dto.request.ReservationCreateRequest;
 import io.reservationservice.api.application.dto.response.ReservationStatusResponses;
 import io.reservationservice.api.application.dto.response.SeatResponse;
 import io.reservationservice.api.application.dto.response.TemporalReservationCreateResponse;
+import io.reservationservice.api.business.domainentity.TemporalReservation;
+import io.reservationservice.api.infrastructure.persistence.orm.TemporalReservationJpaRepository;
 
 /**
  * @author : Rene Choi
@@ -23,15 +27,37 @@ import io.reservationservice.api.application.dto.response.TemporalReservationCre
 
 public class ReservationApiStepDef implements En {
 
-	public ReservationApiStepDef() {
+	private TemporalReservationJpaRepository temporalReservationRepository;
+
+	@Autowired
+	public ReservationApiStepDef(
+		TemporalReservationJpaRepository temporalReservationRepository
+	) {
+		this.temporalReservationRepository = temporalReservationRepository;
+
 		Given("다음과 같은 예약 생성 요청을 보내고 성공 응답을 받는다", this::createReservationWithSuccessResponse);
 		Then("예약이 성공적으로 생성되었음을 확인한다", this::verifyReservationCreation);
 
 		When("예약 상태 조회 요청을 보내고 성공 응답을 받는다", this::getReservationStatusWithSuccessResponse);
 
-
 		And("조회한 예약에 연결된 좌석은 다음과 같은 상태여야 한다", this::verifySeatStatus);
 		Then("예약이 만료되어 취소되었음을 확인한다", this::verifyReservationExpiration);
+
+		Then("전체 예약을 repository에서 조회하여 다음과 같은 1개의 예약이 생성되었음을 확인한다", this::verifyReservationCountByRepository);
+	}
+
+	private void verifyReservationCountByRepository(DataTable dataTable) {
+		List<Map<String, String>> expectedReservations = dataTable.asMaps(String.class, String.class);
+		List<TemporalReservation> actualReservations = temporalReservationRepository.findAll();
+
+		assertEquals(expectedReservations.size(), actualReservations.size(), "예약 개수가 일치하지 않습니다.");
+
+		for (Map<String, String> expectedReservation : expectedReservations) {
+			boolean matchFound = actualReservations.stream().anyMatch(actualReservation ->
+				expectedReservation.get("temporalReservationId").equals(String.valueOf(actualReservation.getTemporalReservationId()))
+			);
+			assertTrue(matchFound, "기대한 예약 정보가 일치하지 않습니다.");
+		}
 	}
 
 	private void createReservationWithSuccessResponse(DataTable dataTable) {
@@ -63,7 +89,6 @@ public class ReservationApiStepDef implements En {
 
 		assertTrue(matchFound, "기대한 예약 정보가 일치하지 않습니다.");
 	}
-
 
 	private void verifySeatStatus(DataTable dataTable) {
 		Map<String, String> expectedSeatStatus = dataTable.asMaps().get(0);

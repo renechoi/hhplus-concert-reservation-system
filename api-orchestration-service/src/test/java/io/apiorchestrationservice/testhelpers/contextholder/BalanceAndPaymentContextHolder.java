@@ -86,6 +86,10 @@ public class BalanceAndPaymentContextHolder implements TestDtoContextHolder {
 		mostRecentUserId.set(userId);
 	}
 
+	public static void putPaymentResponse(PaymentResponse response) {
+		putPaymentResponse(response.userId(), response);
+	}
+
 	public static PaymentResponse getPaymentResponse(Long userId) {
 		return paymentResponseMap.get(userId);
 	}

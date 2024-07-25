@@ -77,17 +77,17 @@ public class ReservationAndConcertApiExecutor extends AbstractRequestExecutor {
 		return doGetWithOkWithToken(getRequestSpecification(getPort()).params(convertDtoToMap(request)), url, token);
 	}
 
-	public static ExtractableResponse<Response> createTemporaryReservation(ReservationCreateRequest request) {
+	public static ExtractableResponse<Response> createTemporalReservation(ReservationCreateRequest request) {
 		String url = RESERVATION_API_URL_PATH;
 		return doPost(getRequestSpecification(getPort()), url, request);
 	}
 
-	public static ExtractableResponse<Response> createTemporaryReservationWithOk(ReservationCreateRequest request) {
+	public static ExtractableResponse<Response> createTemporalReservationWithOk(ReservationCreateRequest request) {
 		String url = RESERVATION_API_URL_PATH;
 		return doPostWithOk(getRequestSpecification(getPort()), url, request);
 	}
 
-	public static ExtractableResponse<Response> createTemporaryReservationWithTokenWithOk(ReservationCreateRequest request, String token) {
+	public static ExtractableResponse<Response> createTemporalReservationWithTokenWithOk(ReservationCreateRequest request, String token) {
 		String url = RESERVATION_API_URL_PATH;
 		return doPostWithOkWithToken(getRequestSpecification(getPort()), url, request, token);
 	}

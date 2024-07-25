@@ -17,7 +17,7 @@ import io.apiorchestrationservice.api.infrastructure.clients.reservation.dto.Res
 import io.apiorchestrationservice.api.infrastructure.clients.reservation.dto.ReservationConfirmDomainServiceResponse;
 import io.apiorchestrationservice.api.infrastructure.clients.reservation.dto.ReservationCreateDomainServiceRequest;
 import io.apiorchestrationservice.api.infrastructure.clients.reservation.dto.ReservationStatusDomainServiceResponses;
-import io.apiorchestrationservice.api.infrastructure.clients.reservation.dto.TemporaryReservationCreateDomainServiceResponse;
+import io.apiorchestrationservice.api.infrastructure.clients.reservation.dto.TemporalReservationCreateDomainServiceResponse;
 
 /**
  * @author : Rene Choi
@@ -42,7 +42,7 @@ public interface ReservationServiceClient {
 
 	// 예약
 	@PostMapping(value =  "/api/reservations")
-	ResponseEntity<TemporaryReservationCreateDomainServiceResponse> createTemporaryReservation(@RequestBody ReservationCreateDomainServiceRequest request);
+	ResponseEntity<TemporalReservationCreateDomainServiceResponse> createTemporalReservation(@RequestBody ReservationCreateDomainServiceRequest request);
 
 
 

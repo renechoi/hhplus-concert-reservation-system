@@ -3,13 +3,13 @@ package io.apiorchestrationservice.api.business.client;
 import io.apiorchestrationservice.api.business.dto.inport.ConcertCreateCommand;
 import io.apiorchestrationservice.api.business.dto.inport.ConcertOptionCreateCommand;
 import io.apiorchestrationservice.api.business.dto.inport.ReservationConfirmCommand;
-import io.apiorchestrationservice.api.business.dto.inport.TemporaryReservationCreateCommand;
+import io.apiorchestrationservice.api.business.dto.inport.TemporalReservationCreateCommand;
 import io.apiorchestrationservice.api.business.dto.outport.AvailableDatesInfos;
 import io.apiorchestrationservice.api.business.dto.outport.ConcertCreateInfo;
 import io.apiorchestrationservice.api.business.dto.outport.ConcertOptionCreateInfo;
 import io.apiorchestrationservice.api.business.dto.outport.ReservationConfirmInfo;
 import io.apiorchestrationservice.api.business.dto.outport.ReservationStatusInfos;
-import io.apiorchestrationservice.api.business.dto.outport.TemporaryReservationCreateInfo;
+import io.apiorchestrationservice.api.business.dto.outport.TemporalReservationCreateInfo;
 import io.apiorchestrationservice.api.infrastructure.clients.reservation.dto.AvailableSeatsInfos;
 
 /**
@@ -21,7 +21,7 @@ public interface ReservationServiceClientAdapter {
 
 	ConcertOptionCreateInfo createConcertOption(ConcertOptionCreateCommand command);
 
-	TemporaryReservationCreateInfo createTemporaryReservation(TemporaryReservationCreateCommand command);
+	TemporalReservationCreateInfo createTemporalReservation(TemporalReservationCreateCommand command);
 
 	ReservationConfirmInfo confirmReservation(ReservationConfirmCommand command);
 

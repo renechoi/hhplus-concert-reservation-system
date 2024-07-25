@@ -21,6 +21,6 @@ public class BalanceReader {
 
 	@Transactional(readOnly = true)
 	public BalanceSearchInfo search(BalanceChargeCommand command) {
-		return BalanceSearchInfo.from(balanceRepository.findByUserId(command.getUserId()));
+		return BalanceSearchInfo.from(balanceRepository.getBalance(command.getUserId()));
 	}
 }

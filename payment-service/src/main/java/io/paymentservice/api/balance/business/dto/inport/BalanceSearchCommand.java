@@ -35,7 +35,11 @@ public class BalanceSearchCommand implements DateSearchCommand {
 			.build();
 	}
 
-	public static BalanceSearchCommand searchByUserId(BalanceUseCommand command) {
+	public static BalanceSearchCommand onUser(BalanceUseCommand command) {
+		return BalanceSearchCommand.builder().userId(command.getUserId()).build();
+	}
+
+	public static BalanceSearchCommand onUser(BalanceChargeCommand command) {
 		return BalanceSearchCommand.builder().userId(command.getUserId()).build();
 	}
 }

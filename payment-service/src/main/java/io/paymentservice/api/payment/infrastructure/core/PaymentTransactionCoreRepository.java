@@ -25,12 +25,12 @@ public class PaymentTransactionCoreRepository  implements PaymentTransactionRepo
 	}
 
 	@Override
-	public List<PaymentTransaction> findListByUserId(Long userId) {
+	public List<PaymentTransaction> getPayment(Long userId) {
 		return paymentTransactionJpaRepository.findAllByUserId(userId);
 	}
 
 	@Override
-	public PaymentTransaction findById(Long transactionId) {
+	public PaymentTransaction fetch(Long transactionId) {
 		return paymentTransactionJpaRepository.findById(transactionId).orElseThrow(PaymentTransactionNotFoundException::new);
 	}
 }

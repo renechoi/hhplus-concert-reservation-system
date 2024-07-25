@@ -82,7 +82,7 @@ public class ReservationOrchestrationController {
 	@PostMapping
 	@Operation(summary = "콘서트 좌석 예약 - 임시 예약")
 	public CommonApiResponse<ReservationCreateResponse> reserveSeat(@RequestBody ReservationCreateRequest request) {
-		return OK(reservationCrudFacade.createTemporaryReservation(request));
+		return OK(reservationCrudFacade.createTemporalReservation(request));
 	}
 
 

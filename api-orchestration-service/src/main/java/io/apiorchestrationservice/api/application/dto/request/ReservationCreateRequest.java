@@ -1,6 +1,6 @@
 package io.apiorchestrationservice.api.application.dto.request;
 
-import io.apiorchestrationservice.api.business.dto.inport.TemporaryReservationCreateCommand;
+import io.apiorchestrationservice.api.business.dto.inport.TemporalReservationCreateCommand;
 import io.apiorchestrationservice.api.infrastructure.clients.reservation.dto.AbstractCommonRequestInfo;
 import io.apiorchestrationservice.common.mapper.ObjectMapperBasedVoMapper;
 import lombok.AllArgsConstructor;
@@ -21,7 +21,7 @@ public class ReservationCreateRequest extends AbstractCommonRequestInfo {
 	private Long concertOptionId;
 	private Long seatNumber;
 
-	public TemporaryReservationCreateCommand toCommand() {
-		return ObjectMapperBasedVoMapper.convert(this, TemporaryReservationCreateCommand.class);
+	public TemporalReservationCreateCommand toCommand() {
+		return ObjectMapperBasedVoMapper.convert(this, TemporalReservationCreateCommand.class);
 	}
 }

@@ -18,6 +18,10 @@ spring:
       hibernate:
         show-sql: true
         generate-ddl: true
+      jakarta:
+        persistence:
+          lock:
+            timeout: 5000
   task:
     execution:
       pool:

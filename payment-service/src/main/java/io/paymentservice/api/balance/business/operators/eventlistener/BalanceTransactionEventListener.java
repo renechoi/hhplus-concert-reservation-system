@@ -30,6 +30,6 @@ public class BalanceTransactionEventListener {
 
 	@TransactionalEventListener(phase = BEFORE_COMMIT)
 	public void handleBalanceUsedEvent(BalanceUseEvent event) {
-		transactionRepository.save(BalanceTransaction.createUsedEvent(event));
+		transactionRepository.save(createUsedEvent(event));
 	}
 }

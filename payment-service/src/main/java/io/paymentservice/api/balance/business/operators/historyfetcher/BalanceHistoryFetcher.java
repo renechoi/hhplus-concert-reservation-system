@@ -20,6 +20,6 @@ public class BalanceHistoryFetcher {
 
 	@Transactional(readOnly = true)
 	public BalanceTransactionInfos getHistories(long userId) {
-		return BalanceTransactionInfos.from(transactionRepository.findListByUserId(userId));
+		return BalanceTransactionInfos.from(transactionRepository.getBalances(userId));
 	}
 }

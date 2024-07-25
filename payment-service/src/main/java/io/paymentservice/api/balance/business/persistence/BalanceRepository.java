@@ -12,9 +12,11 @@ import io.paymentservice.api.balance.business.entity.Balance;
 public interface BalanceRepository {
 	Optional<Balance> findByUserIdOptional(Long userId);
 
-	Balance findSingleWithLock(BalanceSearchCommand balanceSearchCommand);
+	Balance findSingleByConditionWithLock(BalanceSearchCommand balanceSearchCommand);
+
+	Optional<Balance> findSingleByConditionOptionalWithLock(BalanceSearchCommand balanceSearchCommand);
 
 	Balance save(Balance balance);
 
-	Balance findByUserId(Long userId);
+	Balance getBalance(Long userId);
 }

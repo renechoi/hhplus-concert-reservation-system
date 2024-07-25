@@ -13,6 +13,7 @@ import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.apiorchestrationservice.common.annotation.FeignAdapter;
 import io.apiorchestrationservice.common.logtrace.LogTracer;
 import io.apiorchestrationservice.common.logtrace.TraceStatus;
 import lombok.RequiredArgsConstructor;
@@ -39,7 +40,7 @@ public class GlobalTraceHandler {
 		try {
 			status = logTracer.begin(joinPoint.getSignature().toShortString());
 
-			if (isAnnotationPresent(joinPoint, RestController.class)) {
+			if (isAnnotationPresent(joinPoint, RestController.class, FeignAdapter.class)) {
 				result = logWithParameters(joinPoint, status);
 			} else {
 				result = joinPoint.proceed();

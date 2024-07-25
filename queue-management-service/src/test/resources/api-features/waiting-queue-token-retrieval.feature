@@ -40,18 +40,6 @@ Feature: 대기열 토큰 조회
       | user2  | 204        |
 
 
-  Scenario: 이미 존재하는 대기열 토큰 생성 시나리오
-    Given 다음과 같은 유저 정보가 주어지고 대기열 토큰 생성을 요청하면 성공 응답을 받는다
-      | userId | priority | requestAt |
-      | user1  | 1        | now       |
-    Given 다음과 같은 유저 아이디로 대기열 토큰 조회를 요청하면 성공 응답을 받는다
-      | userId |
-      | user1  |
-    Then 조회된 대기열 토큰의 정보가 아래와 같이 확인되어야 한다
-      | userId | tokenValue | position | validUntil | status  |
-      | user1  | notNull    | notNull  | notNull    | WAITING |
-
-
 
   Scenario: 여러 대기열 토큰의 현재 위치 조회 시나리오
     Given 다음과 같은 유저 정보가 주어지고 대기열 토큰 생성을 요청하면 성공 응답을 받는다

@@ -35,7 +35,7 @@ public class SimpleAvailabilityService implements AvailabilityService {
 	@Override
 	@Transactional(readOnly = true)
 	public AvailableDateInfos getAvailableDates(Long concertId) {
-		List<ConcertOption> concertOptions = concertOptionRepository.findMultipleBy(concertIdWithFutureConcertDates(concertId));
+		List<ConcertOption> concertOptions = concertOptionRepository.findMultipleByCondition(onUpcomingDates(concertId));
 		return AvailableDateInfos.from(concertOptions.stream().map(AvailableDateInfo::from).collect(Collectors.toList()));
 	}
 
@@ -44,10 +44,10 @@ public class SimpleAvailabilityService implements AvailabilityService {
 	@Override
 	@Transactional(readOnly = true)
 	public AvailableSeatsInfos getAvailableSeats(Long concertOptionId, Long requestAt) {
-		List<Seat> seats = seatRepository.findMultipleBy(concertOptionId(concertOptionId));
+		List<Seat> seats = seatRepository.findMultipleByCondition(onConcertOption(concertOptionId));
 
 		List<AvailableSeatsInfo> availableSeats = seats.stream()
-			.filter(seat -> seat.isAvailableAtRequestTime(requestAt))
+			.filter(seat -> seat.isAvailableAt(requestAt))
 			.map(AvailableSeatsInfo::from)
 			.collect(Collectors.toList());
 

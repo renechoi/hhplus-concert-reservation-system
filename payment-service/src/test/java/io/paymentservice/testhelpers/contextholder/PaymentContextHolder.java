@@ -1,5 +1,6 @@
 package io.paymentservice.testhelpers.contextholder;
 
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -14,18 +15,20 @@ import io.paymentservice.api.payment.interfaces.dto.response.PaymentResponses;
  * @since : 2024/07/10
  */
 @Component
-public class PaymentContextHolder implements TestDtoContextHolder{
+public class PaymentContextHolder implements TestDtoContextHolder {
 
 	private static final ConcurrentHashMap<Long, PaymentRequest> paymentRequestMap = new ConcurrentHashMap<>();
 	private static final ConcurrentHashMap<Long, PaymentResponse> paymentResponseMap = new ConcurrentHashMap<>();
 	private static final AtomicReference<Long> mostRecentTransactionId = new AtomicReference<>();
 	private static final ConcurrentHashMap<Long, PaymentResponses> paymentHistoryMap = new ConcurrentHashMap<>();
+	private static final AtomicReference<List<PaymentResponse>> concurrentPaymentResponses = new AtomicReference<>();
 
 	public static void initFields() {
 		paymentRequestMap.clear();
 		paymentResponseMap.clear();
 		mostRecentTransactionId.set(null);
 		paymentHistoryMap.clear();
+		concurrentPaymentResponses.set(null);
 	}
 
 	public static void putPaymentRequest(Long userId, PaymentRequest request) {
@@ -70,6 +73,7 @@ public class PaymentContextHolder implements TestDtoContextHolder{
 
 	public static void putPaymentHistory(Long userId, PaymentResponses paymentResponses) {
 		paymentHistoryMap.put(userId, paymentResponses);
+		mostRecentTransactionId.set(userId);
 	}
 
 	public static PaymentResponses getPaymentHistory(Long userId) {
@@ -79,5 +83,13 @@ public class PaymentContextHolder implements TestDtoContextHolder{
 	public static PaymentResponses getMostRecentPaymentHistory() {
 		Long userId = mostRecentTransactionId.get();
 		return userId != null ? getPaymentHistory(userId) : null;
+	}
+
+	public static void setConcurrentPaymentResponses(List<PaymentResponse> responses) {
+		concurrentPaymentResponses.set(responses);
+	}
+
+	public static List<PaymentResponse> getConcurrentPaymentResponses() {
+		return concurrentPaymentResponses.get();
 	}
 }

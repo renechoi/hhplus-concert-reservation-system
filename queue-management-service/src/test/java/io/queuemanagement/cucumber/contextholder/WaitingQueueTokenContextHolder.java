@@ -1,7 +1,10 @@
 package io.queuemanagement.cucumber.contextholder;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 import io.queuemanagement.api.application.dto.request.WaitingQueueTokenGenerateRequest;
 import io.queuemanagement.api.application.dto.response.WaitingQueueTokenGeneralResponse;
@@ -67,5 +70,9 @@ public class WaitingQueueTokenContextHolder implements TestDtoContextHolder {
 	public static WaitingQueueTokenGeneralResponse getMostRecentGeneralResponse() {
 		String recentUserId = mostRecentResponseUserId.get();
 		return recentUserId != null ? getWaitingQueueTokenGeneralResponse(recentUserId) : null;
+	}
+
+	public static List<WaitingQueueTokenGenerationResponse> getAllGenerationResponses() {
+		return new ArrayList<>(responseMap.values());
 	}
 }

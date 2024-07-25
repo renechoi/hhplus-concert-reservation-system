@@ -10,7 +10,7 @@ import io.paymentservice.api.balance.business.entity.BalanceTransaction;
  */
 
 public interface BalanceTransactionRepository  {
-	List<BalanceTransaction> findListByUserId(Long userId);
+	List<BalanceTransaction> getBalances(Long userId);
 
 	BalanceTransaction save(BalanceTransaction transaction);
 }

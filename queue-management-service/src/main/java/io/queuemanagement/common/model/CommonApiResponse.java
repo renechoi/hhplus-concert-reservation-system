@@ -53,6 +53,10 @@ public class CommonApiResponse<T> extends ResponseEntity<Object> {
 		this(responseCode.getResultCode(), customMessage, responseCode.getHttpStatus(), data);
 	}
 
+	public CommonApiResponse(GlobalResponseCode responseCode, String customMessage) {
+		this(responseCode.getResultCode(), customMessage, responseCode.getHttpStatus(), null);
+	}
+
 	public CommonApiResponse(GlobalResponseCode responseCode, Throwable e) {
 		this(responseCode.getResultCode(), e.getMessage(), responseCode.getHttpStatus(), null);
 	}

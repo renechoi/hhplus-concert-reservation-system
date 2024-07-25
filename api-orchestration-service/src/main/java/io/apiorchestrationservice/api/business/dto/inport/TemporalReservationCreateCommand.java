@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class TemporaryReservationCreateCommand {
+public class TemporalReservationCreateCommand {
     private Long userId;
     private Long concertOptionId;
     private Long seatNumber;

@@ -48,6 +48,8 @@ public class BalanceAndPaymentApiStepDef implements En {
 		Given("결제 요청이 다음과 같이 주어졌을 때", this::givenPaymentRequest);
 		Given("가장 최근의 예약에 대한 결제 요청이 다음과 같이 주어졌을 때", this::givenPaymentWithMostRecentReservation);
 		When("결제 요청을 처리하고 정상 응답을 받는다", this::processPaymentRequestedWithSuccessResponse);
+		And("가장 최근의 요청과 동일하게 다시 결제 유효하지 않은 토큰으로 예외 발생해야 한다", this::processPaymentWithInvalidTokenAndExpectFailure);
+
 		Then("결제 상태는 {word}여야 한다", this::verifyPaymentStatus);
 		Then("결제 내역이 저장되어야 한다", this::verifyPaymentHistory);
 		When("결제 요청을 처리하면 실패 응답을 받는다", this::processPaymentRequestedWithFailureResponse);
@@ -95,7 +97,7 @@ public class BalanceAndPaymentApiStepDef implements En {
 
 	private void givenPaymentWithMostRecentReservation(DataTable dataTable) {
 		PaymentProcessRequest paymentProcessRequest = updateFields(new PaymentProcessRequest(), dataTable.asMaps().get(0));
-		paymentProcessRequest.setReservationId(getMostRecentReservationCreateResponse().temporaryReservationId());
+		paymentProcessRequest.setTargetId(String.valueOf(getMostRecentReservationCreateResponse().temporalReservationId()));
 		putPaymentRequest(paymentProcessRequest);
 	}
 
@@ -106,9 +108,19 @@ public class BalanceAndPaymentApiStepDef implements En {
 		putPaymentResponse(request.getUserId(), parsePaymentResponse(response));
 	}
 
+
 	private void processPaymentRequestedWithFailureResponse() {
 		ExtractableResponse<Response> response = processPayment(getMostRecentPaymentRequest());
 		assertNotEquals(200, response.statusCode());
+	}
+
+	private void processPaymentWithInvalidTokenAndExpectFailure() {
+		PaymentProcessRequest mostRecentPaymentRequest = getMostRecentPaymentRequest();
+		String invalidToken = "INVALID_TOKEN";
+
+		ExtractableResponse<Response> response = processPaymentWithToken(mostRecentPaymentRequest, invalidToken);
+		assertNotEquals(200, response.statusCode(), "결제가 실패해야 하는데 성공했습니다.");
+		assertEquals(204, response.statusCode(), "유효하지 않은 토큰으로 인해 에러가 발생해야 합니다.");
 	}
 
 	private void verifyChargeUserBalance(Long expectedBalance) {

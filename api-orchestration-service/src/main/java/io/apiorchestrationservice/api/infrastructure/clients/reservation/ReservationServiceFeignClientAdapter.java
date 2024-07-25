@@ -8,13 +8,13 @@ import io.apiorchestrationservice.api.business.client.ReservationServiceClientAd
 import io.apiorchestrationservice.api.business.dto.inport.ConcertCreateCommand;
 import io.apiorchestrationservice.api.business.dto.inport.ConcertOptionCreateCommand;
 import io.apiorchestrationservice.api.business.dto.inport.ReservationConfirmCommand;
-import io.apiorchestrationservice.api.business.dto.inport.TemporaryReservationCreateCommand;
+import io.apiorchestrationservice.api.business.dto.inport.TemporalReservationCreateCommand;
 import io.apiorchestrationservice.api.business.dto.outport.AvailableDatesInfos;
 import io.apiorchestrationservice.api.business.dto.outport.ConcertCreateInfo;
 import io.apiorchestrationservice.api.business.dto.outport.ConcertOptionCreateInfo;
 import io.apiorchestrationservice.api.business.dto.outport.ReservationConfirmInfo;
 import io.apiorchestrationservice.api.business.dto.outport.ReservationStatusInfos;
-import io.apiorchestrationservice.api.business.dto.outport.TemporaryReservationCreateInfo;
+import io.apiorchestrationservice.api.business.dto.outport.TemporalReservationCreateInfo;
 import io.apiorchestrationservice.api.infrastructure.clients.reservation.dto.AvailableDatesDomainServiceResponses;
 import io.apiorchestrationservice.api.infrastructure.clients.reservation.dto.AvailableSeatsDomainServiceResponses;
 import io.apiorchestrationservice.api.infrastructure.clients.reservation.dto.AvailableSeatsInfos;
@@ -26,7 +26,7 @@ import io.apiorchestrationservice.api.infrastructure.clients.reservation.dto.Res
 import io.apiorchestrationservice.api.infrastructure.clients.reservation.dto.ReservationConfirmDomainServiceResponse;
 import io.apiorchestrationservice.api.infrastructure.clients.reservation.dto.ReservationCreateDomainServiceRequest;
 import io.apiorchestrationservice.api.infrastructure.clients.reservation.dto.ReservationStatusDomainServiceResponses;
-import io.apiorchestrationservice.api.infrastructure.clients.reservation.dto.TemporaryReservationCreateDomainServiceResponse;
+import io.apiorchestrationservice.api.infrastructure.clients.reservation.dto.TemporalReservationCreateDomainServiceResponse;
 import io.apiorchestrationservice.common.annotation.FeignAdapter;
 import lombok.RequiredArgsConstructor;
 
@@ -60,11 +60,11 @@ public class ReservationServiceFeignClientAdapter implements ReservationServiceC
 	}
 
 	@Override
-	public TemporaryReservationCreateInfo createTemporaryReservation(TemporaryReservationCreateCommand command) {
+	public TemporalReservationCreateInfo createTemporalReservation(TemporalReservationCreateCommand command) {
 		ReservationCreateDomainServiceRequest request = ReservationCreateDomainServiceRequest.from(command);
-		ResponseEntity<TemporaryReservationCreateDomainServiceResponse> response = reservationServiceClient.createTemporaryReservation(request);
+		ResponseEntity<TemporalReservationCreateDomainServiceResponse> response = reservationServiceClient.createTemporalReservation(request);
 		return Optional.ofNullable(response.getBody())
-			.map(TemporaryReservationCreateDomainServiceResponse::toTemporaryReservationCreateInfo)
+			.map(TemporalReservationCreateDomainServiceResponse::toTemporalReservationCreateInfo)
 			.orElseThrow();
 	}
 

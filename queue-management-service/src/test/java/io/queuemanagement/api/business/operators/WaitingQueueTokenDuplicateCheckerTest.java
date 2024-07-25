@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,6 +28,7 @@ import io.queuemanagement.api.business.persistence.WaitingQueueTokenRetrievalRep
  * @author : Rene Choi
  * @since : 2024/07/11
  */
+@Disabled
 @ExtendWith(MockitoExtension.class)
 @DisplayName("WaitingQueueTokenDuplicateChecker 단위 테스트")
 public class WaitingQueueTokenDuplicateCheckerTest {

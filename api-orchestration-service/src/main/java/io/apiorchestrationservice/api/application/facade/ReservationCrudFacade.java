@@ -18,8 +18,8 @@ import lombok.RequiredArgsConstructor;
 public class ReservationCrudFacade {
 	private final ReservationService reservationService;
 
-	public ReservationCreateResponse createTemporaryReservation(ReservationCreateRequest request) {
-		return ReservationCreateResponse.from(reservationService.createTemporaryReservation(request.toCommand()));
+	public ReservationCreateResponse createTemporalReservation(ReservationCreateRequest request) {
+		return ReservationCreateResponse.from(reservationService.createTemporalReservation(request.toCommand()));
 	}
 
 
