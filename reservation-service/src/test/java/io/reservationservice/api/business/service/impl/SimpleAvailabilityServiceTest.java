@@ -50,7 +50,7 @@ class SimpleAvailabilityServiceTest {
 			ConcertOption.builder().concertOptionId(2L).concertDate(LocalDateTime.now().plusDays(2)).title("Concert 2").build()
 		);
 
-		when(concertOptionRepository.findMultipleBy(argThat(command ->
+		when(concertOptionRepository.findMultipleByCondition(argThat(command ->
 			command.getConcertId().equals(concertId) && AFTER.equals(command.getDateSearchCondition())
 		))).thenReturn(concertOptions);
 
@@ -59,7 +59,7 @@ class SimpleAvailabilityServiceTest {
 
 		// then
 		assertEquals(2, availableDates.availableDateInfos().size());
-		verify(concertOptionRepository, times(1)).findMultipleBy(argThat(command ->
+		verify(concertOptionRepository, times(1)).findMultipleByCondition(argThat(command ->
 			command.getConcertId().equals(concertId) && AFTER.equals(command.getDateSearchCondition())
 		));
 	}
@@ -74,7 +74,7 @@ class SimpleAvailabilityServiceTest {
 			Seat.builder().seatId(2L).concertOption(ConcertOption.builder().concertOptionId(concertOptionId).concertDate(LocalDateTime.now().plusDays(2)).build()).seatNumber(2L).occupied(false).build()
 		);
 
-		when(seatRepository.findMultipleBy(concertOptionId(concertOptionId)))
+		when(seatRepository.findMultipleByCondition(onConcertOption(concertOptionId)))
 			.thenReturn(seats);
 
 		AvailableSeatsInfos availableSeats = simpleAvailabilityService.getAvailableSeats(concertOptionId, requestAt);

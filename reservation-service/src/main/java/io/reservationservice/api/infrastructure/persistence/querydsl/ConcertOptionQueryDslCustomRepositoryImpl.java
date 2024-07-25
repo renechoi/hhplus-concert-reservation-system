@@ -1,6 +1,9 @@
 package io.reservationservice.api.infrastructure.persistence.querydsl;
 
+import static jakarta.persistence.LockModeType.*;
+
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.stereotype.Component;
 
@@ -33,5 +36,17 @@ public class ConcertOptionQueryDslCustomRepositoryImpl implements ConcertOptionQ
 				.where(searchPredicate)
 				.fetch();
 
+	}
+
+	@Override
+	public Optional<ConcertOption> findByIdWithSLock(Long concertOptionId) {
+		QConcertOption qConcertOption = QConcertOption.concertOption;
+
+		ConcertOption concertOption = queryFactory.selectFrom(qConcertOption)
+			.where(qConcertOption.concertOptionId.eq(concertOptionId))
+			.setLockMode(PESSIMISTIC_READ) // S락 (공유 락) 설정
+			.fetchOne();
+
+		return Optional.ofNullable(concertOption);
 	}
 }

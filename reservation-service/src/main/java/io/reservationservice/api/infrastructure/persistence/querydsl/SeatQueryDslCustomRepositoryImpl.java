@@ -1,5 +1,7 @@
 package io.reservationservice.api.infrastructure.persistence.querydsl;
 
+import static jakarta.persistence.LockModeType.*;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -24,10 +26,9 @@ public class SeatQueryDslCustomRepositoryImpl implements SeatQueryDslCustomRepos
 	private final QueryFilter<SeatSearchCommand> queryFilter;
 	private final QuerySorter<Seat> querySorter;
 
+	private final QSeat seat = QSeat.seat;
 	@Override
 	public Optional<Seat> findSingleByCondition(SeatSearchCommand searchCommand) {
-		QSeat seat = QSeat.seat;
-
 		Predicate searchPredicate = queryFilter.createGlobalSearchQuery(searchCommand);
 
 		return Optional.ofNullable(
@@ -39,8 +40,6 @@ public class SeatQueryDslCustomRepositoryImpl implements SeatQueryDslCustomRepos
 
 	@Override
 	public List<Seat> findMultipleByCondition(SeatSearchCommand searchCommand) {
-		QSeat seat = QSeat.seat;
-
 		Predicate searchPredicate = queryFilter.createGlobalSearchQuery(searchCommand);
 
 		return
@@ -48,4 +47,17 @@ public class SeatQueryDslCustomRepositoryImpl implements SeatQueryDslCustomRepos
 				.where(searchPredicate)
 				.fetch();
 	}
+
+	@Override
+	public Optional<Seat> findSingleByConditionWithLock(SeatSearchCommand searchCommand) {
+		Predicate searchPredicate = queryFilter.createGlobalSearchQuery(searchCommand);
+
+		return Optional.ofNullable(
+			queryFactory.selectFrom(seat)
+				.where(searchPredicate)
+				.setLockMode(PESSIMISTIC_WRITE)
+				.fetchOne()
+		);
+	}
+
 }
