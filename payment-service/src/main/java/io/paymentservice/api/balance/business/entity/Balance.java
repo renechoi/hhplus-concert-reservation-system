@@ -20,6 +20,7 @@ import jakarta.persistence.EntityListeners;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Version;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -41,6 +42,9 @@ public class Balance extends AbstractAggregateRoot<Balance> {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long balanceId;
+
+	// @Version
+	// private Long version;
 
 	private Long userId;
 

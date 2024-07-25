@@ -19,7 +19,7 @@ public class BalanceTransactionCoreRepository implements BalanceTransactionRepos
 	private final BalanceTransactionJpaRepository balanceTransactionJpaRepository;
 
 	@Override
-	public List<BalanceTransaction> findListByUserId(Long userId) {
+	public List<BalanceTransaction> getBalances(Long userId) {
 		return balanceTransactionJpaRepository.findByUserId(userId);
 	}
 

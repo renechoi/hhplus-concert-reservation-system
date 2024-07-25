@@ -32,6 +32,7 @@ public class BalanceQueryDslCustomRepositoryImpl implements BalanceQueryDslCusto
 
 		return Optional.ofNullable(queryFactory.selectFrom(balance)
 			.where(searchPredicate)
+			.setLockMode(LockModeType.PESSIMISTIC_WRITE)
 			.fetchOne());
 	}
 }

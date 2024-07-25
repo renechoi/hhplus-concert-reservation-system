@@ -26,8 +26,13 @@ public class BalanceCoreRepository implements BalanceRepository {
 	}
 
 	@Override
-	public Balance findSingleWithLock(BalanceSearchCommand balanceSearchCommand) {
+	public Balance findSingleByConditionWithLock(BalanceSearchCommand balanceSearchCommand) {
 		return balanceJpaRepository.findSingleWithLock(balanceSearchCommand).orElseThrow(BalanceNotFoundException::new);
+	}
+
+	@Override
+	public Optional<Balance> findSingleByConditionOptionalWithLock(BalanceSearchCommand balanceSearchCommand) {
+		return balanceJpaRepository.findSingleWithLock(balanceSearchCommand);
 	}
 
 	@Override
@@ -36,7 +41,7 @@ public class BalanceCoreRepository implements BalanceRepository {
 	}
 
 	@Override
-	public Balance findByUserId(Long userId) {
+	public Balance getBalance(Long userId) {
 		return balanceJpaRepository.findByUserId(userId).orElseThrow(BalanceNotFoundException::new);
 	}
 }

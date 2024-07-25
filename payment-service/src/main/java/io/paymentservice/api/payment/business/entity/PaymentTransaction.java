@@ -36,9 +36,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Getter
 @EntityListeners(AuditingEntityListener.class)
-@Table(name = "PaymentTransaction", uniqueConstraints = {
-	@UniqueConstraint(columnNames = {"targetId", "userId", "amount", "paymentMethod"})
-})
+// @Table(name = "PaymentTransaction", uniqueConstraints = {
+// 	@UniqueConstraint(columnNames = {"targetId", "userId", "amount", "paymentMethod"})
+// })
 public class PaymentTransaction {
 
 	@Id
@@ -54,6 +54,7 @@ public class PaymentTransaction {
 	@Enumerated(EnumType.STRING)
 	private PaymentMethod paymentMethod;
 
+	@Enumerated(EnumType.STRING)
 	private PaymentStatus paymentStatus;
 
 	@CreatedDate
