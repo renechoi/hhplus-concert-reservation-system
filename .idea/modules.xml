@@ -16,6 +16,7 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/queue-management-service.test.iml" filepath="$PROJECT_DIR$/.idea/modules/queue-management-service.test.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/redis-service.main.iml" filepath="$PROJECT_DIR$/.idea/modules/redis-service.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/redis-service.test.iml" filepath="$PROJECT_DIR$/.idea/modules/redis-service.test.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/reservation-service.gatling.iml" filepath="$PROJECT_DIR$/.idea/modules/reservation-service.gatling.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/reservation-service.main.iml" filepath="$PROJECT_DIR$/.idea/modules/reservation-service.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/reservation-service.test.iml" filepath="$PROJECT_DIR$/.idea/modules/reservation-service.test.iml" />
     </modules>

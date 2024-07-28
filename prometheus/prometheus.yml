@@ -54,3 +54,9 @@ scrape_configs:
     metrics_path: /actuator/prometheus
     static_configs:
       - targets: ['host.docker.internal:24000']
+
+  - job_name: 'pmm-server'
+    metrics_path: /prometheus
+    static_configs:
+      - targets: ['pmm-server:8080']
+

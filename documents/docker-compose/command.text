@@ -1,0 +1,5 @@
+docker-compose -f docker-compose-mysql.yml up --build
+docker-compose -f docker-compose-kafka.yml up --build
+docker-compose -f docker-compose-redis.yml up --build
+docker-compose -f docker-compose-prometheus-grafana.yml up --build
+

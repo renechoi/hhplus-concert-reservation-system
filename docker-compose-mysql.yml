@@ -1,0 +1,69 @@
+services:
+  dev-database:
+    container_name: hhplus-reservation-dev-database
+    image: mysql:8.0.33
+    env_file:
+      - .env
+    environment:
+      - MYSQL_DATABASE=hhplus-reservation-dev-database
+      - MYSQL_ROOT_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
+      - TZ=Asia/Seoul
+    volumes:
+      - ./database/config/mysql.cnf:/etc/mysql/conf.d/mysql.cnf
+      - ./database/config/init-dev.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "3302:3306"
+
+  stage-database:
+    container_name: hhplus-reservation-stage-database
+    image: mysql:8.0.33
+    env_file:
+      - .env
+    environment:
+      - MYSQL_DATABASE=hhplus-reservation-stage-database
+      - MYSQL_ROOT_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
+      - TZ=Asia/Seoul
+    volumes:
+      - ./database/config/mysql.cnf:/etc/mysql/conf.d/mysql.cnf
+      - ./database/config/init-stage.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "3301:3306"
+
+  dev-mysql-exporter:
+    image: prom/mysqld-exporter
+    container_name: dev-mysql-exporter
+    restart: unless-stopped
+    command:
+      - '--config.my-cnf=/etc/mysql/config.my-cnf'
+      - "--no-collect.slave_status"
+    ports:
+      - "9104:9104"
+    depends_on:
+      - dev-database
+    volumes:
+      - ./database/config/dev-mysql-exporter.cnf:/etc/mysql/config.my-cnf:ro
+
+  stage-mysql-exporter:
+    image: prom/mysqld-exporter
+    container_name: stage-mysql-exporter
+    restart: unless-stopped
+    command:
+      - '--config.my-cnf=/etc/mysql/config.my-cnf'
+      - "--no-collect.slave_status"
+    ports:
+      - "9105:9104"
+    depends_on:
+      - stage-database
+    volumes:
+      - ./database/config/stage-mysql-exporter.cnf:/etc/mysql/config.my-cnf:ro
+
+  pmm-server:
+    image: percona/pmm-server:2
+    container_name: pmm-server
+    restart: always
+    ports:
+      - "8080:80"
+    environment:
+      PMM_SERVER_USER: admin
+      PMM_SERVER_PASSWORD: admin
+
