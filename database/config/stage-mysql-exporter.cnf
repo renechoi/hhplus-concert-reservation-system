@@ -1,0 +1,4 @@
+[client]
+user = exporter
+password = password
+host = hhplus-reservation-stage-database

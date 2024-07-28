@@ -7,6 +7,10 @@ management:
     web:
       exposure:
         include: '*'
+  prometheus:
+    metrics:
+      export:
+        enabled: true
 
 eureka:
   client:
@@ -16,5 +20,8 @@ eureka:
       defaultZone: http://localhost:24010/eureka/
   server:
     enableSelfPreservation: false # 개발 환경에서는 비활성화하는 것이 일반적
+
+
+
 
 

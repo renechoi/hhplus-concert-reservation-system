@@ -50,3 +50,18 @@ logging:
     org.springframework.cloud.gateway: DEBUG
     org.springframework.web: DEBUG
     org.springframework.http: DEBUG
+
+
+
+
+
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: prometheus
+  prometheus:
+    metrics:
+      export:
+        enabled: true
