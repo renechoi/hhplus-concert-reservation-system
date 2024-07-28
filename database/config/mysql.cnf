@@ -2,5 +2,10 @@
 default-character-set = utf8mb4
 
 [mysqld]
-authentication-policy = mysql_native_password
 max_connections = 500
+bind-address = 0.0.0.0
+slow_query_log = ON
+slow_query_log_file = /log/slow_query.log
+long_query_time = 1
+log_output = FILE
+performance_schema = ON

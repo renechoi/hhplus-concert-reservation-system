@@ -1,0 +1,14 @@
+pmm container에서 수동 등록 스텝 및 명령어
+
+(유저는 미리 등록 -> mysql 서버에서)
+
+docker ps
+
+docker exec -it <pmm-server-container-id> /bin/bash
+
+
+pmm-admin config --server-insecure-tls --server-url=http://admin:admin@pmm-server:80
+
+pmm-admin add mysql --query-source=perfschema --username=pmm --password=your_password --service-name=dev-mysql --host=dev-database --port=3306 --server-insecure-tls
+
+pmm-admin add mysql --query-source=perfschema --username=pmm --password=your_password --service-name=stage-mysql --host=stage-database --port=3306 --server-insecure-tls
