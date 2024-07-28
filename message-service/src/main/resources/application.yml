@@ -28,3 +28,19 @@ slack:
   message:
     polling:
       interval: 100
+
+
+
+
+
+
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: prometheus
+  prometheus:
+    metrics:
+      export:
+        enabled: true

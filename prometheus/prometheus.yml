@@ -1,0 +1,56 @@
+## prometheus.yml
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'dev-mysql-exporter'
+    static_configs:
+      - targets: ['dev-mysql-exporter:9104']
+
+  - job_name: 'stage-mysql-exporter'
+    static_configs:
+      - targets: ['stage-mysql-exporter:9104']
+
+  - job_name: 'reservation-service'
+    metrics_path: /reservation/actuator/prometheus
+    static_configs:
+      - targets: ['host.docker.internal:24071']
+
+  - job_name: 'redis-service'
+    metrics_path: /redis-service/actuator/prometheus
+    static_configs:
+      - targets: ['host.docker.internal:24301']
+
+  - job_name: 'queue-management-service'
+    metrics_path: /queue-management/actuator/prometheus
+    static_configs:
+      - targets: ['host.docker.internal:24031']
+
+  - job_name: 'api-orchestration-service'
+    metrics_path: /api-orchestration/actuator/prometheus
+    static_configs:
+      - targets: ['host.docker.internal:24051']
+
+  - job_name: 'client-channel-service'
+    metrics_path: /client-channel/actuator/prometheus
+    static_configs:
+      - targets: ['host.docker.internal:24101']
+
+  - job_name: 'payment-service'
+    metrics_path: /payment/actuator/prometheus
+    static_configs:
+      - targets: ['host.docker.internal:24081']
+
+  - job_name: 'eureka-server'
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ['host.docker.internal:24010']
+
+  - job_name: 'gateway-service'
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ['host.docker.internal:24000']

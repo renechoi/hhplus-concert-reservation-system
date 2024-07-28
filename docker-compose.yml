@@ -34,6 +34,37 @@ services:
     ports:
       - "3301:3306"
 
+
+
+  dev-mysql-exporter:
+    image: prom/mysqld-exporter
+    container_name: dev-mysql-exporter
+    restart: unless-stopped
+    command:
+      - '--config.my-cnf=/etc/mysql/config.my-cnf'
+    ports:
+      - "9104:9104"
+    depends_on:
+      - dev-database
+    volumes:
+      - ./database/config/dev-mysql-exporter.cnf:/etc/mysql/config.my-cnf:ro
+
+  stage-mysql-exporter:
+    image: prom/mysqld-exporter
+    container_name: stage-mysql-exporter
+    restart: unless-stopped
+    command:
+      - '--config.my-cnf=/etc/mysql/config.my-cnf'
+    ports:
+      - "9105:9104"
+    depends_on:
+      - stage-database
+    volumes:
+      - ./database/config/stage-mysql-exporter.cnf:/etc/mysql/config.my-cnf:ro
+
+
+
+
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
     container_name: zookeeper
@@ -102,3 +133,25 @@ services:
     restart: unless-stopped
     ports:
       - "8001:8001"
+
+
+
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus

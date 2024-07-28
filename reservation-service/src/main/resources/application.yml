@@ -40,3 +40,19 @@ reservation:
 slack:
   channel:
     name: slack-test
+
+
+
+
+
+
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: prometheus
+  prometheus:
+    metrics:
+      export:
+        enabled: true
