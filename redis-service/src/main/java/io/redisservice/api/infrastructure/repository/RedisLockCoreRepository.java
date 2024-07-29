@@ -4,9 +4,9 @@ import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Component;
 
-import io.redisservice.api.business.RedisLockRepository;
-import io.redisservice.api.business.service.command.LockCommand;
-import io.redisservice.api.business.service.command.UnLockCommand;
+import io.redisservice.api.business.repository.RedisLockRepository;
+import io.redisservice.api.business.dto.command.LockCommand;
+import io.redisservice.api.business.dto.command.UnLockCommand;
 import lombok.RequiredArgsConstructor;
 
 /**

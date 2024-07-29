@@ -4,8 +4,8 @@ import static io.redisservice.testhelpers.apiexecutor.DynamicPortHolder.*;
 import static io.restassured.RestAssured.*;
 import static org.springframework.http.MediaType.*;
 
-import io.redisservice.api.application.dto.LockRequest;
-import io.redisservice.api.application.dto.UnLockRequest;
+import io.redisservice.api.application.dto.request.LockRequest;
+import io.redisservice.api.application.dto.request.UnLockRequest;
 import io.redisservice.util.YmlLoader;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;

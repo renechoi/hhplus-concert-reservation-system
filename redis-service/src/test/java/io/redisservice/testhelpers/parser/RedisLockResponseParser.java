@@ -1,7 +1,7 @@
 package io.redisservice.testhelpers.parser;
 
-import io.redisservice.api.application.dto.LockResponse;
-import io.redisservice.api.application.dto.UnLockResponse;
+import io.redisservice.api.application.dto.response.LockResponse;
+import io.redisservice.api.application.dto.response.UnLockResponse;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
 

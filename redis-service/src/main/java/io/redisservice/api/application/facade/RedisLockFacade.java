@@ -2,10 +2,10 @@ package io.redisservice.api.application.facade;
 
 import org.springframework.stereotype.Component;
 
-import io.redisservice.api.application.dto.LockRequest;
-import io.redisservice.api.application.dto.LockResponse;
-import io.redisservice.api.application.dto.UnLockRequest;
-import io.redisservice.api.application.dto.UnLockResponse;
+import io.redisservice.api.application.dto.request.LockRequest;
+import io.redisservice.api.application.dto.response.LockResponse;
+import io.redisservice.api.application.dto.request.UnLockRequest;
+import io.redisservice.api.application.dto.response.UnLockResponse;
 import io.redisservice.api.business.service.RedisLockService;
 import lombok.RequiredArgsConstructor;
 

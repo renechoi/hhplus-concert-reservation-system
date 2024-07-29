@@ -1,4 +1,4 @@
-package io.redisservice.api.business.service.command;
+package io.redisservice.api.business.dto.command;
 
 import java.util.concurrent.TimeUnit;
 
@@ -15,11 +15,6 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class LockCommand{
+public class UnLockCommand {
 	private String lockKey;
-	private long waitTime;
-	private long leaseTime;
-	private TimeUnit timeUnit;
-
-
 }

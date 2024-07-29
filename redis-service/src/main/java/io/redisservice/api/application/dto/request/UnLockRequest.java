@@ -1,6 +1,6 @@
-package io.redisservice.api.application.dto;
+package io.redisservice.api.application.dto.request;
 
-import io.redisservice.api.business.service.info.UnLockInfo;
+import io.redisservice.api.business.dto.command.UnLockCommand;
 import io.redisservice.common.mapper.ObjectMapperBasedVoMapper;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -15,11 +15,10 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class UnLockResponse {
+public class UnLockRequest {
 	private String lockKey;
-	private Boolean isUnLocked;
 
-	public static UnLockResponse from(UnLockInfo unLockInfo) {
-		return ObjectMapperBasedVoMapper.convert(unLockInfo, UnLockResponse.class);
+	public UnLockCommand toCommand() {
+		return ObjectMapperBasedVoMapper.convert(this, UnLockCommand.class);
 	}
 }
