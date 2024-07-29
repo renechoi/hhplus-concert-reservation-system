@@ -1,17 +1,16 @@
 package io.redisservice.api.business.service;
 
 
-import static io.redisservice.api.business.service.info.LockInfo.*;
-import static io.redisservice.api.business.service.info.UnLockInfo.*;
+import static io.redisservice.api.business.dto.info.LockInfo.*;
+import static io.redisservice.api.business.dto.info.UnLockInfo.*;
 
 import org.springframework.stereotype.Service;
 
-import io.redisservice.api.application.dto.LockRequest;
-import io.redisservice.api.business.RedisLockRepository;
-import io.redisservice.api.business.service.command.LockCommand;
-import io.redisservice.api.business.service.command.UnLockCommand;
-import io.redisservice.api.business.service.info.LockInfo;
-import io.redisservice.api.business.service.info.UnLockInfo;
+import io.redisservice.api.business.repository.RedisLockRepository;
+import io.redisservice.api.business.dto.command.LockCommand;
+import io.redisservice.api.business.dto.command.UnLockCommand;
+import io.redisservice.api.business.dto.info.LockInfo;
+import io.redisservice.api.business.dto.info.UnLockInfo;
 import lombok.RequiredArgsConstructor;
 
 /**

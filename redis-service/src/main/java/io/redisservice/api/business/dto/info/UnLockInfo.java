@@ -1,8 +1,6 @@
-package io.redisservice.api.business.service.info;
+package io.redisservice.api.business.dto.info;
 
-import java.util.concurrent.TimeUnit;
-
-import io.redisservice.api.business.service.command.UnLockCommand;
+import io.redisservice.api.business.dto.command.UnLockCommand;
 
 /**
  * @author : Rene Choi

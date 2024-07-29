@@ -1,10 +1,8 @@
-package io.redisservice.api.application.dto;
+package io.redisservice.api.application.dto.request;
 
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jdt.internal.compiler.codegen.ObjectCache;
-
-import io.redisservice.api.business.service.command.LockCommand;
+import io.redisservice.api.business.dto.command.LockCommand;
 import io.redisservice.common.mapper.ObjectMapperBasedVoMapper;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

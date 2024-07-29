@@ -1,11 +1,7 @@
-package io.redisservice.api.application.dto;
+package io.redisservice.api.application.dto.response;
 
-import io.redisservice.api.business.service.info.LockInfo;
+import io.redisservice.api.business.dto.info.LockInfo;
 import io.redisservice.common.mapper.ObjectMapperBasedVoMapper;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
 /**
  * @author : Rene Choi

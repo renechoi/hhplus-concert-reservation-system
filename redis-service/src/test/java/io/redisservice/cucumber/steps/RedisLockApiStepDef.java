@@ -9,12 +9,10 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import io.cucumber.datatable.DataTable;
 import io.cucumber.java8.En;
-import io.redisservice.api.application.dto.LockRequest;
-import io.redisservice.api.application.dto.LockResponse;
-import io.redisservice.api.application.dto.UnLockRequest;
-import io.redisservice.api.application.dto.UnLockResponse;
-import io.restassured.response.ExtractableResponse;
-import io.restassured.response.Response;
+import io.redisservice.api.application.dto.request.LockRequest;
+import io.redisservice.api.application.dto.response.LockResponse;
+import io.redisservice.api.application.dto.request.UnLockRequest;
+import io.redisservice.api.application.dto.response.UnLockResponse;
 
 /**
  * @author : Rene Choi
