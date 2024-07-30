@@ -15,4 +15,8 @@ public record CacheInfo(
     public static CacheInfo createCacheInfo(CacheCommand cacheCommand, boolean isCached) {
         return new CacheInfo(cacheCommand.getCacheKey(), cacheCommand.getCacheValue(), cacheCommand.getTtl(), isCached);
     }
+
+    public static CacheInfo of(String cacheKey, String value) {
+        return new CacheInfo(cacheKey, value, null, true);
+    }
 }

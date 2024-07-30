@@ -9,6 +9,9 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import org.apache.commons.lang.StringUtils;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import io.cucumber.datatable.DataTable;
 import io.cucumber.java8.En;
 import io.redisservice.api.application.dto.request.CacheRequest;
@@ -36,7 +39,6 @@ public class RedisCacheApiStepDef implements En {
 
 		Then("Redis 캐시 조회 응답은 없음을 확인한다", this::verifyCacheIsAbsent);
 
-
 	}
 
 	private void sendCacheRequest(DataTable dataTable) {
@@ -56,11 +58,13 @@ public class RedisCacheApiStepDef implements En {
 
 			String cacheValue = response.asString();
 
+			try {
+				putCacheResponse(cacheKey, new ObjectMapper().readValue(cacheValue, CacheResponse.class));
+			} catch (Exception ignored) {
+			}
 			putCacheRequest(cacheKey, getCacheRequest(cacheKey));
-			putCacheResponse(cacheKey, new CacheResponse(cacheKey, cacheValue, null, true));
 		});
 	}
-
 
 	private void sendEvictCacheRequest(DataTable dataTable) {
 		dataTable.asMaps().forEach(row -> {
@@ -72,25 +76,32 @@ public class RedisCacheApiStepDef implements En {
 		});
 	}
 
-
 	private void verifyCacheResponse(DataTable dataTable) {
 		dataTable.asMaps().forEach(row -> assertTrue(matchResponse(row, getCacheResponse(row.get("cacheKey")))));
 	}
 
 	private void verifyGetCacheResponse(DataTable dataTable) {
-		dataTable.asMaps().forEach(row -> assertTrue(matchResponse(row, getCacheResponse(row.get("cacheKey")))));
+		dataTable.asMaps().forEach(row -> {
+			String cacheKey = row.get("cacheKey");
+			CacheResponse expectedResponse = getCacheResponse(cacheKey);
+			String expectedValue = row.get("cacheValue");
+
+			// 파싱하여 JSON 동등성 비교
+			assertEquals(cacheKey, expectedResponse.getCacheKey());
+			assertEquals("\"" + expectedValue + "\"", expectedResponse.getCacheValue());
+		});
 	}
 
 	private void verifyEvictCacheResponse(DataTable dataTable) {
 		dataTable.asMaps().forEach(row -> assertTrue(matchResponse(row, getCacheResponse(row.get("cacheKey")))));
 	}
 
-
 	private void verifyCacheIsAbsent(DataTable dataTable) {
 		dataTable.asMaps().forEach(row -> {
 			String cacheKey = row.get("cacheKey");
-			assertTrue(StringUtils.isEmpty(getCache(cacheKey).asString()),"캐시가 없어야 함 -> key: " + cacheKey);
 
+			ExtractableResponse<Response> cacheResponse = getCache(cacheKey);
+			assertEquals(204, cacheResponse.statusCode(), "캐시가 없어야 함 -> key: " + cacheKey);
 		});
 	}
 

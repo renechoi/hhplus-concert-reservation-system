@@ -37,7 +37,7 @@ public class RedisCacheController {
 
 	@GetMapping(value = "/cache/{cacheKey}", produces = MediaType.APPLICATION_JSON_VALUE)
 	@Operation(summary = "Get Cache API")
-	public CommonApiResponse<Object> getCache(@PathVariable String cacheKey) {
+	public CommonApiResponse<CacheResponse> getCache(@PathVariable String cacheKey) {
 		return CommonApiResponse.OK(redisCacheFacade.getCache(cacheKey));
 	}
 

@@ -22,8 +22,8 @@ public class RedisCacheFacade {
 		return CacheResponse.from(redisCacheService.cache(request.toCommand()));
 	}
 
-	public Object getCache(String cacheKey) {
-		return redisCacheService.getCache(cacheKey);
+	public CacheResponse getCache(String cacheKey) {
+		return CacheResponse.from(redisCacheService.getCache(cacheKey));
 	}
 
 	public EvictCacheResponse evictCache(String cacheKey) {
