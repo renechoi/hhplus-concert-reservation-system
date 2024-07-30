@@ -13,7 +13,6 @@ import io.queuemanagement.api.business.dto.inport.WaitingQueueTokenGenerateComma
 import io.queuemanagement.api.business.dto.outport.WaitingQueueTokenGeneralInfo;
 import io.queuemanagement.api.business.dto.outport.WaitingQueueTokenGenerateInfo;
 import io.queuemanagement.api.business.operators.WaitingQueueTokenCounterManager;
-import io.queuemanagement.api.business.operators.WaitingQueueTokenDuplicateChecker;
 import io.queuemanagement.api.business.persistence.WaitingQueueTokenEnqueueRepository;
 import io.queuemanagement.api.business.persistence.WaitingQueueTokenRetrievalRepository;
 import io.queuemanagement.api.business.service.WaitingQueueService;
@@ -29,17 +28,13 @@ public class SimpleWaitingQueueService implements WaitingQueueService {
 	private final WaitingQueueTokenEnqueueRepository enqueueRepository;
 	private final WaitingQueueTokenCounterManager counterManager;
 	private final WaitingQueueTokenRetrievalRepository waitingQueueRepository;
-	private final WaitingQueueTokenDuplicateChecker duplicateChecker;
 
 	@Override
 	@Transactional
 	public WaitingQueueTokenGenerateInfo generateAndEnqueue(WaitingQueueTokenGenerateCommand command) {
-		return duplicateChecker.check(command.getUserId())
-			.orElseGet(() -> {
-				WaitingQueueTokenCounter counter = counterManager.getAndIncreaseCounter(getMaxWaitingTokens());
-				WaitingQueueToken newToken = createToken(command).init(counter);
-				return WaitingQueueTokenGenerateInfo.from(enqueueRepository.enqueue(newToken));
-			});
+		WaitingQueueTokenCounter counter = counterManager.getWithLockAndIncreaseCounter(getMaxWaitingTokens());
+		WaitingQueueToken newToken = createToken(command).init(counter);
+		return WaitingQueueTokenGenerateInfo.from(enqueueRepository.enqueue(newToken));
 	}
 
 	/**

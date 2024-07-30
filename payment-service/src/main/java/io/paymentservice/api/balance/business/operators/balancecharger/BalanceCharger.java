@@ -1,5 +1,6 @@
 package io.paymentservice.api.balance.business.operators.balancecharger;
 
+import static io.paymentservice.api.balance.business.dto.inport.BalanceSearchCommand.*;
 import static io.paymentservice.api.balance.business.entity.Balance.*;
 
 import java.util.Optional;
@@ -25,7 +26,7 @@ public class BalanceCharger {
 
 	@Transactional
 	public BalanceChargeInfo charge(BalanceChargeCommand command) {
-		return balanceRepository.findByUserIdOptional(command.getUserId())
+		return balanceRepository.findSingleByConditionOptionalWithLock(onUser(command))
 			.or(() -> Optional.of(createDefaultNewBalance(command.getUserId())))
 			.map(balance -> balance.charge(command.getAmount(), command.getTransactionReason()))
 			.map(balanceRepository::save)

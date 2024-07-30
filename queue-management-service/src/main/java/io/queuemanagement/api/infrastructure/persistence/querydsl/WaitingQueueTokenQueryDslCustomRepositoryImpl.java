@@ -12,6 +12,7 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import io.queuemanagement.api.business.dto.inport.WaitingQueueTokenSearchCommand;
 import io.queuemanagement.api.infrastructure.entity.QWaitingQueueTokenEntity;
 import io.queuemanagement.api.infrastructure.entity.WaitingQueueTokenEntity;
+import jakarta.persistence.LockModeType;
 import lombok.RequiredArgsConstructor;
 
 /**
@@ -24,10 +25,10 @@ public class WaitingQueueTokenQueryDslCustomRepositoryImpl implements WaitingQue
 	private final JPAQueryFactory queryFactory;
 	private final QueryFilter<WaitingQueueTokenSearchCommand> queryFilter;
 	private final QuerySorter<WaitingQueueTokenEntity> querySorter;
+	private final QWaitingQueueTokenEntity processingQueueToken = QWaitingQueueTokenEntity.waitingQueueTokenEntity;
 
 	@Override
 	public Optional<WaitingQueueTokenEntity> findSingleByCondition(WaitingQueueTokenSearchCommand searchCommand){
-		QWaitingQueueTokenEntity processingQueueToken = QWaitingQueueTokenEntity.waitingQueueTokenEntity;
 
 		Predicate searchPredicate = queryFilter.createGlobalSearchQuery(searchCommand);
 
@@ -47,7 +48,6 @@ public class WaitingQueueTokenQueryDslCustomRepositoryImpl implements WaitingQue
 
 	@Override
 	public List<WaitingQueueTokenEntity> findAllByCondition(WaitingQueueTokenSearchCommand searchCommand) {
-		QWaitingQueueTokenEntity processingQueueToken = QWaitingQueueTokenEntity.waitingQueueTokenEntity;
 		Predicate searchPredicate = queryFilter.createGlobalSearchQuery(searchCommand);
 
 
@@ -59,5 +59,16 @@ public class WaitingQueueTokenQueryDslCustomRepositoryImpl implements WaitingQue
 		}
 
 		return query.fetch();
+	}
+
+	@Override
+	public Optional<WaitingQueueTokenEntity> findOptionalByConditionWithLock(WaitingQueueTokenSearchCommand searchCommand) {
+		Predicate searchPredicate = queryFilter.createGlobalSearchQuery(searchCommand);
+
+		JPAQuery<WaitingQueueTokenEntity> query = queryFactory.selectFrom(processingQueueToken)
+			.where(searchPredicate)
+			.setLockMode(LockModeType.PESSIMISTIC_WRITE);
+
+		return Optional.ofNullable(query.fetchOne());
 	}
 }

@@ -1,7 +1,6 @@
 package io.reservationservice.api.business.service.impl;
 
 import static io.reservationservice.api.business.domainentity.TemporalReservation.*;
-import static io.reservationservice.api.business.dto.inport.DateSearchCommand.DateSearchCondition.*;
 import static io.reservationservice.api.business.dto.inport.ReservationSearchCommand.*;
 import static io.reservationservice.api.business.dto.inport.SeatSearchCommand.*;
 import static io.reservationservice.api.business.dto.inport.TemporalReservationSearchCommand.*;
@@ -57,8 +56,8 @@ public class SimpleReservationCrudService implements ReservationCrudService {
 	@Override
 	@Transactional
 	public TemporalReservationCreateInfo createTemporalReservation(ReservationCreateCommand command) {
-		ConcertOption concertOption = concertOptionRepository.findById(command.getConcertOptionId());
-		Seat seat = seatRepository.findSingleByCondition(concertOptionAndSeatNumber(concertOption, command.getSeatNumber()));
+		ConcertOption concertOption = concertOptionRepository.findByIdWithSLock(command.getConcertOptionId()); // read / write 분리를 고려한 s lock
+		Seat seat = seatRepository.findSingleByConditionWithLock(onConcertOptionSeat(concertOption, command.getSeatNumber()));
 		seatRepository.save(seat.doReserve());
 		return TemporalReservationCreateInfo.from(temporalReservationRepository.save(create(command, concertOption, seat)));
 	}
@@ -81,10 +80,9 @@ public class SimpleReservationCrudService implements ReservationCrudService {
 	@Override
 	@Transactional(readOnly = true)
 	public ReservationStatusInfos getReservationStatus(Long userId, Long concertOptionId) {
-		List<Reservation> reservations = reservationRepository.findMultipleByCondition(userIdAndConcertOptionId(userId, concertOptionId));
+		List<Reservation> reservations = reservationRepository.findMultipleByCondition(onMatchingReservation(userId, concertOptionId));
 
-		List<TemporalReservation> temporalReservations = temporalReservationRepository
-			.findMultipleByCondtion(temporalReservationByUserIdAndConcertOptionId(userId, concertOptionId));
+		List<TemporalReservation> temporalReservations = temporalReservationRepository.findMultipleByCondtion(onMatchingTemporalReservaion(userId, concertOptionId));
 
 		return Stream.concat(reservations.stream().map(ReservationStatusInfo::from), temporalReservations.stream().map(ReservationStatusInfo::from))
 			.collect(collectingAndThen(toList(), ReservationStatusInfos::new))
@@ -100,18 +98,13 @@ public class SimpleReservationCrudService implements ReservationCrudService {
 	@Transactional
 	public void cancelTemporalReservation(Long temporalReservationId) {
 		TemporalReservation temporalReservation = temporalReservationRepository.findById(temporalReservationId);
-		temporalReservation.doCancelSeat();
-		temporalReservation.cancelConfirm();
+		temporalReservation.cancel();
 	}
 
 	@Override
 	@Transactional
 	public void cancelExpiredTemporalReservations() {
-		temporalReservationRepository.findMultipleByCondtion(expireAt(now(), BEFORE))
-			.forEach(temporalReservation -> {
-				temporalReservation.doCancelSeat();
-				temporalReservation.cancelConfirm();
-			});
+		temporalReservationRepository.findMultipleByCondtion(expireAt(now())).forEach(TemporalReservation::expire);
 	}
 
 }

@@ -14,5 +14,7 @@ public interface WaitingQueueTokenCounterCrudRepository {
 
 	WaitingQueueTokenCounter getCounter();
 
+	WaitingQueueTokenCounter getWithLockOrInitializeCounter();
+
 	WaitingQueueTokenCounter getOrInitializeCounter();
 }

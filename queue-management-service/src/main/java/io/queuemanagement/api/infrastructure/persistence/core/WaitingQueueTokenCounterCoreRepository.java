@@ -36,9 +36,13 @@ public class WaitingQueueTokenCounterCoreRepository implements WaitingQueueToken
 	}
 
 	@Override
+	public WaitingQueueTokenCounter getWithLockOrInitializeCounter() {
+		return waitingQueueTokenCounterJpaRepository.getAndLockCounter().map(WaitingQueueTokenCounterEntity::toDomain).orElseGet(WaitingQueueTokenCounter::createInitializingCounter);
+	}
+
+	@Override
 	public WaitingQueueTokenCounter getOrInitializeCounter() {
 		return waitingQueueTokenCounterJpaRepository.findById(1L).map(WaitingQueueTokenCounterEntity::toDomain).orElseGet(WaitingQueueTokenCounter::createInitializingCounter);
 	}
-
 
 }

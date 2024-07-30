@@ -9,7 +9,6 @@ import java.time.ZoneOffset;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import io.reservationservice.api.business.dto.inport.ReservationCreateCommand;
 import io.reservationservice.common.exception.definitions.ReservationUnAvailableException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -40,6 +39,9 @@ public class Seat {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long seatId;
+	//
+	// @Version
+	// private Long version;
 
 	@ManyToOne
 	@JoinColumn(name = "concert_option_id")
@@ -84,7 +86,7 @@ public class Seat {
 		return !isOccupied() && concertOption.isConcertDateAfter(date);
 	}
 
-	public boolean isAvailableAtRequestTime(Long requestAt) {
+	public boolean isAvailableAt(Long requestAt) {
 		LocalDateTime date = Instant.ofEpochMilli(requestAt).atZone(ZoneOffset.UTC).toLocalDateTime();
 		return isAvailable(date);
 	}

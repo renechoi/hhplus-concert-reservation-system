@@ -39,7 +39,12 @@ public class SeatCoreRepository implements SeatRepository {
 	}
 
 	@Override
-	public List<Seat> findMultipleBy(SeatSearchCommand searchCommand) {
+	public Seat findSingleByConditionWithLock(SeatSearchCommand searchCommand) {
+		return seatJpaRepository.findSingleByConditionWithLock(searchCommand).orElseThrow(() -> new ReservationUnAvailableException(SEAT_NOT_FOUND));
+	}
+
+	@Override
+	public List<Seat> findMultipleByCondition(SeatSearchCommand searchCommand) {
 		return seatJpaRepository.findMultipleByCondition(searchCommand);
 	}
 }
