@@ -10,6 +10,7 @@ import static java.util.stream.Collectors.*;
 import java.util.List;
 import java.util.stream.Stream;
 
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -62,7 +63,6 @@ public class SimpleReservationCrudService implements ReservationCrudService {
 		return TemporalReservationCreateInfo.from(temporalReservationRepository.save(create(command, concertOption, seat)));
 	}
 
-
 	/**
 	 * 임시 예약을 확정된 예약으로 변환
 	 *
@@ -79,6 +79,7 @@ public class SimpleReservationCrudService implements ReservationCrudService {
 
 	@Override
 	@Transactional(readOnly = true)
+	@Cacheable(key = "#userId" + "-" + "#concertOptionId", value= "reservationStatus")
 	public ReservationStatusInfos getReservationStatus(Long userId, Long concertOptionId) {
 		List<Reservation> reservations = reservationRepository.findMultipleByCondition(onMatchingReservation(userId, concertOptionId));
 

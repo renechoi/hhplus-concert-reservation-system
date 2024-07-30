@@ -6,8 +6,11 @@ import static java.time.LocalDateTime.*;
 import java.time.LocalDateTime;
 
 import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.domain.AbstractAggregateRoot;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import io.reservationservice.api.business.dto.event.ReservationChangedEvent;
+import io.reservationservice.api.business.dto.event.TemporalReservationChangedEvent;
 import io.reservationservice.api.business.dto.inport.ReservationCreateCommand;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -17,6 +20,9 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PostPersist;
+import jakarta.persistence.PostRemove;
+import jakarta.persistence.PostUpdate;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -33,7 +39,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @Getter
 @EntityListeners({AuditingEntityListener.class})
-public class TemporalReservation {
+public class TemporalReservation extends AbstractAggregateRoot<TemporalReservation> {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long temporalReservationId;
@@ -63,6 +69,15 @@ public class TemporalReservation {
 	private LocalDateTime requestAt;
 
 	private Boolean isCanceled;
+
+
+
+	@PostPersist
+	@PostUpdate
+	@PostRemove
+	private void publishTemporalReservationChangedEvent() {
+		registerEvent(new TemporalReservationChangedEvent(this.userId, this.concertOption.getConcertOptionId()));
+	}
 
 	public static TemporalReservationBuilder defaultBuilder(){
 		return TemporalReservation.builder().reserveAt(now()).isConfirmed(false);

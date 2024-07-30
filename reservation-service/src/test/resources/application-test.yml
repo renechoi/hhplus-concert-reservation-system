@@ -1,6 +1,10 @@
 spring:
   application:
     name: hhplus-reservation-application-system
+  cache:
+    type: none
+#    jcache:
+#      config: classpath:ehcache.xml
   datasource:
     url: jdbc:mysql://localhost:3302/hhplus-reservation-dev-database
     username: ${SPRING_DATASOURCE_USERNAME:root}  # 기본값 설정

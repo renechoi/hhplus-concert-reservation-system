@@ -2,6 +2,7 @@ package io.redisservice.api.application.dto.response;
 
 import io.redisservice.api.business.dto.info.CacheInfo;
 import io.redisservice.common.mapper.ObjectMapperBasedVoMapper;
+import jakarta.annotation.Nullable;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,7 +19,9 @@ import lombok.NoArgsConstructor;
 public class CacheResponse {
 	private String cacheKey;
 	private Object cacheValue;
+	@Nullable
 	private Long ttl;
+	@Nullable
 	private Boolean isCached;
 
 	public static CacheResponse from(CacheInfo cacheInfo) {

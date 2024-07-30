@@ -50,6 +50,7 @@ public class ProcessingQueueTokenApiStepDef implements En {
 	}
 
 
+
 	private void checkTokenAvailabilityWith204Response(DataTable dataTable) {
 		Map<String, String> userIdMap = dataTable.asMaps().get(0);
 		String userId = userIdMap.get("userId");

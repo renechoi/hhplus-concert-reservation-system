@@ -29,9 +29,11 @@ public class TokenScheduler {
 
 	/**
 	 * 만료 토큰 처리
+	 * 저장소를 Redis로 변경함에 따라 Deprecated
 	 */
 	@Scheduled(fixedRateString = "${scheduler.expireTokensRate}")
 	// @SchedulerLock(name = "expireTokens", lockAtMostFor = "PT15S", lockAtLeastFor = "PT10S")
+	@Deprecated
 	public void expireTokens() {
 		queueManagementFacade.expireQueueTokens();
 	}

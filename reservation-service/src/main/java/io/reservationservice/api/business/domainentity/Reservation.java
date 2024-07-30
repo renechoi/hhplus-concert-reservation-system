@@ -3,8 +3,10 @@ package io.reservationservice.api.business.domainentity;
 import java.time.LocalDateTime;
 
 import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.domain.AbstractAggregateRoot;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import io.reservationservice.api.business.dto.event.ReservationChangedEvent;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
@@ -13,6 +15,9 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PostPersist;
+import jakarta.persistence.PostRemove;
+import jakarta.persistence.PostUpdate;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -29,7 +34,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @Getter
 @EntityListeners({AuditingEntityListener.class})
-public class Reservation {
+public class Reservation extends AbstractAggregateRoot<Reservation> {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long reservationId;
@@ -61,6 +66,11 @@ public class Reservation {
 	@Setter
 	private LocalDateTime requestAt;
 
-
+	@PostPersist
+	@PostUpdate
+	@PostRemove
+	private void publishReservationChangedEvent() {
+		registerEvent(new ReservationChangedEvent(this.userId, this.concertOption.getConcertOptionId()));
+	}
 
 }

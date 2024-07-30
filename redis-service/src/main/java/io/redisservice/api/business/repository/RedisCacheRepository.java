@@ -1,6 +1,9 @@
 package io.redisservice.api.business.repository;
 
+import java.util.Optional;
+
 import io.redisservice.api.business.dto.command.CacheCommand;
+import io.redisservice.api.business.dto.command.EvictCacheCommand;
 
 /**
  * @author : Rene Choi
@@ -8,6 +11,6 @@ import io.redisservice.api.business.dto.command.CacheCommand;
  */
 public interface RedisCacheRepository {
 	boolean cache(CacheCommand cacheCommand);
-	Object getCache(String cacheKey);
-	boolean evictCache(String cacheKey);
+	String getCache(String cacheKey);
+	boolean evictCache(EvictCacheCommand evictCacheCommand);
 }

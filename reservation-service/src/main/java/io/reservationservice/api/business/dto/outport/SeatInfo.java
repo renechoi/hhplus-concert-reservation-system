@@ -1,5 +1,6 @@
 package io.reservationservice.api.business.dto.outport;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 import io.reservationservice.api.business.domainentity.Seat;
@@ -17,7 +18,7 @@ public record SeatInfo(
 	 String seatNumber,
 	 Boolean occupied,
 	 LocalDateTime createdAt
-) {
+) implements Serializable {
 	public static SeatInfo from(Seat seat) {
 		return ObjectMapperBasedVoMapper.convert(seat, SeatInfo.class);
 	}

@@ -6,11 +6,6 @@ services:
     restart: unless-stopped
     ports:
       - "6379:6379"
-
-  redisinsight:
-    image: redislabs/redisinsight:latest
-    container_name: redisinsight
-    restart: unless-stopped
-    ports:
-      - "8001:8001"
-
+    volumes:
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]

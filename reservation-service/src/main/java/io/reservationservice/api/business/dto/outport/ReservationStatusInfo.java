@@ -1,5 +1,6 @@
 package io.reservationservice.api.business.dto.outport;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 import io.reservationservice.api.business.domainentity.Reservation;
@@ -19,7 +20,7 @@ public record ReservationStatusInfo(
      Boolean isConfirmed,
      Boolean isCanceled,
 	 Boolean isTemporary
-) {
+) implements Serializable {
 
 	public static ReservationStatusInfo from(Reservation reservation) {
 		return new ReservationStatusInfo(

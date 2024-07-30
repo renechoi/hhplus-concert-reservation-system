@@ -1,5 +1,6 @@
 package io.reservationservice.api.business.dto.outport;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -22,7 +23,7 @@ public record ConcertOptionInfo(
 	BigDecimal price,
 	LocalDateTime createdAt,
 	LocalDateTime requestAt
-) {
+) implements Serializable {
 
 	public static ConcertOptionInfo from(ConcertOption concertOption) {
 		return ObjectMapperBasedVoMapper.convert(concertOption, ConcertOptionInfo.class);

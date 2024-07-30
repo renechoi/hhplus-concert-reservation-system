@@ -3,6 +3,9 @@ spring:
     active: stage
   application:
     name: reservation-service
+  cache:
+    jcache:
+      config: classpath:ehcache.xml
 eureka:
   client:
     serviceUrl:

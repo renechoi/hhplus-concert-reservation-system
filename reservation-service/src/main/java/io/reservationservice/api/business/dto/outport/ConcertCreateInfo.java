@@ -1,5 +1,6 @@
 package io.reservationservice.api.business.dto.outport;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 import io.reservationservice.api.business.domainentity.Concert;
@@ -14,7 +15,7 @@ public record ConcertCreateInfo(
 	String title,
 	LocalDateTime createdAt,
 	LocalDateTime requestAt
-) {
+) implements Serializable {
 	public static ConcertCreateInfo from(Concert concert) {
 		return ObjectMapperBasedVoMapper.convert(concert, ConcertCreateInfo.class);
 	}

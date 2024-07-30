@@ -9,5 +9,7 @@ import io.queuemanagement.api.business.domainmodel.WaitingQueueToken;
 public interface WaitingQueueTokenManagementRepository {
 	WaitingQueueToken updateStatus(WaitingQueueToken waitingQueueToken);
 
+	void remove(WaitingQueueToken waitingQueueToken);
+
 	WaitingQueueToken updatePosition(WaitingQueueToken waitingQueueToken);
 }

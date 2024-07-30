@@ -3144,6 +3144,2054 @@ public class SimpleBalanceUseManager implements BalanceUseManager {
 
 
 
+
+<details>
+<summary><b>캐싱을 이용한 API 및 쿼리 개선</b></summary>
+
+
+# 1. 요구사항
+
+**선택한 시나리오에서의 Query 분석 및 캐싱 전략 설계**
+
+
+> 조회가 오래 걸리는 쿼리에 대한 캐싱, 혹은 Redis 를 이용한 로직 이관을 통해 성능 개선할 수 있는 로직을 분석
+
+**주요 포인트**
+- 각 시나리오에서 발생하는 Query 에 대한 충분한 이해하기
+- 대량의 트래픽 발생시 지연이 발생할 수 있는 조회쿼리에 대해 분석하고, 이에 대한 결과를 작성하기
+
+
+# 2. 요구사항 이해하기
+
+
+
+<details>
+<summary><b>질문과 답변</b></summary>
+
+**질문**
+
+```
+이번 주차 Step 13 과제 요구사항에 대한 이해가 필요해서 문의드립니다!
+
+아래의 Step 13 과제 캐시와 DB 조회 부하에 대한 이해 채점 기준에 따르면 쿼리에 대한 이해를 요구하는 것으로 이해가 됩니다.
+
+각 시나리오에서 발생하는 Query 에 대한 충분한 이해가 있는지
+대량의 트래픽 발생시 지연이 발생할 수 있는 조회쿼리에 대해 분석하고, 이에 대한 결과를 작성하였는지
+
+제가 처음 생각한 사고의 흐름은 아래와 같았는데요.
+
+대량의 트래픽에서 슬로우 쿼리를 찾아야 하는구나 -> 그러면 대량의 더미 데이터가 필요하겠네  -> 그런 뒤에 성능 테스트를 돌려서 슬로우 쿼리를 찾자
+
+그런데 생각해 보니 대량의 데이터에서 인덱스가 없는 경우 어떤 경우를 조회해도 쿼리 성능은 잘 나오지 않을 것 같습니다. :thinking_face:
+
+현재 스텝에서 캐싱이 주된 주제이고, 조회 쿼리에 대한 캐싱을 통한 개선이 1차 목표인 것으로 이해 했는데요.
+
+그렇다면
+인덱스 없이 일단 슬로우 쿼리를 찾기 (대량의 트래픽 발생시 지연이 발생할 수 있는 조회쿼리 에 대한 요구 사항) 
+해당 쿼리에 대한 분석하기 (각 시나리오에서 발생하는 Query 에 대한 충분한 이해가 있는지 에 대한 요구사항) 
+해당 쿼리에 대한 캐싱을 통해 성능을 개선하기 (분석하고, 이에 대한 결과를 작성  에 대한 요구 사항)
+
+이와 같은 내용으로 접근하는 것이 과제의 요구 사항에 대한 이해가 맞는지 문의드립니다!
+```
+
+**답변**
+
+```
+네네 추가 인덱스 설정 없이 트래픽 발생 시 지연이 발생할 수 있는 부분을 캐싱 처리를 통해 성능을 개선하는것이 목적 입니다.
+(더미 DATA를 넣고 테스트 진행하는 것을 권장 드립니다.)
+```
+
+
+**질문**
+
+```
+`쿼리에 대한 이해 및 분석` 을 어떻게 풀어야 할지 잘 감이 안옵니다.
+    
+인덱스가 없는 경우 대량의 데이터에 대한 조회 성능이 나쁜 점은 어떻게 보면 자명해보여서, 이런 수치로 느리다 빠르다를 판단할 수가 있는 것인지부터 의문이 듭니다.
+
+혹은 조회가 아닌 CUD에 대한 성능 테스트가 필요한 것인지(캐싱과 연결지으려면 조회 중심으로 테스트를 해야 한다고 생각하고 있는데 이 가정이 틀린 것인지), 마찬가지로 그 경우라면 어떤 부분을 중점적으로 보고 ‘쿼리’ 에 대해서 ‘지연 여부’를 어떻게 정의하고, 어떻게 분석해야 하는 것인지, 감이 잘 안와서 ㅠㅠ 조언 부탁드립니다!
+```
+
+
+```
+쿼리에 대한 직접적인 성능 판단과 함께 비즈니스적으로 특정 쿼리 패턴이 어떻게 사용해볼지도 생각해보자. 
+```
+
+
+
+</details>
+
+본 과제의 요구사항은 비즈니스 기반의 쿼리 패턴 사용 사례를 분석하고, 개선 포인트를 위한 캐싱 전략을 설계 및 구현하는 것이다.
+이때 전제는 인덱스는 고려하지 않는다.
+아래의 스텝을 따라 진행한다.
+
+
+- 유스케이스별 잠재적 이슈 분석
+- 쿼리 성능 확인
+- 개선사항 도출
+
+
+
+
+
+# 3. 분석
+
+
+
+## 1. 예약 가능 날짜 조회 API (`GET /api/availability/dates/{concertId}`)
+### 설명
+- 이 API는 특정 콘서트의 예약 가능한 날짜를 조회한다.
+- 사용되는 쿼리는 대개 concertId를 기준으로 해당 콘서트의 가능한 모든 예약 날짜를 반환한다.
+
+### 분석
+- **조회 빈도**: 예약 가능한 날짜는 예약 시 자주 조회된다.
+- **변경 빈도**: 콘서트 일정이 자주 변경되지 않으므로 데이터 변경 빈도는 낮다.
+- **쿼리 성능 추정**: 단일 concertId를 기준으로 하므로 인덱스만 잘 설정되어 있다면 성능이 좋을 것이다.
+
+### 캐싱이 필요한 유스케이스
+
+1. **콘서트 예약 페이지 로드 시**
+  - 사용자들이 콘서트 예약 페이지를 방문할 때마다 예약 가능한 날짜를 조회한다.
+
+2. **예약 가능 날짜를 기반으로 한 달력 뷰 생성 시**
+  - 여러 사용자가 동시에 예약 가능한 날짜를 달력 형식으로 조회하는 경우, 캐시를 사용하여 동일한 데이터를 반복적으로 조회하지 않도록 최적화할 수 있다.
+
+
+### 분석 종합
+
+- 분석에 따른 캐싱 적절도: ★★★★★
+- 근거: 데이터 변경이 적고 조회 빈도가 높을 것으로 예상된다.
+
+
+### 선택
+
+1. **캐싱 전략: Look-aside vs Write-back**
+  - **Look-aside 캐싱** 선택
+  - 예약 가능한 날짜는 읽기 빈도가 높고, 데이터 변경 빈도는 낮다.
+
+2. **캐시 유형 결정: 로컬 캐시 vs 글로벌 캐시**
+  - **글로벌 캐시** 선택
+  - 예약 가능한 날짜는 서로 다른 여러 유저로부터 동일하게 조회될 가능성이 높다.
+  - 글로벌 캐시를 사용하는 경우 공유 자원을 중앙에서 관리함으로써 동기화 과정이 비교적 수월하고, 일관된 데이터를 제공하기 용이하다.
+
+
+**결론:**
+- **캐싱 전략**: Look-aside 캐싱
+- **캐시 유형**: 글로벌 캐시 (Redis)
+
+
+
+
+## 2. 예약 가능 좌석 조회 API (`GET /api/availability/seats/{concertOptionId}/{requestAt}`)
+### 설명
+- 이 API는 특정 콘서트 옵션에 대해 요청 시점(requestAt) 기준으로 예약 가능한 좌석을 조회한다.
+- 사용되는 쿼리는 concertOptionId와 requestAt을 기준으로 해당 콘서트 옵션의 가능한 모든 예약 좌석을 반환한다.
+
+### 분석
+- **조회 빈도**: 예약 가능 좌석은 예약 과정에서 자주 조회된다.
+- **변경 빈도**: 좌석 예약 상황에 따라 변경이 발생할 수 있어 데이터 변경 빈도는 중간 정도이다.
+- **쿼리 성능 추정**: 인덱스가 적절히 설정되어 있다면 성능이 좋을 수 있지만, 많은 동시 조회 시 성능 저하 가능성이 있다.
+
+### 캐싱이 필요한 유스케이스
+
+1. **콘서트 좌석 선택 페이지 로드 시**
+  - 사용자들이 좌석 선택 페이지를 방문할 때마다 예약 가능한 좌석을 조회한다.
+
+2. **여러 사용자들이 동일한 콘서트 옵션의 좌석을 조회 시**
+  - 여러 사용자가 동시에 동일한 콘서트 옵션의 예약 가능한 좌석을 조회하는 경우, 캐시를 사용하여 동일한 데이터를 반복적으로 조회하지 않도록 최적화할 수 있다.
+
+3. **특이 케이스**:
+  - 특정 유저들이 의사 결정 과정에서 여러 차례 반복적인 조회하는 경우가 가능하다.
+
+### 분석 종합
+- 분석에 따른 캐싱 적절도: ★★★★☆
+- 근거: 조회 빈도가 높고 변경 빈도가 중간 정도이기 때문에 캐싱이 유효할 수 있다.
+
+### 선택
+
+1. **캐싱 전략: Look-aside vs Write-back**
+  - **Look-aside 캐싱** 선택
+  - 예약 가능 좌석은 읽기 빈도가 높고 데이터 변경 빈도가 중간 정도이다.
+
+2. **캐시 유형 결정: 로컬 캐시 vs 글로벌 캐시**
+  - **글로벌 캐시** 선택
+  - 예약 가능 좌석 데이터는 여러 서버 인스턴스에서 동일하게 조회될 가능성이 높고, 데이터 일관성이 중요하다.
+
+**결론:**
+- **캐싱 전략**: Look-aside 캐싱
+- **캐시 유형**: 글로벌 캐시 (Redis)
+
+
+
+## 3. 예약 상태 조회 API (`GET /api/reservations/status/{userId}/{concertOptionId}`)
+### 설명
+- 이 API는 특정 사용자(userId)가 특정 콘서트 옵션(concertOptionId)에 대해 예약한 상태를 조회한다.
+- 사용되는 쿼리는 userId와 concertOptionId를 기준으로 해당 사용자의 예약 상태를 반환한다.
+
+### 분석
+- **조회 빈도**: 예약 상태는 사용자가 예약 상황을 확인할 때 자주 조회된다.
+- **변경 빈도**: 예약 상태는 예약 확정, 취소 등으로 인해 변경이 발생할 수 있어 데이터 변경 빈도는 중간 정도이다.
+- **쿼리 성능 추정**: 인덱스가 적절히 설정되어 있다면 성능이 좋을 수 있지만, 많은 동시 조회 시 성능 저하 가능성이 있다.
+
+### 캐싱이 필요한 유스케이스
+
+1. **사용자가 자신의 예약 상태를 확인할 때**
+  - 사용자들이 예약 후 자신의 예약 상태를 확인하는 경우가 많아 조회 빈도가 높다.
+  - 사용자의 행동 패턴을 고려할 때, 초기 조회 수 단기간에 반복적인 조회가 가능하다.
+
+2. **관리자가 다수의 사용자 예약 상태를 조회 시**
+  - 관리자가 다수 사용자의 예약 상태를 조회하는 경우, 캐시를 사용하여 동일한 데이터를 반복적으로 조회하지 않도록 최적화할 수 있다.
+
+### 분석 종합
+- 분석에 따른 캐싱 적절도: ★★★☆☆
+- 근거: 조회 빈도가 높고 변경 빈도가 중간 정도이기 때문에 캐싱이 유효할 수 있다.
+
+### 선택
+
+1. **캐싱 전략: Look-aside vs Write-back**
+  - **Look-aside 캐싱** 선택
+  - 예약 상태는 읽기 빈도가 높고 데이터 변경 빈도가 중간 정도이다.
+
+2. **캐시 유형 결정: 로컬 캐시 vs 글로벌 캐시**
+  - **글로벌 캐시** 선택
+  - 이 API는 사용자별로 개인화된 데이터를 조회하므로, 전역 자원에서 데이터를 관리하기보다는 각 인스턴스에서 데이터를 관리하는 로컬 캐시를 사용하는 것이 적합하다.
+  - 로컬 캐시는 드라마틱한 성능 개선보다는, 특정 사용자에 대한 집중적인 요청이 발생하는 상황이나 단기간의 부하와 같은 특수 케이스에 대한 방어 목적에 초점을 맞춘다.
+  - 따라서, 데이터의 일관성을 유지하면서도 효율적인 캐싱을 위해 짧은 TTL(e.g. 1분)을 설정한다.
+
+**결론:**
+- **캐싱 전략**: Look-aside 캐싱
+- **캐시 유형**: 로컬 캐시 (짧은 TTL)
+
+
+
+## 4. 결제 내역 조회 API (`GET /api/user-balance/payment/history/{userId}`)
+### 설명
+- 이 API는 특정 사용자(userId)의 결제 내역을 조회한다.
+- 사용되는 쿼리는 userId를 기준으로 해당 사용자의 모든 결제 내역을 반환한다.
+
+### 분석
+- **조회 빈도**: 결제 내역은 사용자가 자신의 거래 내역을 확인할 때 자주 조회된다.
+- **변경 빈도**: 결제나 취소 시 변경이 발생하므로 데이터 변경 빈도는 중간 정도이다.
+- **쿼리 성능 추정**: 인덱스가 적절히 설정되어 있다면 성능이 좋을 수 있지만, 많은 동시 조회 시 성능 저하 가능성이 있다.
+
+### 캐싱이 필요한 유스케이스
+
+1. **사용자가 자신의 결제 내역을 확인할 때**
+  - 사용자들이 결제 후 자신의 결제 내역을 확인하는 경우가 많아 조회 빈도가 높다.
+  - 사용자의 행동 패턴을 고려할 때, 초기 조회 수 단기간에 반복적인 조회가 가능하다.
+
+2. **관리자가 다수의 사용자 결제 내역을 조회 시**
+  - 관리자가 다수 사용자의 결제 내역을 조회하는 경우, 캐시를 사용하여 동일한 데이터를 반복적으로 조회하지 않도록 최적화할 수 있다.
+
+### 분석 종합
+- 분석에 따른 캐싱 적절도: ★★★☆☆
+- 근거: 조회 빈도가 높고 변경 빈도가 중간 정도이기 때문에 캐싱이 유효할 수 있다.
+
+### 선택
+
+1. **캐싱 전략: Look-aside vs Write-back**
+  - **Look-aside 캐싱** 선택
+  - 결제 내역은 읽기 빈도가 높고 데이터 변경 빈도가 중간 정도이다.
+
+2. **캐시 유형 결정: 로컬 캐시 vs 글로벌 캐시**
+  - **글로벌 캐시** 선택
+  - 이 API는 사용자별로 개인화된 데이터를 조회하므로, 전역 자원에서 데이터를 관리하기보다는 각 인스턴스에서 데이터를 관리하는 로컬 캐시를 사용하는 것이 적합하다.
+  - 로컬 캐시는 드라마틱한 성능 개선보다는, 특정 사용자에 대한 집중적인 요청이 발생하는 상황이나 단기간의 부하와 같은 특수 케이스에 대한 방어 목적에 초점을 맞춘다.
+  - 따라서, 데이터의 일관성을 유지하면서도 효율적인 캐싱을 위해 짧은 TTL(e.g. 1분)을 설정한다.
+
+
+
+**결론:**
+- **캐싱 전략**: Look-aside 캐싱
+- **캐시 유형**: 로컬 캐시 (짧은 TTL)
+
+
+
+## 5. 대기열 순번 조회 API (`GET /api/waiting-queue-token/{userId}`)
+### 설명
+- 이 API는 특정 사용자(userId)의 대기열 순번을 조회한다.
+- 사용되는 쿼리는 userId를 기준으로 해당 사용자의 대기열 순번을 반환한다.
+
+### 분석
+- **조회 빈도**: 대기열 순번은 대기 중인 사용자가 자주 조회한다.
+- **변경 빈도**: 대기열 상태는 자주 변경되므로 데이터 변경 빈도는 매우 높다.
+- **쿼리 성능 추정**: 인덱스가 적절히 설정되어 있어도 자주 변경되므로 성능 저하 가능성이 크다.
+
+### 캐싱이 필요한 유스케이스
+
+1. **사용자가 자신의 대기열 순번을 확인할 때**
+  - 사용자들이 대기 중 자신의 순번을 자주 확인하는 경우가 많아 조회 빈도가 높다.
+
+### 분석 종합
+- 분석에 따른 캐싱 적절도: ☆☆☆☆☆
+- 근거: 데이터 변경 빈도가 매우 높아 캐싱의 효과가 크지 않다.
+
+### 선택
+
+**캐시 사용하지 않음**
+- 대기열 순번 조회 요구는 많지만, 지나치게 개인화된 정보이며 변경이 매우 잦으므로, 캐시를 사용하지 않는 것이 적합하다.
+- 실시간 처리가 필요하므로 **Redis**를 사용하여 기존의 RDB를 이용한 구현을 레디스를 이용한 구현으로 리팩토링 하는 것으로 개선한다.
+
+**결론:**
+- **캐싱 전략**: 캐시 사용하지 않음
+- **대안 전략**: Redis를 사용한 실시간 처리
+
+
+
+
+
+
+# 4. 구현
+
+
+
+
+# 3. 분석
+
+
+
+## 1. 예약 가능 날짜 조회 API (`GET /api/availability/dates/{concertId}`)
+### 설명
+- 이 API는 특정 콘서트의 예약 가능한 날짜를 조회한다.
+- 사용되는 쿼리는 대개 concertId를 기준으로 해당 콘서트의 가능한 모든 예약 날짜를 반환한다.
+
+### 분석
+- **조회 빈도**: 예약 가능한 날짜는 예약 시 자주 조회된다.
+- **변경 빈도**: 콘서트 일정이 자주 변경되지 않으므로 데이터 변경 빈도는 낮다.
+- **쿼리 성능 추정**: 단일 concertId를 기준으로 하므로 인덱스만 잘 설정되어 있다면 성능이 좋을 것이다.
+
+### 캐싱이 필요한 유스케이스
+
+1. **콘서트 예약 페이지 로드 시**
+- 사용자들이 콘서트 예약 페이지를 방문할 때마다 예약 가능한 날짜를 조회한다.
+
+2. **예약 가능 날짜를 기반으로 한 달력 뷰 생성 시**
+- 여러 사용자가 동시에 예약 가능한 날짜를 달력 형식으로 조회하는 경우, 캐시를 사용하여 동일한 데이터를 반복적으로 조회하지 않도록 최적화할 수 있다.
+
+
+### 분석 종합
+
+- 분석에 따른 캐싱 적절도: ★★★★★
+- 근거: 데이터 변경이 적고 조회 빈도가 높을 것으로 예상된다.
+
+
+### 선택
+
+1. **캐싱 전략: Look-aside vs Write-back**
+- **Look-aside 캐싱** 선택
+- 예약 가능한 날짜는 읽기 빈도가 높고, 데이터 변경 빈도는 낮다.
+
+2. **캐시 유형 결정: 로컬 캐시 vs 글로벌 캐시**
+- **글로벌 캐시** 선택
+- 예약 가능한 날짜는 서로 다른 여러 유저로부터 동일하게 조회될 가능성이 높다.
+- 글로벌 캐시를 사용하는 경우 공유 자원을 중앙에서 관리함으로써 동기화 과정이 비교적 수월하고, 일관된 데이터를 제공하기 용이하다.
+
+
+**결론:**
+- **캐싱 전략**: Look-aside 캐싱
+- **캐시 유형**: 글로벌 캐시 (Redis)
+
+
+
+
+## 2. 예약 가능 좌석 조회 API (`GET /api/availability/seats/{concertOptionId}/{requestAt}`)
+### 설명
+- 이 API는 특정 콘서트 옵션에 대해 요청 시점(requestAt) 기준으로 예약 가능한 좌석을 조회한다.
+- 사용되는 쿼리는 concertOptionId와 requestAt을 기준으로 해당 콘서트 옵션의 가능한 모든 예약 좌석을 반환한다.
+
+### 분석
+- **조회 빈도**: 예약 가능 좌석은 예약 과정에서 자주 조회된다.
+- **변경 빈도**: 좌석 예약 상황에 따라 변경이 발생할 수 있어 데이터 변경 빈도는 중간 정도이다.
+- **쿼리 성능 추정**: 인덱스가 적절히 설정되어 있다면 성능이 좋을 수 있지만, 많은 동시 조회 시 성능 저하 가능성이 있다.
+
+### 캐싱이 필요한 유스케이스
+
+1. **콘서트 좌석 선택 페이지 로드 시**
+- 사용자들이 좌석 선택 페이지를 방문할 때마다 예약 가능한 좌석을 조회한다.
+
+2. **여러 사용자들이 동일한 콘서트 옵션의 좌석을 조회 시**
+- 여러 사용자가 동시에 동일한 콘서트 옵션의 예약 가능한 좌석을 조회하는 경우, 캐시를 사용하여 동일한 데이터를 반복적으로 조회하지 않도록 최적화할 수 있다.
+
+3. **특이 케이스**:
+- 특정 유저들이 의사 결정 과정에서 여러 차례 반복적인 조회하는 경우가 가능하다.
+
+### 분석 종합
+- 분석에 따른 캐싱 적절도: ★★★★☆
+- 근거: 조회 빈도가 높고 변경 빈도가 중간 정도이기 때문에 캐싱이 유효할 수 있다.
+
+### 선택
+
+1. **캐싱 전략: Look-aside vs Write-back**
+- **Look-aside 캐싱** 선택
+- 예약 가능 좌석은 읽기 빈도가 높고 데이터 변경 빈도가 중간 정도이다.
+
+2. **캐시 유형 결정: 로컬 캐시 vs 글로벌 캐시**
+- **글로벌 캐시** 선택
+- 예약 가능 좌석 데이터는 여러 서버 인스턴스에서 동일하게 조회될 가능성이 높고, 데이터 일관성이 중요하다.
+
+**결론:**
+- **캐싱 전략**: Look-aside 캐싱
+- **캐시 유형**: 글로벌 캐시 (Redis)
+
+
+
+## 3. 예약 상태 조회 API (`GET /api/reservations/status/{userId}/{concertOptionId}`)
+### 설명
+- 이 API는 특정 사용자(userId)가 특정 콘서트 옵션(concertOptionId)에 대해 예약한 상태를 조회한다.
+- 사용되는 쿼리는 userId와 concertOptionId를 기준으로 해당 사용자의 예약 상태를 반환한다.
+
+### 분석
+- **조회 빈도**: 예약 상태는 사용자가 예약 상황을 확인할 때 자주 조회된다.
+- **변경 빈도**: 예약 상태는 예약 확정, 취소 등으로 인해 변경이 발생할 수 있어 데이터 변경 빈도는 중간 정도이다.
+- **쿼리 성능 추정**: 인덱스가 적절히 설정되어 있다면 성능이 좋을 수 있지만, 많은 동시 조회 시 성능 저하 가능성이 있다.
+
+### 캐싱이 필요한 유스케이스
+
+1. **사용자가 자신의 예약 상태를 확인할 때**
+- 사용자들이 예약 후 자신의 예약 상태를 확인하는 경우가 많아 조회 빈도가 높다.
+- 사용자의 행동 패턴을 고려할 때, 초기 조회 수 단기간에 반복적인 조회가 가능하다.
+
+2. **관리자가 다수의 사용자 예약 상태를 조회 시**
+- 관리자가 다수 사용자의 예약 상태를 조회하는 경우, 캐시를 사용하여 동일한 데이터를 반복적으로 조회하지 않도록 최적화할 수 있다.
+
+### 분석 종합
+- 분석에 따른 캐싱 적절도: ★★★☆☆
+- 근거: 조회 빈도가 높고 변경 빈도가 중간 정도이기 때문에 캐싱이 유효할 수 있다.
+
+### 선택
+
+1. **캐싱 전략: Look-aside vs Write-back**
+- **Look-aside 캐싱** 선택
+- 예약 상태는 읽기 빈도가 높고 데이터 변경 빈도가 중간 정도이다.
+
+2. **캐시 유형 결정: 로컬 캐시 vs 글로벌 캐시**
+- **글로벌 캐시** 선택
+- 이 API는 사용자별로 개인화된 데이터를 조회하므로, 전역 자원에서 데이터를 관리하기보다는 각 인스턴스에서 데이터를 관리하는 로컬 캐시를 사용하는 것이 적합하다.
+- 로컬 캐시는 드라마틱한 성능 개선보다는, 특정 사용자에 대한 집중적인 요청이 발생하는 상황이나 단기간의 부하와 같은 특수 케이스에 대한 방어 목적에 초점을 맞춘다.
+- 따라서, 데이터의 일관성을 유지하면서도 효율적인 캐싱을 위해 짧은 TTL(e.g. 1분)을 설정한다.
+
+**결론:**
+- **캐싱 전략**: Look-aside 캐싱
+- **캐시 유형**: 로컬 캐시 (짧은 TTL)
+
+
+
+## 4. 결제 내역 조회 API (`GET /api/user-balance/payment/history/{userId}`)
+### 설명
+- 이 API는 특정 사용자(userId)의 결제 내역을 조회한다.
+- 사용되는 쿼리는 userId를 기준으로 해당 사용자의 모든 결제 내역을 반환한다.
+
+### 분석
+- **조회 빈도**: 결제 내역은 사용자가 자신의 거래 내역을 확인할 때 자주 조회된다.
+- **변경 빈도**: 결제나 취소 시 변경이 발생하므로 데이터 변경 빈도는 중간 정도이다.
+- **쿼리 성능 추정**: 인덱스가 적절히 설정되어 있다면 성능이 좋을 수 있지만, 많은 동시 조회 시 성능 저하 가능성이 있다.
+
+### 캐싱이 필요한 유스케이스
+
+1. **사용자가 자신의 결제 내역을 확인할 때**
+- 사용자들이 결제 후 자신의 결제 내역을 확인하는 경우가 많아 조회 빈도가 높다.
+- 사용자의 행동 패턴을 고려할 때, 초기 조회 수 단기간에 반복적인 조회가 가능하다.
+
+2. **관리자가 다수의 사용자 결제 내역을 조회 시**
+- 관리자가 다수 사용자의 결제 내역을 조회하는 경우, 캐시를 사용하여 동일한 데이터를 반복적으로 조회하지 않도록 최적화할 수 있다.
+
+### 분석 종합
+- 분석에 따른 캐싱 적절도: ★★★☆☆
+- 근거: 조회 빈도가 높고 변경 빈도가 중간 정도이기 때문에 캐싱이 유효할 수 있다.
+
+### 선택
+
+1. **캐싱 전략: Look-aside vs Write-back**
+- **Look-aside 캐싱** 선택
+- 결제 내역은 읽기 빈도가 높고 데이터 변경 빈도가 중간 정도이다.
+
+2. **캐시 유형 결정: 로컬 캐시 vs 글로벌 캐시**
+- **글로벌 캐시** 선택
+- 이 API는 사용자별로 개인화된 데이터를 조회하므로, 전역 자원에서 데이터를 관리하기보다는 각 인스턴스에서 데이터를 관리하는 로컬 캐시를 사용하는 것이 적합하다.
+- 로컬 캐시는 드라마틱한 성능 개선보다는, 특정 사용자에 대한 집중적인 요청이 발생하는 상황이나 단기간의 부하와 같은 특수 케이스에 대한 방어 목적에 초점을 맞춘다.
+- 따라서, 데이터의 일관성을 유지하면서도 효율적인 캐싱을 위해 짧은 TTL(e.g. 1분)을 설정한다.
+
+
+
+**결론:**
+- **캐싱 전략**: Look-aside 캐싱
+- **캐시 유형**: 로컬 캐시 (짧은 TTL)
+
+
+
+## 5. 대기열 순번 조회 API (`GET /api/waiting-queue-token/{userId}`)
+### 설명
+- 이 API는 특정 사용자(userId)의 대기열 순번을 조회한다.
+- 사용되는 쿼리는 userId를 기준으로 해당 사용자의 대기열 순번을 반환한다.
+
+### 분석
+- **조회 빈도**: 대기열 순번은 대기 중인 사용자가 자주 조회한다.
+- **변경 빈도**: 대기열 상태는 자주 변경되므로 데이터 변경 빈도는 매우 높다.
+- **쿼리 성능 추정**: 인덱스가 적절히 설정되어 있어도 자주 변경되므로 성능 저하 가능성이 크다.
+
+### 캐싱이 필요한 유스케이스
+
+1. **사용자가 자신의 대기열 순번을 확인할 때**
+- 사용자들이 대기 중 자신의 순번을 자주 확인하는 경우가 많아 조회 빈도가 높다.
+
+### 분석 종합
+- 분석에 따른 캐싱 적절도: ☆☆☆☆☆
+- 근거: 데이터 변경 빈도가 매우 높아 캐싱의 효과가 크지 않다.
+
+### 선택
+
+**캐시 사용하지 않음**
+- 대기열 순번 조회 요구는 많지만, 지나치게 개인화된 정보이며 변경이 매우 잦으므로, 캐시를 사용하지 않는 것이 적합하다.
+- 실시간 처리가 필요하므로 **Redis**를 사용하여 기존의 RDB를 이용한 구현을 레디스를 이용한 구현으로 리팩토링 하는 것으로 개선한다.
+
+**결론:**
+- **캐싱 전략**: 캐시 사용하지 않음
+- **대안 전략**: Redis를 사용한 실시간 처리
+
+
+
+
+
+
+# 4. 구현
+
+
+## 패키지 구성 방식
+
+캐시 도입 시 패키지를 구성하는 데 두 가지 방식을 고민했고 각각을 사용해보았다.
+
+#### 1. 기존 패키지에 통합
+첫 번째 방식은 기존의 도메인 패키지에 캐시 관련 클래스를 통합하는 것이다. 즉, 각 도메인 api 패키지 하위에 기존에 구성된 계층 구조에, 캐시 관련 컴포넌트들을 추가하는 것이다.
+
+**장점:**
+- 패키지를 별도로 추가하지 않아도 되어 코드 량이 늘어나는 부담이 적다.
+- 캐시 로직 역시 api 하위 관리 대상이 되므로 실제 구현에서 자연스럽게 구현이 가능하다.
+
+**단점:**
+- 캐시 관련 코드가 여러 도메인 패키지에 분산되어 관리가 복잡해질 수 있다.
+- 정책의 일관성을 유지하기 어려울 수 있다.
+
+**패키지 구조 예시:**
+```
+io
+└── reservationservice
+    └── api
+        └── application
+            ├── aspect
+            │   └── GlobalCacheAspect.java
+            ├── eventlistener
+            │   └── CacheEvictEventListener.java
+            └── service
+                ├── CacheService.java
+                └── LocalCacheEvictionService.java
+```
+
+#### 2. 공통 패키지로 분리
+두 번째 방식은 공통 패키지를 생성하고, 그 하위에 캐시 관련 클래스를 모아서 관리하는 것이다. 캐시 관련 기능을 별도의 공통 모듈로 분리하여 재사용성과 관리 용이성을 높인다.
+
+**장점:**
+- 캐시 관련 코드가 한 곳에 모여 있어 관리가 용이하다.
+- 공통 모듈로 사용되므로 마이크로 서비스 간 일관된 코드를 유지할 수 있고, 바로 복사해서 붙여넣기가 가능하므로 구현 속도가 빨라진다.
+
+**단점:**
+- 특정 도메인에 특화된 캐시 전략을 적용할 때 커스터마이징이 필요할 수 있다.
+
+**패키지 구조 예시:**
+```
+io
+└── paymentservice
+    ├── balance
+    ├── payment
+    └── common
+        └── cache
+            ├── application
+            │   ├── aspect
+            │   │   └── GlobalCacheAspect.java
+            │   ├── eventlistener
+            │   │   └── CacheEvictEventListener.java
+            │   └── service
+            │       ├── CacheService.java
+            │       └── LocalCacheEvictionService.java
+            ├── business
+            │   ├── dto
+            │   │   ├── command
+            │   │   │   └── CacheCommand.java
+            │   │   ├── event
+            │   │   │   └── LocalCacheEvictEvent.java
+            │   │   └── info
+            │   │       └── CacheInfo.java
+            │   └── service
+            │       ├── CacheEvictionPropagationService.java
+            │       └── RedisCacheService.java
+            ├── infrastructure
+            │   └── clients
+            │       └── discovery
+            │           └── DiscoveryInstanceClientAdapter.java
+            └── interfaces
+                └── CacheEviction.java
+
+```
+#### 3. 선택
+
+본 프로젝트에서는 `Reservation` 서비스에서는 첫 번째 방식을 적용했고, `Payment` 서비스에서는 두 번째 방식을 적용했다.
+
+향후 추가 구현이 필요할 경우 후자를 선호할 것이다.
+
+## 로컬 캐시 구현
+
+### 요약
+
+- **라이브러리**: Ehcache
+- **캐시 생성**: Spring의 `@Cacheable` 어노테이션 사용
+- **캐시 동기화 (만료, Eviction)**:
+  - 동기화 전략의 첫 번째로 TTL은 스프링의 도움으로 캐시 생성시 설정하는 것으로 가능하다.
+  - 수동 Eviction 전략 구현 시엔 어노테이션 기반의 AOP 작동과 도메인 객체의 `AbstractAggregateRoot`를 통한 변경 이벤트 발행을 통해 동기화를 처리한다.
+  - 이때, 도메인 엔티티로 JPA 엔티티로 사용하고 있으므로 JPA 엔티티 객체의 변경을 감지한다.
+  - 변경 사항은 Listener로 컨슘하여 Eviction을 처리하되, 바로 evict 처리를 하는 것이 아니라 Propagation Service를 통해 서로 다른 인스턴스가 모두 처리할 수 있도록 eviction 요청을 셀프 호출하하여 전체 인스턴스 캐시의 동기화를 달성한다.
+
+### Eviction 전략의 워크플로우
+
+1. **도메인 엔티티 변경 감지**:
+  - JPA 엔티티 객체의 변경 사항을 감지하여 도메인 이벤트를 발행.
+2. **도메인 이벤트 리스너**:
+  - 리스너는 발행된 이벤트를 비동기로 처리하여 캐시 Eviction 명령을 Propagation Service에 전달.
+3. **Propagation Service**:
+  - 캐시 Eviction 명령을 인스턴스별로 전파.
+  - 각 인스턴스는 수신한 명령에 따라 로컬 캐시 Evict.
+
+### 시퀀스 다이어그램
+
+```mermaid
+sequenceDiagram
+    participant Entity
+    participant EventListener
+    participant PropagationService
+    participant Instances
+
+    Entity-->>+EventListener: 도메인 객체의 변경 이벤트 발행
+    EventListener->>+PropagationService: propagateCacheEviction 호출
+    PropagationService-->>+Instances: 로컬 캐시 Evict 요청
+    Instances->>-Instances: Eviction complete
+```
+
+
+### 주요 코드
+
+**Ehcache 설정** (`ehcache.xml`):
+
+```xml
+<config xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'
+        xmlns='http://www.ehcache.org/v3'
+        xsi:schemaLocation="http://www.ehcache.org/v3 http://www.ehcache.org/schema/ehcache-core.xsd'>
+
+    <cache alias="reservationStatus">
+        <key-type>java.lang.Long</key-type>
+        <value-type>io.reservationservice.api.business.dto.outport.ReservationStatusInfos</value-type>
+        <resources>
+            <heap unit="entries">1000</heap>
+            <offheap unit="MB">10</offheap>
+        </resources>
+        <expiry>
+            <ttl unit="minutes">60</ttl>
+        </expiry>
+    </cache>
+</config>
+```
+**캐시 적용 서비스** (`ReservationService.java`):
+
+```java
+@Service
+public class SimpleReservationCrudService implements ReservationCrudService {
+	
+  @Cacheable(key = "#userId" + "-" + "#concertOptionId", value= "reservationStatus")
+  public ReservationStatusInfos getReservationStatus(Long userId, Long concertOptionId) {
+    List<Reservation> reservations = reservationRepository.findMultipleByCondition(onMatchingReservation(userId, concertOptionId));
+
+    List<TemporalReservation> temporalReservations = temporalReservationRepository.findMultipleByCondtion(onMatchingTemporalReservaion(userId, concertOptionId));
+
+    return Stream.concat(reservations.stream().map(ReservationStatusInfo::from), temporalReservations.stream().map(ReservationStatusInfo::from))
+            .collect(collectingAndThen(toList(), ReservationStatusInfos::new))
+            .withValidated();
+  }
+}
+```
+
+**Eviction Aspect** (`LocalCacheEvictionAspect.java`):
+
+```java
+@Aspect
+public class LocalCacheEvictionAspect {
+
+    @AfterReturning(pointcut = "@annotation(evictLocalCache)", returning = "result")
+    public void afterReturning(JoinPoint joinPoint, LocalCacheEvict evictLocalCache, Object result) {
+        Arrays.stream(evictLocalCache.keys())
+            .forEach(customKey -> propagationService.propagateCacheEviction(
+                PropagateCacheEvictionCommand.of(evictLocalCache.cacheName(), parseKey(result, customKey))));
+    }
+}
+```
+
+**Eviction Propagation Service** (`CacheEvictionPropagationService.java`):
+
+```java
+@Service
+public class CacheEvictionPropagationService {
+    public void propagateCacheEviction(PropagateCacheEvictionCommand command) {
+        String commandPath = String.format("/api/v1/cache/evict/%s/%s", command.getCacheName(), command.getKey());
+        discoveryInstanceClientAdapter.getRequestToAllInstances(commandPath);
+    }
+}
+```
+
+**Eviction Listener** (`ReservationEventListener.java`):
+
+```java
+@Component
+public class ReservationEventListener {
+
+    @EventListener
+    public void handleReservationChangedEvent(ReservationChangedEvent event) {
+        evictReservationCache(event.getUserId(), event.getConcertOptionId());
+    }
+
+    private void evictReservationCache(Long userId, Long concertOptionId) {
+            propagationService.propagateCacheEviction(
+                PropagateCacheEvictionCommand.of("reservationStatus", userId + "-" + concertOptionId));
+    }
+}
+```
+
+
+## 글로벌 캐시 구현
+
+### 요약
+
+- **글로벌 캐시 저장소**: Redis
+- **캐시 생성**: `GlobalCacheable` 어노테이션을 이용하여 Aspect를 구현. 복수개의 키와 TTL(Time To Live)을 받아 캐시 생성.
+- **캐시 동기화 (만료, Eviction)**:
+  - TTL은 `GlobalCacheable` 어노테이션을 통해 캐시 생성 시 설정합니다.
+  - Eviction 전략 구현 시, 어노테이션 기반의 AOP 작동과 도메인 객체의 `AbstractAggregateRoot`를 통한 변경 이벤트 발행을 통해 동기화를 처리합니다.
+  - 도메인 엔티티의 변경을 감지하여 Listener가 이를 컨슘하고, Redis 서비스를 호출하여 Eviction을 달성합니다.
+
+### Eviction 전략의 워크플로우
+
+1. **도메인 엔티티 변경 감지**:
+- JPA 엔티티 객체의 변경 사항을 감지하여 도메인 이벤트를 발행합니다.
+2. **도메인 이벤트 리스너**:
+- 리스너는 발행된 이벤트를 비동기로 처리하여 캐시 Eviction 명령을 Redis 서비스에 전달합니다.
+3. **Redis 서비스**:
+- 캐시 Eviction 명령을 처리하여 Redis 캐시를 Evict 합니다.
+
+### 주요 코드
+
+
+**캐시 적용 서비스**
+
+```
+@Service
+public class SimpleAvailabilityService implements AvailabilityService {
+
+	@GlobalCacheable(prefix = "availableDates", keys = {"#concertId"}, ttl = 60 * 60 * 24)
+	public AvailableDateInfos getAvailableDates(Long concertId) {
+             // ...
+	}
+}
+```
+
+
+
+**캐시 어노테이션 정의** (`GlobalCacheable.java`):
+
+```java
+public @interface GlobalCacheable {
+    String prefix() default "";
+    String[] keys();
+    long ttl() default 60L; 
+}
+
+public @interface GlobalCacheEvict {
+    String prefix() default "";
+    String[] keys();
+}
+```
+
+**캐시 서비스** (`RedisCacheService.java`):
+
+```java
+@Service
+public class RedisCacheService {
+    public void cache(String cacheKey, Object value, long ttl) {
+        redisClientAdapter.cache(cacheKey, value, ttl);
+    }
+
+    public Object get(String cacheKey) {
+        return redisClientAdapter.getCache(cacheKey).orElse(null);
+    }
+
+    public void evict(String cacheKey) {
+        redisClientAdapter.evictCache(cacheKey);
+    }
+}
+```
+
+**캐시 Aspect** (`GlobalCacheAspect.java`):
+
+```java
+@Aspect
+public class GlobalCacheAspect {
+
+    @Around("@annotation(globalCacheable)")
+    public Object handleCache(ProceedingJoinPoint joinPoint, GlobalCacheable globalCacheable) throws Throwable {
+       String cacheKey = resolveKey(joinPoint, globalCacheable);
+		Object cachedValue = getCachedValue(cacheKey, ((MethodSignature) joinPoint.getSignature()).getReturnType());
+
+         // 캐시가 존재한다면 캐시 반환
+         // 존재하지 않는다면 메서드 진행, 캐싱 후 반환
+    }
+}
+```
+
+**Eviction Aspect** (`GlobalCacheEvictAspect.java`):
+
+```java
+@Aspect
+public class GlobalCacheEvictAspect {
+
+    @Before("@annotation(globalCacheEvict)")
+    public void handleCacheEvict(JoinPoint joinPoint, GlobalCacheEvict globalCacheEvict) {
+        String cacheKey = resolveKey(joinPoint, globalCacheEvict);
+        cacheService.evict(cacheKey);
+    }
+}
+```
+
+
+
+
+
+
+# 5. Before & After
+
+## 목표 
+
+- 캐시가 사용된 경우와 사용되지 않은 경우 극단적인 비교를 통해 이상적인 캐시 사용시의 개선 확인 
+
+** 캐시는 로컬 캐시로 사용 
+
+## 테스트 환경 및 부하 설정  
+
+- 시스템 : M1 맥북, CPU 8코어, 도커 Mysql
+- 성능 테스트 도구: Gatling
+- 극단적인 부하 환경 조성: 
+  - 1,000건의 랜덤 파라미터 유저 설정 
+  - 초당 1명에서 300명으로 1분 동안 증가, 초당 300명을 1분 동안 유지, 초당 300명에서 1명으로 1분 동안 감소
+  - 최대 요청 -> 300개 요청/초
+  - 총 36060개 요청 (1분) 
+
+
+
+
+## Before: 캐시가 없는 경우 
+
+```
+================================================================================
+---- Global Information --------------------------------------------------------
+> request count                                      36060 (OK=27901  KO=8159  )
+> min response time                                      0 (OK=0      KO=9     )
+> max response time                                  60272 (OK=59981  KO=60272 )
+> mean response time                                 11578 (OK=11493  KO=11870 )
+> std deviation                                      14490 (OK=15858  KO=8239  )
+> response time 50th percentile                       1780 (OK=25     KO=10727 )
+> response time 75th percentile                      20093 (OK=32772  KO=20019 )
+> response time 95th percentile                      36642 (OK=36742  KO=20139 )
+> response time 99th percentile                      47265 (OK=47937  KO=20629 )
+> mean requests/sec                                198.132 (OK=153.302 KO=44.83 )
+---- Response Time Distribution ------------------------------------------------
+> t < 800 ms                                         16049 ( 45%)
+> 800 ms <= t < 1200 ms                                218 (  1%)
+> t >= 1200 ms                                       11634 ( 32%)
+> failed                                              8159 ( 23%)
+---- Errors --------------------------------------------------------------------
+> i.n.c.ConnectTimeoutException: connection timed out after 1000   3438 (42.14%)
+0 ms: localhost/[0:0:0:0:0:0:0:1]:24081
+> j.n.SocketException: Connection reset by peer                    3386 (41.50%)
+> j.i.IOException: Premature close                                 1263 (15.48%)
+> Request timeout to localhost/127.0.0.1:24081 after 60000 ms        66 ( 0.81%)
+> status.find.is(200), but actually found 500                         6 ( 0.07%)
+================================================================================
+```
+
+
+
+![image](./documents/performance-test/cache/paymenthistory-withoutcache-gatling.png)
+![image](./documents/performance-test/cache/paymenthistory-withoutcache-query.png)
+![image](./documents/performance-test/cache/paymenthistory-withoutcache-cp.png)
+![image](./documents/performance-test/cache/paymenthistory-withoutcache-request-duration.png)
+![image](./documents/performance-test/cache/paymenthistory-withoutcache-cpu.png)
+![image](./documents/performance-test/cache/paymenthistory-withoutcache-gc.png)
+
+
+
+## After: 충분한 예열로 캐시 히트율이 100%인 경우 
+
+```
+
+================================================================================
+---- Global Information --------------------------------------------------------
+> request count                                       6060 (OK=6060   KO=0     )
+> min response time                                      0 (OK=0      KO=-     )
+> max response time                                    310 (OK=310    KO=-     )
+> mean response time                                     3 (OK=3      KO=-     )
+> std deviation                                          5 (OK=5      KO=-     )
+> response time 50th percentile                          2 (OK=2      KO=-     )
+> response time 75th percentile                          3 (OK=3      KO=-     )
+> response time 95th percentile                          8 (OK=8      KO=-     )
+> response time 99th percentile                         18 (OK=18     KO=-     )
+> mean requests/sec                                 33.297 (OK=33.297 KO=-     )
+---- Response Time Distribution ------------------------------------------------
+> t < 800 ms                                          6060 (100%)
+> 800 ms <= t < 1200 ms                                  0 (  0%)
+> t >= 1200 ms                                           0 (  0%)
+> failed                                                 0 (  0%)
+================================================================================
+```
+
+
+
+
+![image](./documents/performance-test/cache/paymenthistory-cache-100-gatling.png)
+![image](./documents/performance-test/cache/paymenthistory-cache-100-requestpersecond.png)
+![image](./documents/performance-test/cache/paymenthistory-cache-100-cpu.png)
+![image](./documents/performance-test/cache/paymenthistory-cache-100-g1-heap.png)
+
+
+
+## 결과 
+
+캐시 사용 전후의 성능 차이를 다음과 같이 확인할 수 있었다.
+
+### 캐시 사용 전의 특징
+- 실패율이 23%에 달했으며, 성공률은 77%에 그쳤다.
+- 초당 300건의 부하를 감당하기 어려웠다.
+- DB 커넥션 수는 100개를 풀 가동, 중간 중간 timeout 현상이 발생했다.
+- Percona Monitoring에서는 평균 쿼리 시간이 7.73초로, 많은 요청으로 인한 지연이 확인됐다.
+- 전반적인 과부하로 인해 `ConnectTimeoutException`, `SocketException`, `IOException` 등의 오류가 발생했다.
+- Request Duration에서 밀림 현상이 발생하였다.
+
+### 캐시 사용 후 (After)
+- 실패율이 0%로, 모든 부하를 받아냈다.
+- 단, 초당 500건의 요청이 발생했을 경우 간헐적으로 에러가 발생하였다.
+- 캐시 히트율 100%이므로 당연하겠지만, 응답 시간이 극도로 빠르다. (평균 응답 시간 3ms)
+- GC가 활발히 수행되었으며, 메모리 사용량도 많았지만 문제될 수준은 아니었다.
+
+
+
+
+
+# c.f
+
+
+## 캐싱 전략 배경 지식
+
+
+
+1. Look-aside vs Write-back
+
+  - **Look-aside 캐싱**: 이 전략에서는 애플리케이션이 먼저 캐시를 조회하고, 캐시에 데이터가 없으면 데이터베이스에서 데이터를 조회한 후 캐시에 저장한다. 이 방법은 읽기 성능을 향상시키지만, 데이터 일관성을 유지하는 것이 어렵다.
+  - **Write-back 캐싱**: 이 전략에서는 데이터 변경 시 캐시에 먼저 쓰고, 이후 비동기적으로 데이터베이스에 쓰는 방식이다. 쓰기 성능은 향상되지만, 데이터 일관성 문제와 데이터 손실 위험이 존재한다.
+
+2. 로컬 캐시 vs 글로벌 캐시
+
+  - **로컬 캐시**: 각 서버 인스턴스가 자체 캐시를 가지는 방식이다. 네트워크 오버헤드 부담이 없어 글로벌 캐시보다도 빠르지만 데이터 일관성 문제를 해결하는 데 비용이 많이 들 수 있다. 
+  - **글로벌 캐시**: Redis와 같은 분산 캐시를 사용하여 여러 서버 인스턴스가 동일한 캐시 데이터를 공유한다. 데이터 일관성 문제를 비교적 쉽게 해결하지만, 네트워크 오버헤드 비용 부담이 있다. 
+
+
+
+
+## 모니터링 환경 구축
+
+
+### 더미 데이터 생성
+
+- 성능 병목 API 및 슬로우 쿼리를 식별하기 위해서는 대량의 더미 데이터가 필요하다. 가장 빠르게 대량의 데이터를 적재하기 위해 DB Procedure를 이용한다.
+- 각 엔티티별로 1만에서 1천만 건의 더미 데이터를 생성한다.
+- 데이터 설정은 실제 비즈니스 시나리오에 따라 적절하게 선정한다.
+
+```sql
+DELIMITER //
+          
+DROP PROCEDURE IF EXISTS GenerateConcertData;
+
+CREATE PROCEDURE GenerateConcertData()
+BEGIN
+    DECLARE i INT DEFAULT 0;
+
+    -- Concert 생성
+    SET i = 0;
+    WHILE i < 10000 DO
+            INSERT INTO concert (title, created_at, request_at)
+            VALUES (CONCAT('Concert ', i), NOW(), NOW());
+            SET i = i + 1;
+        END WHILE;
+
+    COMMIT;
+END //
+DELIMITER ;
+
+CALL GenerateConcertData();
+```
+
+
+
+### 성능 테스트
+
+대량의 트래픽을 시뮬레이션하여 부하를 테스트한다. 이때 성능 테스트 도구로는 Gatling을 사용한다.
+
+##### Gatling 선정 이유 (feat. Jmeter, nGrinder와의 비교)
+
+Gatling은 높은 성능과 효율적인 자원 관리를 제공하여 대규모 부하 테스트에 적합하다.
+코드 기반의 시나리오 작성이 가능하여 유지보수가 용이하며, Java로도 쉽게 테스트 시나리오를 작성할 수 있어 러닝 커브가 적고, 재사용성이 용이하다.
+
+JMeter는 컴퓨터 자원을 많이 소비하며, 경험적으로 보았을 때 대용량 데이터 테스트 시 금방 뻗는 문제가 있다.
+nGrinder는 분산 부하 테스트를 지원하지만, 설정과 관리가 복잡하며, 사용자 친화적인 인터페이스가 부족하여 초기 설정 시 어려움을 겪을 수 있다.
+
+Gatling은 직관적인 UI와 실시간 보고서 생성 기능이 뛰어나, 테스트 결과를 쉽게 분석하고 시각화할 수 있다.
+
+##### Gatling을 이용한 성능 테스트 환경 구성
+- 시나리오 작성, 사용자 수 설정, 요청 패턴을 정의하여 실제 트래픽을 시뮬레이션 한다.
+
+```java
+public class PaymentHistorySimulation extends Simulation {
+	
+	private OpenInjectionStep[] getOpenInjectionSteps() {
+		return new OpenInjectionStep[] {
+			rampUsersPerSec(1).to(300).during(Duration.ofSeconds(30 *2)),
+			constantUsersPerSec(300).during(Duration.ofSeconds(30*2)),
+			rampUsersPerSec(300).to(1).during(Duration.ofSeconds(30*2))
+		};
+	}
+
+	private ScenarioBuilder createScenario() {
+		return scenario("Payment History Scenario")
+			.exec(session -> {
+				Map<String, Object> params = generateParams();
+				return session.setAll(params);
+			})
+			.exec(http("결제 내역 조회")
+				.get("/api/user-balance/payment/history/#{userId}")
+				.check(status().is(200))
+			)
+			.pause(2);
+	}
+}
+```
+
+
+
+### 모니터링
+
+
+#### 스프링 어플리케이션 모니터링 
+
+
+스프링부트로 동작하는 어플리케이션의 성능을 모니터링하기 위해 Prometheus와 Grafana를 활용한 모니터링 환경을 구성한다. 
+손쉽게 주요 지표를 실시간으로 확인하고, 성능을 최적화할 수 있다.
+
+
+##### Prometheus 설정
+
+`docker-compose-prometheus-grafana.yml` 파일을 작성하여 Prometheus와 Grafana를 도커에 띄운다.  
+
+```yaml
+#docker-compose-prometheus-grafana.yml
+services:
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+```
+
+Prometheus 설정 파일인 `prometheus.yml`을 작성하여 어플리케이션 메트릭을 수집한다.
+
+```yaml
+## prometheus.yml
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'reservation-service'
+    metrics_path: /reservation/actuator/prometheus
+    static_configs:
+      - targets: ['host.docker.internal:24071']
+  
+  // ... 
+```
+
+##### Grafana 대시보드 설정
+
+Grafana를 통해 Prometheus에서 수집한 메트릭을 시각화한다. 
+Grafana 대시보드 중 `Spring Boot 2.1 System Monitor`를 사용하여 스프링 어플리케이션의 다양한 지표를 확인할 수 있다.
+CPU 사용량, 메모리 사용량, GC 활동, 쓰레드 정보, HTTP 요청 수 등을 확인할 수 있다.
+
+
+![image](./documents/performance-test/tool/prometheus-grafana.png)
+
+
+
+
+
+#### DB 모니터링 
+
+실시간으로 쿼리 성능을 분석하기 위해 모니터링 환경을 구성한다.
+
+
+Percona PMM(Percona Monitoring and Management)은 MySQL, MongoDB 등의 데이터베이스 성능을 모니터링하고 관리하는 도구이다. 
+오픈소스로서 무료로 사용할 수 있고 실시간 쿼리 성능 및 시스템 성능을 분석할 수 있다.
+
+PMM을 설정하려면, 먼저 도커 컴포즈 파일에서 `pmm-server` 서비스를 정의한다. 
+이후 클라이언트 설정을 해주어야 한다. 
+서버 컨테이너에 접속하여 다음 명령어를 실행한다.
+
+```bash
+pmm-admin config --server-insecure-tls --server-url=http://admin:admin@pmm-server:80
+pmm-admin add mysql --query-source=perfschema --username=pmm --password=your_password --service-name=dev-mysql --host=dev-database --port=3306 --server-insecure-tls
+pmm-admin add mysql --query-source=perfschema --username=pmm --password=your_password --service-name=stage-mysql --host=stage-database --port=3306 --server-insecure-tls
+```
+
+MySQL 데이터베이스에서 발생하는 지표 및 쿼리를 실시간으로 확인할 수 있다. 
+
+
+![image](./documents/performance-test/tool/percona-mysql.png)
+![image](./documents/performance-test/tool/percona-query.png)
+
+
+
+
+
+
+</details>
+
+
+
+
+
+
+<details>
+<summary><b>대기열 시스템 리팩토링 (RDB -> Redis)</b></summary>
+
+
+
+# 1. AS-IS (현재 프로세스)
+
+현재 시스템은 RDB를 메인 데이터베이스로 사용하여 대기열 시스템을 관리한다.
+
+### 1. 대기열 토큰 생성 및 인입
+
+1. 유저가 대기열 토큰 생성 요청을 보낸다.
+2. `대기열 비즈니스 로직`에서 요청을 받아 토큰을 생성하고 데이터베이스(RDB)에 저장한다.
+3. 데이터베이스에 유저 ID와 상태값을 기준으로 중복 여부를 확인하고, 중복이 아닐 경우 새로운 대기열 토큰을 생성한다.
+4. 대기열 토큰 카운터를 증가시킨다.
+5. 토큰의 상태는 `WAITING`으로 설정된다.
+
+### 2. 대기열 토큰 정보 조회
+
+1. 유저가 특정 토큰의 정보를 조회하는 요청을 보낸다.
+2. `대기열 비즈니스 로직`에서 데이터베이스(RDB)에서 해당 유저의 토큰 정보를 조회하고 반환한다.
+3. 조회된 정보에서 누적 카운트와 autoincrement 값을 이용하여 대기열 순번을 계산한다.
+
+### 3. 대기열 -> 처리열 이동
+
+1. `토큰 스케줄링 로직`에서 일정 시간마다 토큰 이동 스케줄링을 수행한다.
+2. 데이터베이스(RDB)에서 이동 가능한 토큰을 조회하여 처리열로 이동시키고, 상태를 `PROCESSING`으로 업데이트한다.
+3. 대기열 토큰 카운터를 감소시킨다.
+
+### 4. 만료 토큰 처리
+
+1. `토큰 스케줄링 로직`에서 일정 시간마다 토큰 만료 스케줄링을 수행한다.
+2. 데이터베이스(RDB)에서 만료된 토큰을 조회하여 상태를 `EXPIRED`로 업데이트한다.
+
+
+### 5. 결제 완료 이벤트 수신
+
+1. `카프카 이벤트`로 결제 완료 메시지를 수신한다.
+2. 처리열 데이터베이스(RDB)에서 해당 유저 토큰을 찾아 `COMPLETE`로 업데이트 한다.
+
+### 시퀀스 다이어그램
+
+```mermaid
+sequenceDiagram
+    participant User as 유저
+    participant BusinessLogic as 대기열 비즈니스 로직
+    participant SchedulingLogic as 토큰 스케줄링 로직
+    participant RDB as RDB
+    
+    rect rgb(173, 216, 230)
+    Note right of User: 대기열 입장
+    User->>BusinessLogic: 대기열 토큰 생성 요청
+    BusinessLogic->>BusinessLogic: 요청 전달 및 토큰 생성
+    BusinessLogic->>RDB: 토큰 중복 확인 및 생성 및 저장
+    RDB-->>BusinessLogic: 토큰 생성 후 응답
+    BusinessLogic-->>User: 토큰 상태는 'WAITING'
+    end
+    
+    rect rgb(144, 238, 144)
+    Note right of User: 대기열 순번 조회
+    User->>BusinessLogic: 특정 토큰 정보 조회 요청
+    BusinessLogic->>RDB: 토큰 정보 조회
+    RDB-->>BusinessLogic: 토큰 정보 반환
+    BusinessLogic-->>User: 토큰 정보 반환
+    end
+    
+    rect rgb(255, 182, 193)
+    Note left of SchedulingLogic: 토큰 이동 스케줄링
+    loop 반복
+        SchedulingLogic->>RDB: 이동 가능한 토큰 조회
+        RDB-->>SchedulingLogic: 이동 가능한 토큰 반환
+        SchedulingLogic->>RDB: 토큰 상태를 'PROCESSING'으로 업데이트
+        SchedulingLogic-->>SchedulingLogic: 이동 완료
+    end
+    end
+    
+    rect rgb(255, 228, 181)
+    Note left of SchedulingLogic: 토큰 만료 스케줄링
+    loop 반복
+        SchedulingLogic->>RDB: 만료된 토큰 조회
+        RDB-->>SchedulingLogic: 만료된 토큰 반환
+        SchedulingLogic->>RDB: 토큰 상태를 'EXPIRED'로 업데이트
+        SchedulingLogic-->>SchedulingLogic: 만료 처리 완료
+    end
+    end
+```
+
+
+# 2. 쟁점 사항
+
+
+## 1. 현재 활성 가능한 토큰의 개수를 어떻게 추적할 것인가?
+
+활성 가능한 토큰의 개수를 추적해야 한다. 기존의 방식은 RDB에서 인덱스를 활용하여 row 수를 세는 것이었다.
+
+Redis를 이용할 때 다음과 같은 두 가지 방법을 고려해볼 수 있다.
+
+#### 1. 처리열을 Set 구조로 구성
+
+- 이 방법은 활성 토큰을 Set에 저장하여 관리하는 것이다.
+- Key는 각 토큰이며, Member에는 유저 정보와 만료 일시 등의 메타정보를 포함한다.
+- `SMEMBERS` 명령을 사용하여 Tokens Set과 메타정보를 조회할 수 있다.
+- 장점: Set의 크기를 통해 활성화된 토큰 수를 쉽게 파악할 수 있다.
+- 단점: 각 토큰에 대해 만료 시간을 설정할 수 없다. 만료된 토큰을 삭제하기 위해 별도의 스케줄링 로직이 필요하다.
+
+
+#### 2. 처리열을 별도의 자료 구조 없이, 활성 토큰을 Key-Value 구조로 저장
+
+- 이 방법은 토큰을 단순히 Key-Value 형태로 저장한다.
+- Key는 토큰 ID이며, Value는 유저 정보와 만료 일시 등의 메타정보를 포함한다.
+- 각 토큰은 Redis의 `SET` 명령을 통해 저장되며, 만료 시간(TTL)은 `EXPIRE` 명령을 통해 설정된다.
+- `GET` 명령을 사용하여 특정 토큰의 정보를 조회할 수 있다.
+- 장점: 구조가 단순하여 구현이 쉽고, 각 토큰의 TTL을 설정할 수 있어 자동 만료 관리가 가능하다.
+- 단점: 현재 활성화된 토큰 수를 알 수 없다. 따라서 별도의 카운팅 로직이 필요하다.
+
+
+두 가지 방법은 장단점이 있어 보인다. Key-Value 구조는 단순하지만 카운팅이 어렵고, Set 구조는 관리가 용이하지만 만료 처리에 추가 로직이 필요하다.
+
+
+
+#### 3. 결정
+
+**Key-Value 구조**를 사용하여 별도의 카운터로 활성 토큰 수를 추적하는 방안을 선택한다.
+
+- **Redis Expiration 기능 활용:** 이 방법은 각 토큰에 만료 시간을 설정하여 자동으로 만료되게 할 수 있다. Redis가 자체적으로 만료된 키를 삭제하므로, 애플리케이션의 스케줄링 부담이 줄어든다.
+- **카운터 관리:** 활성 토큰 수를 별도의 카운터로 관리함으로써, 카운터만 잘 동기화하면 현재 활성화된 토큰 수를 정확하게 추적할 수 있다. 관리 부담이 하나 더 는다고 볼 수도 있지만, 한편으론 관리 포인트를 하나로 집중시킬 수 있어 분산된 책임으로 작업이 가능하다.
+
+결론적으로, Key-Value 구조와 별도의 카운터를 사용하는 방식은 시스템의 단순성과 효율성을 동시에 달성할 수 있는 최적의 선택이다.
+
+
+
+## 2. 대기열 조회시 대기열에는 없고 처리열에는 있는 경우 어떻게 처리할 것인가?
+
+유저가 대기열 조회 요청에서, 이미 대기열을 벗어나 처리열로 이동했을 경우 어떤 응답을 내릴지 결정해야 한다. 
+
+에러 응답 후 처리열 재요청 방식과 서버에서 애초에 처리열까지 조회 범위를 산정하여 응답하는 방식 두 가지를 고려했다. 
+
+비즈니스 유스케이스를 고려할 때, 두 번째 방식인 **서버에서 대기열과 처리열을 통합하여 조회하는 방식**을 채택했다. 사용자 경험과 응답 일관성 측면에서 좋다고 생각했다. 
+
+따라서, 서버는 대기열 조회를 먼저 수행하고, 해당 토큰이 대기열에 존재하지 않을 경우 처리열을 조회하여 응답한다. 
+이 때 분기 처리는 `facade`에서 처리하여, 대기열과 처리열 서비스의 응답을 조합하여 응답한다.
+
+
+#### 구현 예시
+
+```java
+/**
+ * 먼저 대기열 조회 후 대기열에 존재하지 않는 경우 처리열 조회
+ * 반환 값은 통합된 정보로 반환
+ */
+public WaitingQueueTokenGeneralResponse retrieveToken(String userId) {
+    WaitingQueueTokenGeneralInfo waitingToken = waitingQueueService.retrieveToken(userId);
+
+    if (waitingToken.isEmpty()) {
+        return WaitingQueueTokenGeneralResponse.from(processingQueueService.retrieve(userId))
+                                               .withUserId(userId);
+    }
+
+    return WaitingQueueTokenGeneralResponse.from(waitingToken)
+                                           .withUserId(userId);
+}
+```
+
+1. `waitingQueueService.retrieveToken(userId)`를 호출하여 대기열에서 해당 유저의 토큰을 조회한다.
+2. 조회된 토큰이 대기열에 없는 경우, `processingQueueService.retrieve(userId)`를 호출하여 처리열에서 토큰을 조회한다.
+3. 최종적으로 대기열 또는 처리열에서 조회된 정보를 `WaitingQueueTokenGeneralResponse` 객체로 반환한다.
+
+
+## 3.  userId 기반 토큰 생성 및 조회 방법
+
+기존 방식에서는 `tokenvalue`를 UUID로 생성했다. 이때 속성 필드로 `userId`를 두어 인덱스를 생성했다. 즉, 유저에게 토큰을 전달해야 할 때, `userId`를 파라미터로 받아서 해당 토큰을 찾아 리턴할 수 있었다. 그러나 Redis로 토큰을 관리할 때는 `userId`로 검색이 불가능하다. Redis에서는 `sortedset`의 키로 토큰 값을 사용하기 때문이다. 이 경우, `userId`로 조회 요청을 받을 때 어떻게 응답을 제공할 수 있을까?
+
+즉, 고유한 토큰을 생성하면서도, 사용자가 `userId` 기반으로 토큰 조회를 요청할 때 찾아서 리턴해야 한다.
+
+### 해결 방안 1: 토큰 값을 `userId`로 설정하기
+
+key 값을 `userId`로 설정하여 사용하는 방법이 있다. 그러나 이 방식은 보안 취약성 면에서 좋지 않다.
+
+`userId`를 토큰 값으로 사용하는 경우, 토큰 자체의 의미를 갖기 힘들다. 누구나 `userId`를 알고 있다면 해당 유저의 토큰에 쉽게 접근할 수 있다.
+
+
+### 해결 방안 2: 해시 함수로 토큰 생성하기
+
+이 문제를 해결하기 위해 해시 함수를 사용할 수 있다. 해시 함수의 특징은 입력 값에 대해 항상 동일한 해시 값을 생성하는 멱등성을 가지며, 암호화의 성격도 포함하고 있다. `userId`가 고유하다면, 해시 함수를 사용하여 고유한 정해진 길이의 토큰가 생성되는 것은 보장된다. 따라서 `userId` 기반으로 토큰을 조회할 때 해당 해시 값을 사용하여 Redis에서 토큰 키 값을 조회하고 리턴할 수 있다.
+
+### 해시 함수 구현 예시
+
+아래는 `QueueTokenGenerator` 클래스의 해시 함수 구현 예시이다.
+
+```java
+public class QueueTokenGenerator {
+  private static final String SECRET_KEY = "secret-key";
+
+  public static String generateToken(String userId) {
+    try {
+      String input = userId + SECRET_KEY;
+      MessageDigest digest = MessageDigest.getInstance("SHA-256");
+      byte[] hash = digest.digest(input.getBytes(StandardCharsets.UTF_8));
+      return Base64.getUrlEncoder().withoutPadding().encodeToString(hash);
+    } catch (NoSuchAlgorithmException e) {
+      throw new RuntimeException("Error generating token", e);
+    }
+  }
+}
+```
+
+다음과 같은 장점이 있다.
+
+1. **보안 강화**: `userId`와 `SECRET_KEY`를 결합하여 해시 값을 생성하므로, 단순히 `userId`를 아는 것으로는 토큰 값을 예측할 수 없다.
+2. **고유성 보장**: `userId`가 고유하다면, 해시 함수에 의해 생성되는 토큰 값도 고유하다.
+3. **조회 가능성**: `userId`를 입력으로 해시 함수를 호출하면 동일한 토큰 값을 생성할 수 있으므로, 해당 토큰 값을 키로 사용하여 Redis에서 조회가 가능하다.
+
+
+# 3. TO-BE (Redis로 리팩토링한 프로세스)
+
+### 컴포넌트 변경 사항
+
+1. **대기열 관리**: 기존 RDB -> Redis의 Sorted Set
+2. **처리열 관리**: 기존 RDB -> Redis의 Key-Value 구조
+3. **토큰 상태 관리**: 기존 스케줄링 -> 레디스 TTL 설정으로 자동 만료
+4. **카운터 관리**: 기존 RDB -> 대기열에서 불필요, 처리 중인 토큰 추적시 Redis로 카운팅
+5. **순번 계산**: 기존 누적 카운터에 근거한 포지션 필드 + AI 계산 -> 레디스 Sorted Set의 Rank
+
+### 프로세스 변경 사항
+
+- 기존 토큰 서비스를 대기열 서비스와 처리열 서비스로 분리.
+- 대기열 서비스는 대기열 인입 요청만 담당하며, 요청을 모두 Redis 대기열(Sorted Set)에 저장.
+- 처리열 서비스는 주기적으로 Redis의 처리열(Key-Value)과 대기열(Sorted Set)을 폴링하여 서버 가용량을 확인하고, 이동 가능한 토큰을 대기열(Sorted Set)에서 가져옴.
+- 가져온 토큰들을 Kafka 이벤트로 발행하여, 여러 인스턴스가 동시에 작업할 수 있도록 self로 컨슘하여 인스턴스 별로 이관 작업을 수행.
+- 처리열 서비스는 토큰을 Redis의 처리열(Key-Value)에 인입하고, 대기열(Sorted Set)에서 제거.
+- 결제 완료 이벤트를 수신하여 처리열에서 토큰을 제거.
+- 처리열 인입과 제거시 Redis 카운터를 사용하여 활성 유저수 추적, 서버의 가용량과 현재 가용량을 비교시 사용.
+- 유저의 요청에 대한 응답으로, 폴링 서비스는 기존과 동일하게 대기열 서비스를 거쳐 대기열 정보를 조회하여 응답.
+
+
+### 시퀀스 다이어그램
+
+```mermaid
+sequenceDiagram
+    participant User as 유저
+    participant QueueService as 대기열 서비스
+    participant ProcessingService as 처리열 서비스
+    participant PollingService as 폴링 서비스
+    participant WaitingQueue as 대기열 (Redis Sorted Set)
+    participant ProcessingQueue as 처리열 (Redis Key-Value)
+    participant TokenCounter as 토큰 카운터 (Redis)
+    participant Kafka as Kafka
+
+    rect rgb(173, 216, 230)
+    Note right of User: 대기열 토큰 생성 요청
+    User-->>QueueService: 대기열 토큰 생성 요청
+    QueueService-->>WaitingQueue: 대기열에 토큰 인입
+    end
+    
+    rect rgb(255, 182, 193)
+    Note left of ProcessingService: 처리열로 이동 스케줄링
+    loop 주기적 폴링
+        ProcessingService->>TokenCounter: 처리열 카운트 폴링
+        TokenCounter-->>ProcessingService: 현재 처리열 크기 반환
+        ProcessingService->>WaitingQueue: 가용량 계산 및 대기열에서 가용 토큰 fetch
+        WaitingQueue-->>ProcessingService: 가용 토큰 반환
+        ProcessingService-->>Kafka: 토큰 정보를 Kafka로 발행 (개별 건)
+    end
+    end
+    
+    rect rgb(255, 228, 181)
+    Note left of ProcessingService: 토큰 이관 이벤트 처리
+    loop 이벤트 수신 및 처리
+        Kafka-->>ProcessingService: 토큰 이관 이벤트 수신
+        ProcessingService->>ProcessingQueue: 처리열에 토큰 인입 및 대기열에서 제거 (원자성 필요)
+        ProcessingService->>TokenCounter: 활성 토큰 수 증가
+    end
+    end
+    
+    rect rgb(255, 228, 181)
+    Note left of ProcessingService: 결제 완료 이벤트 처리
+    loop 결제 완료 이벤트 수신
+        Kafka-->>ProcessingService: 결제 완료 이벤트 수신
+        ProcessingService->>ProcessingQueue: 처리열에서 토큰 제거
+        ProcessingService->>TokenCounter: 활성 토큰 수 감소
+    end
+    end
+    
+    rect rgb(144, 238, 144)
+    Note right of User: 유저의 순번 조회 요청
+    User->>PollingService: 대기열 순번 조회
+    PollingService->>QueueService: 대기열 순번 요청
+    QueueService->>WaitingQueue: 대기열/처리열 조회
+    QueueService->>ProcessingQueue: 
+    ProcessingQueue-->>QueueService: 순번 정보 반환
+    WaitingQueue-->>QueueService:     
+    QueueService-->>PollingService: 순번 정보 응답
+    PollingService-->>User: 순번 정보 응답
+    end
+```
+
+### 설명
+
+1. **대기열 서비스**:
+  - 유저의 대기열 토큰 생성 요청을 받아 Redis의 Sorted Set(대기열)에 저장한다.
+
+2. **처리열 서비스**:
+  - 주기적으로 Redis의 처리열(Key-Value)과 대기열(Sorted Set)을 폴링하여 서버의 가용 유저 수를 확인한다.
+  - 처리 가능한 유저 수만큼 대기열(Sorted Set)에서 토큰을 가져와 Kafka 이벤트로 발행한다.
+  - Kafka 이벤트를 self로 구독하여 각 인스턴스가 동시에 작업을 수행한다.
+  - 토큰을 처리열(Key-Value)에 인입하고 대기열(Sorted Set)에서 제거한다.
+  - 토큰 인입 시 Redis 카운터를 사용하여 활성화된 토큰 수를 증가시킨다.
+  - 결제 완료 이벤트를 수신하여 처리열(Key-Value)에서 해당 토큰을 제거하고, Redis 카운터에서 활성화된 토큰 수를 감소시킨다.
+
+3. **유저 요청 응답**:
+  - 유저의 대기열 순번 조회 요청에 대해 폴링 서비스는 기존과 동일하게 대기열 서비스를 거쳐 Redis의 대기열과 처리열을 조회하여 응답한다.
+
+
+
+# 4. 성능 테스트 
+
+## 목적 
+
+- RDB와 Redis의 성능 비교 분석 
+- 각 방식의 부하 최대치를 탐구
+
+
+## 테스트 환경 및 부하 설정
+
+### 시스템 및 도구
+
+- 시스템: M1 맥북, CPU 8코어, 도커 Mysql
+- 성능 테스트 도구: Gatling
+
+### 부하 환경 조성
+
+- 유니크한 랜덤 유저의 대기열 인입 요청(토큰 생성 요청)
+- 부하 시나리오:
+  - 초당 1명에서 300명으로 1분 동안 증가
+  - 초당 300명을 1분 동안 유지
+  - 초당 300명에서 1명으로 1분 동안 감소
+
+### 설정 세부사항
+
+- 처리열 최대 크기: 1000
+- 처리열 만료 시간: 30초 (테스트 용이성을 위해 빠른 전환율 설정)
+- 테스트 실행 시간: 최대 1분 
+- RDB 커넥션풀 설정: 50개
+
+
+## 토큰 인입 요청 시나리오
+
+이 성능 테스트 시나리오는 `WaitingQueueTokenController`의 `/api/waiting-queue-token` 엔드포인트를 사용하여 대기열 토큰을 생성하고 인입하는 작업을 수행한다. 
+
+Gatling을 사용하여 대량의 토큰 생성 요청을 시뮬레이션한다.
+
+부하 환경은 다음과 같은 파라미터들을 통해 조정한다.  
+
+1. 초당 1명에서 300명으로 1분 동안 증가
+2. 초당 300명을 1분 동안 유지
+3. 초당 300명에서 1명으로 1분 동안 감소
+
+
+
+```java
+public class WaitingQueueTokenGenerationSimulation extends Simulation {
+	
+	// ... 생략
+	
+	{
+		setUp(createScenario()
+			.injectOpen(getOpenInjectionSteps())
+			.protocols(httpProtocolBuilder))
+			.maxDuration(Duration.ofMinutes(1))
+			.assertions(global().requestsPerSec().gte(1.0));
+	}
+
+	private OpenInjectionStep[] getOpenInjectionSteps() {
+		return new OpenInjectionStep[]{
+			rampUsersPerSec(100).to(1000).during(Duration.ofSeconds(20)),
+			constantUsersPerSec(1000).during(Duration.ofSeconds(20)),
+			rampUsersPerSec(1000).to(1).during(Duration.ofSeconds(20))
+		};
+	}
+
+	private ScenarioBuilder createScenario() {
+		return scenario("Waiting Queue Token Generation Scenario")
+			.asLongAs(session -> userIdCounter.get() <= MAX_USER_ID)
+			.on(exec(session -> {
+					int userId = userIdCounter.getAndIncrement();
+					return session.set("userId", "user" + userId);
+				})
+					.exec(http("대기열 토큰 생성")
+						.post("/api/waiting-queue-token")
+						.body(StringBody(session -> {
+							LocalDateTime now = LocalDateTime.now();
+							return String.format("{ \"userId\": \"%s\", \"requestAt\": \"%s\" }", session.getString("userId"), now.toString());
+						}))
+						.check(status().is(201))
+					)
+					.pause(2)
+			);
+	}
+}
+```
+
+
+
+
+## Redis 구현의 성능 한계치 
+
+
+먼저 아래와 같은 고부하 상황으로 1차 테스트를 진행한다.  
+
+```
+- 초당 100명의 유저로 시작하여 20초 동안 초당 1000명까지 증가
+- 초당 1000명의 유저를 20초 동안 유지
+- 초당 1000명의 유저에서 20초 동안 1명으로 감소
+```
+
+다음과 같은 상당히 높은 오류율이 확인된다.
+
+
+```
+
+================================================================================
+---- Global Information --------------------------------------------------------
+> request count                                     294923 (OK=43740  KO=251183)
+> min response time                                      0 (OK=2      KO=0     )
+> max response time                                  28726 (OK=28726  KO=23722 )
+> mean response time                                  1167 (OK=4610   KO=567   )
+> std deviation                                       3885 (OK=7981   KO=2050  )
+> response time 50th percentile                          5 (OK=1710   KO=3     )
+> response time 75th percentile                         90 (OK=3460   KO=33    )
+> response time 95th percentile                       5937 (OK=25413  KO=4129  )
+> response time 99th percentile                      25176 (OK=26820  KO=11772 )
+> mean requests/sec                                4915.383 (OK=729    KO=4186.383)
+---- Response Time Distribution ------------------------------------------------
+> t < 800 ms                                         20108 (  7%)
+> 800 ms <= t < 1200 ms                               1160 (  0%)
+> t >= 1200 ms                                       22472 (  8%)
+> failed                                            251183 ( 85%)
+---- Errors --------------------------------------------------------------------
+> j.n.SocketException: Too many open files                       212681 (84.67%)
+> j.i.IOException: Premature close                                15589 ( 6.21%)
+> j.n.BindException: Can't assign requested address               14510 ( 5.78%)
+> status.find.is(201), but actually found 500                      4293 ( 1.71%)
+> i.n.c.ConnectTimeoutException: connection timed out after 1000   2210 ( 0.88%)
+0 ms: localhost/127.0.0.1:24031
+> j.n.SocketException: Connection reset by peer                    1829 ( 0.73%)
+> i.n.c.ConnectTimeoutException: connection timed out after 1000     69 ( 0.03%)
+0 ms: localhost/[0:0:0:0:0:0:0:1]:24031
+> j.n.ConnectException: Connection refused                            2 ( 0.00%)
+================================================================================
+```
+
+초당 요청 약 5,000건으로 상당히 높은 부하이다.
+
+대기열 sortedSet에 약 52,000건의 토큰이 생성되었지만, 대부분의 요청은 실패한 것을 볼 수 있다.
+
+
+![redis-max-1.png](documents%2Fperformance-test%2Ftoken%2Fredis%2Fredis-max-1.png)
+
+
+
+부하 수치를 낮춰서 다시 시도해 보자.  
+
+
+
+```
+- 초당 100명의 사용자가 500명까지 20초 동안 증가
+- 500명을 20초 동안 유지
+- 500명에서 1명까지 20초 동안 감
+```
+
+
+```
+================================================================================
+---- Global Information --------------------------------------------------------
+> request count                                     124882 (OK=44811  KO=80071 )
+> min response time                                      0 (OK=2      KO=0     )
+> max response time                                  23132 (OK=23132  KO=21946 )
+> mean response time                                  2574 (OK=3655   KO=1968  )
+> std deviation                                       4757 (OK=6427   KO=3340  )
+> response time 50th percentile                        548 (OK=618    KO=513   )
+> response time 75th percentile                       3155 (OK=3832   KO=1887  )
+> response time 95th percentile                      12357 (OK=21990  KO=10481 )
+> response time 99th percentile                      22107 (OK=22405  KO=13422 )
+> mean requests/sec                                2047.246 (OK=734.607 KO=1312.639)
+---- Response Time Distribution ------------------------------------------------
+> t < 800 ms                                         23168 ( 19%)
+> 800 ms <= t < 1200 ms                               2114 (  2%)
+> t >= 1200 ms                                       19529 ( 16%)
+> failed                                             80071 ( 64%)
+---- Errors --------------------------------------------------------------------
+> j.n.SocketException: Too many open files                        60781 (75.91%)
+> j.i.IOException: Premature close                                14638 (18.28%)
+> status.find.is(201), but actually found 500                      4310 ( 5.38%)
+> j.n.SocketException: Connection reset by peer                     258 ( 0.32%)
+> i.n.c.ConnectTimeoutException: connection timed out after 1000     84 ( 0.10%)
+0 ms: localhost/[0:0:0:0:0:0:0:1]:24031
+================================================================================
+
+```
+
+초당 요청은 2,000건으로, 처음보다 낮은 부하이지만 여전히 큰 부하로 보인다.
+
+
+다시 한 번 부하를 낮춰보자.  
+
+```
+- 초당 100명의 사용자가 200명까지 20초 동안 증가
+- 200명을 20초 동안 유지
+- 200명에서 1명까지 20초 동안 감소
+```
+
+대기열 카운트 45000 건까지 올라가는 것이 확인되었지만, 여전히 에러는 발생한다. 
+
+
+```
+================================================================================
+---- Global Information --------------------------------------------------------
+> request count                                      62841 (OK=44294  KO=18547 )
+> min response time                                      1 (OK=1      KO=7     )
+> max response time                                  22740 (OK=17232  KO=22740 )
+> mean response time                                  2376 (OK=1258   KO=5047  )
+> std deviation                                       3285 (OK=2288   KO=3733  )
+> response time 50th percentile                        617 (OK=150    KO=3867  )
+> response time 75th percentile                       3705 (OK=1205   KO=6665  )
+> response time 95th percentile                       7201 (OK=6853   KO=14635 )
+> response time 99th percentile                      14661 (OK=10595  KO=15427 )
+> mean requests/sec                                1047.35 (OK=738.233 KO=309.117)
+---- Response Time Distribution ------------------------------------------------
+> t < 800 ms                                         31800 ( 51%)
+> 800 ms <= t < 1200 ms                               1404 (  2%)
+> t >= 1200 ms                                       11090 ( 18%)
+> failed                                             18547 ( 30%)
+---- Errors --------------------------------------------------------------------
+> j.i.IOException: Premature close                                11037 (59.51%)
+> status.find.is(201), but actually found 500                      7212 (38.88%)
+> i.n.c.ConnectTimeoutException: connection timed out after 1000    297 ( 1.60%)
+0 ms: localhost/[0:0:0:0:0:0:0:1]:24031
+> j.n.SocketException: Connection reset by peer                       1 ( 0.01%)
+================================================================================
+```
+
+초당 1,000건의 요청을 수용하기 힘들다. 좀 더 낮출 필요가 있다. 
+
+
+```
+- 초당 10명의 사용자가 50명까지 20초 동안 증가
+- 50명을 20초 동안 유지
+- 50명에서 1명까지 20초 동안 감소
+```
+
+결과는 어떨까? 
+
+```
+================================================================================
+---- Global Information --------------------------------------------------------
+> request count                                      32573 (OK=32573  KO=0     )
+> min response time                                      1 (OK=1      KO=-     )
+> max response time                                   1144 (OK=1144   KO=-     )
+> mean response time                                    84 (OK=84     KO=-     )
+> std deviation                                        179 (OK=179    KO=-     )
+> response time 50th percentile                         19 (OK=19     KO=-     )
+> response time 75th percentile                         64 (OK=64     KO=-     )
+> response time 95th percentile                        510 (OK=510    KO=-     )
+> response time 99th percentile                        921 (OK=921    KO=-     )
+> mean requests/sec                                542.883 (OK=542.883 KO=-     )
+---- Response Time Distribution ------------------------------------------------
+> t < 800 ms                                         31774 ( 98%)
+> 800 ms <= t < 1200 ms                                799 (  2%)
+> t >= 1200 ms                                           0 (  0%)
+> failed                                                 0 (  0%)
+================================================================================
+```
+
+
+드디어 에러 없이 성공했다 ! 
+
+초당 500 건의 요청은 수용할 수 있음을 확인했다.
+
+그렇다면 여기서 좀 더 올리면 어떨까? 
+
+
+```
+- 초당 10명의 사용자가 100명까지 20초 동안 증가
+- 100명을 20초 동안 유지
+- 100명에서 1명까지 20초 동안
+```
+
+```
+
+================================================================================
+---- Global Information --------------------------------------------------------
+> request count                                      48336 (OK=44296  KO=4040  )
+> min response time                                      1 (OK=1      KO=4     )
+> max response time                                  13179 (OK=13179  KO=11299 )
+> mean response time                                   426 (OK=367    KO=1070  )
+> std deviation                                        962 (OK=920    KO=1155  )
+> response time 50th percentile                        109 (OK=81     KO=1036  )
+> response time 75th percentile                        535 (OK=400    KO=1366  )
+> response time 95th percentile                       1505 (OK=1425   KO=1842  )
+> response time 99th percentile                       1949 (OK=1844   KO=8551  )
+> mean requests/sec                                  805.6 (OK=738.267 KO=67.333)
+---- Response Time Distribution ------------------------------------------------
+> t < 800 ms                                         37729 ( 78%)
+> 800 ms <= t < 1200 ms                               2776 (  6%)
+> t >= 1200 ms                                        3791 (  8%)
+> failed                                              4040 (  8%)
+---- Errors --------------------------------------------------------------------
+> status.find.is(201), but actually found 500                      3909 (96.76%)
+> j.n.SocketException: Connection reset by peer                      82 ( 2.03%)
+> j.i.IOException: Premature close                                   48 ( 1.19%)
+> i.n.c.ConnectTimeoutException: connection timed out after 1000      1 ( 0.02%)
+0 ms: localhost/[0:0:0:0:0:0:0:1]:24031
+================================================================================
+```
+
+
+이번엔 실패한다! 
+
+초당 500건까지는 처리 가능했으나 초당 800건은 불가하다는 결론을 얻었다.
+따라서 500~800 건 사이에서 최대 수용치가 있음을 알 수 있다.
+
+
+#### 결론 및 요약  
+
+
+![redis-max-gatling.png](documents%2Fperformance-test%2Ftoken%2Fredis%2Fredis-max-gatling.png)
+
+
+유의미한 포인트를 추려보면 다음과 같다. 
+
+- 95번째 백분위수에서 응답 시간이 510ms로, 대부분의 요청이 800ms 이하에서 처리되었다.
+- 99번째 백분위수에서도 응답 시간이 921ms로, 여전히 1,000ms 이내에서 대부분의 요청이 처리되었다.
+- 응답 시간이 800ms에서 1,200ms 사이에 위치한 요청이 2% 정도 존재하여, 높은 부하 상황에서도 비교적 안정적인 응답 시간을 유지하고 있음을 보여준다.
+
+
+응답 시간의 분포는 대부분 800ms 이하로 나타났다. 
+최대 응답 시간은 1,144ms였고, 95번째 백분위수는 510ms로 안정적인 수치로 보인다. 
+다만, 응답 시간이 800ms에서 1,200ms 사이에 위치한 요청이 2% 정도 존재하여, 시스템의 개선 여지가 있음을 시사한다.
+
+따라서 Redis 기반의 대기열은 한 인스턴스에서 초당 분당 약 30,000건 가량의 토큰 인입 요청을 수용할 수 있음으로 결론 내릴 수 있다.
+
+
+
+## RDB 구현의 성능 한계치 
+
+
+우선 작은 수치부터 시작하여 테스트를 진행했다. 
+
+```
+- 초당 10명의 사용자가 20초 동안 유지
+- 초당 10명의 사용자를 20초 동안 유지
+- 초당 10명의 사용자를 20초 동안 1명으로 감소
+```
+
+
+
+```
+
+================================================================================
+---- Global Information --------------------------------------------------------
+> request count                                       7115 (OK=7115   KO=0     )
+> min response time                                      4 (OK=4      KO=-     )
+> max response time                                   3250 (OK=3250   KO=-     )
+> mean response time                                   514 (OK=514    KO=-     )
+> std deviation                                        626 (OK=626    KO=-     )
+> response time 50th percentile                        278 (OK=278    KO=-     )
+> response time 75th percentile                        728 (OK=728    KO=-     )
+> response time 95th percentile                       2128 (OK=2128   KO=-     )
+> response time 99th percentile                       2519 (OK=2519   KO=-     )
+> mean requests/sec                                118.583 (OK=118.583 KO=-     )
+---- Response Time Distribution ------------------------------------------------
+> t < 800 ms                                          5457 ( 77%)
+> 800 ms <= t < 1200 ms                                684 ( 10%)
+> t >= 1200 ms                                         974 ( 14%)
+> failed                                                 0 (  0%)
+================================================================================
+```
+
+
+요청이 많지 않음에도 불구하고 상당히 느린 응답 속도를 보인다. 저장된 토큰 카운트도 7,187건으로 매우 작다.
+
+
+![rdb-max-count1.png](documents%2Fperformance-test%2Ftoken%2Frdb%2Frdb-max-count1.png)
+
+
+두 번째 테스트에서는 수치를 좀 더 올려보자 
+
+
+```
+- 초당 50명의 사용자가 200명까지 20초 동안 증가
+- 초당 200명의 사용자를 20초 동안 유지
+- 초당 200명의 사용자를 20초 동안 1명으로 감소
+```
+
+테스트 결과는 다음과 같다.
+
+```
+
+================================================================================
+---- Global Information --------------------------------------------------------
+> request count                                      13097 (OK=10000  KO=3097  )
+> min response time                                      1 (OK=4      KO=1     )
+> max response time                                  22178 (OK=18351  KO=22178 )
+> mean response time                                 11129 (OK=8853   KO=18479 )
+> std deviation                                       7297 (OK=6736   KO=2814  )
+> response time 50th percentile                      13581 (OK=7011   KO=18658 )
+> response time 75th percentile                      17723 (OK=16009  KO=19386 )
+> response time 95th percentile                      19700 (OK=17746  KO=21055 )
+> response time 99th percentile                      21169 (OK=17817  KO=21715 )
+> mean requests/sec                                218.283 (OK=166.667 KO=51.617)
+---- Response Time Distribution ------------------------------------------------
+> t < 800 ms                                          1306 ( 10%)
+> 800 ms <= t < 1200 ms                                461 (  4%)
+> t >= 1200 ms                                        8233 ( 63%)
+> failed                                              3097 ( 24%)
+---- Errors --------------------------------------------------------------------
+> status.find.is(201), but actually found 400                      3030 (97.84%)
+> j.i.IOException: Premature close                                   65 ( 2.10%)
+> status.find.is(201), but actually found 500                         2 ( 0.06%)
+================================================================================
+```
+
+
+벌써 상당한 오류가 확인된다. 
+
+
+다시 부하를 좀 더 줄여보자. 
+
+
+
+```
+- 초당 50명의 사용자가 150명까지 20초 동안 증가
+- 초당 150명의 사용자를 20초 동안 유지
+- 초당 150명의 사용자를 20초 동안 1명으로 감소
+```
+
+이전보다는 오류가 줄었지만 여전히 많은 오류와 지연이 발생하고 있다.
+
+
+```
+================================================================================
+---- Global Information --------------------------------------------------------
+> request count                                      12593 (OK=10000  KO=2593  )
+> min response time                                      4 (OK=4      KO=103   )
+> max response time                                  20589 (OK=14368  KO=20589 )
+> mean response time                                  8817 (OK=7060   KO=15595 )
+> std deviation                                       5369 (OK=4552   KO=1491  )
+> response time 50th percentile                       9826 (OK=7423   KO=15280 )
+> response time 75th percentile                      13426 (OK=10787  KO=16508 )
+> response time 95th percentile                      16550 (OK=13496  KO=18180 )
+> response time 99th percentile                      18340 (OK=13984  KO=19679 )
+> mean requests/sec                                209.883 (OK=166.667 KO=43.217)
+---- Response Time Distribution ------------------------------------------------
+> t < 800 ms                                          1329 ( 11%)
+> 800 ms <= t < 1200 ms                                499 (  4%)
+> t >= 1200 ms                                        8172 ( 65%)
+> failed                                              2593 ( 21%)
+---- Errors --------------------------------------------------------------------
+> status.find.is(201), but actually found 400                      2590 (99.88%)
+> status.find.is(201), but actually found 500                         3 ( 0.12%)
+================================================================================
+```
+
+커넥션 풀도 확인해 보면 50개의 풀을 모두 사용하고 150개의 pending이 발생함을 확인할 수 있다.
+
+
+![rdb-cp.png](documents%2Fperformance-test%2Ftoken%2Frdb%2Frdb-cp.png)
+
+
+쿼리 수행 시간에서도 상당한 지연이 발생하고 있다. 
+
+
+![rdb-query.png](documents%2Fperformance-test%2Ftoken%2Frdb%2Frdb-query.png)
+
+
+다음과 같은 쿼리가 락 타임을 발생시키고 있음을 확인할 수 있다.
+
+```sql
+SELECT
+  `wqtce1_0`.`waiting_queue_token_counter_id`,
+  `wqtce1_0`.`count`
+FROM
+  `waiting_queue_token_counter_entity` `wqtce1_0`
+WHERE
+  `wqtce1_0`.`waiting_queue_token_counter_id` = ? FOR
+UPDATE
+```
+
+락 타임이 길게 잡히는 것이 문제의 원인임을 확인할 수 있다.
+
+```
+락 타임 통계:
+
+- 평균 로드 시간: 10.86 초
+- 총 로드 시간: 54:19
+- 총 쿼리 시간의 99.99%가 락 타임에 사용됨
+- 총 45.90 초의 락 타임
+```
+
+
+![rdb-slow-query.png](documents%2Fperformance-test%2Ftoken%2Frdb%2Frdb-slow-query.png)
+
+
+
+
+#### 결론 및 요약
+
+
+
+![rdb-max-gatling.png](documents%2Fperformance-test%2Ftoken%2Frdb%2Frdb-max-gatling.png)
+
+
+
+유의미한 포인트를 추려보면 다음과 같다.
+
+- 95번째 백분위수에서 응답 시간이 2,128ms로, 상당히 긴 지연 시간이 발생하였다.
+- 99번째 백분위수에서는 응답 시간이 2,519ms로, 여전히 긴 지연 시간을 보였다.
+- 응답 시간이 1,200ms 이상인 요청이 14% 정도 존재하여, RDB에서는 높은 부하 상황에서 성능이 급격히 저하됨을 알 수 있다.
+
+응답 시간의 분포는 대부분 800ms 이상으로 나타났다. 
+최대 응답 시간은 3,250ms였고, 95번째 백분위수는 2,128ms로 매우 긴 지연 시간을 보인다. 
+이러한 결과는 RDB가 높은 부하를 처리하는 데 있어서 큰 제약이 있음을 시사한다.
+
+따라서 RDB 기반의 대기열은 한 인스턴스에서 초당 약 100~150건의 요청을 수용할 수 있다.
+
+
+
+
+## 비교 분석
+
+마지막으로 Redis와 RDB를 비교 분석하고 정리해보자. 
+
+### Gatling 리포트를 기준으로 한 성능 비교
+
+**1분 요청 수 (Request Count)**
+- Redis: 32,573건 (성공: 32,573건, 실패: 0건)
+- RDB: 7,115건 (성공: 7,115건, 실패: 0건)
+
+**초당 요청 수 (Requests per Second)**
+- Redis: 평균 542.883건/초
+- RDB: 평균 118.583건/초
+
+Redis는 RDB에 비해 분당 5배 가량 더 많은 요청을 처리할 수 있었다.
+
+
+**응답 시간 (Response Time)**
+- Redis:
+  - 최소 응답 시간: 1ms
+  - 최대 응답 시간: 1,144ms
+  - 평균 응답 시간: 84ms
+  - 95번째 백분위수: 510ms
+  - 99번째 백분위수: 921ms
+- RDB:
+  - 최소 응답 시간: 4ms
+  - 최대 응답 시간: 3,250ms
+  - 평균 응답 시간: 514ms
+  - 95번째 백분위수: 2,128ms
+  - 99번째 백분위수: 2,519ms
+
+응답 시간에서는 더 큰 차이를 볼 수 있다. Redis의 응답 시간이 RDB에 비해 월등히 빠르다.
+Redis는 99%의 요청이 1초 이내에 처리된 반면, RDB는 95%의 요청만 2초 이내에 처리되었다.
+
+
+### 그라파나에서 확인되는 차이
+
+Grafana를 통해서도 다음과 같이 확인된다. 
+
+**초당 요청 수 (Requests per Second)**
+![compare-request-per-sec.png](documents%2Fperformance-test%2Ftoken%2Fcompare-request-per-sec.png)
+
+위 그래프에서 보듯이, Redis는 RDB에 비해 지속적으로 더 높은 초당 요청 수를 유지하고 있다.
+
+**요청 시간 (Request Duration)**
+![compare-request-duration.png](documents%2Fperformance-test%2Ftoken%2Fcompare-request-duration.png)
+
+요청 시간 그래프에서도 Redis가 RDB보다 일관되게 짧은 응답 시간을 보이고 있으며, RDB의 경우 요청 시간이 상대적으로 불안정하고 길게 나타난다.
+
+**GC 횟수 (GC Count)**
+![copare-gc-count.png](documents%2Fperformance-test%2Ftoken%2Fcopare-gc-count.png)
+
+GC 횟수에서도 Redis가 RDB보다 낮은 수치를 보이고 있어, 메모리 관리에서도 Redis가 더 효율적임을 알 수 있다.
+
+### 결론 및 요약
+
+대기열 시스템을 레디스로 구성할 경우 RDB를 사용하는 것 대비 훨씬 큰 가용성과 성능을 기대할 수 있다.  
+
+
+
+
+
+</details>
+
+
+
+
+
+
 </details>
 
 

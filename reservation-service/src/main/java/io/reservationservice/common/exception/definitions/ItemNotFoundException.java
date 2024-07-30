@@ -15,4 +15,9 @@ public class ItemNotFoundException extends ServerException {
 	public ItemNotFoundException(GlobalResponseCode code) {
 		super(code);
 	}
+
+
+	public ItemNotFoundException(GlobalResponseCode globalResponseCode, String value) {
+		super(globalResponseCode, value);
+	}
 }

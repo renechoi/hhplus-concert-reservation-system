@@ -3,3 +3,19 @@ docker-compose -f docker-compose-kafka.yml up --build
 docker-compose -f docker-compose-redis.yml up --build
 docker-compose -f docker-compose-prometheus-grafana.yml up --build
 
+
+// Redis notify-keyspace-event 설정법
+redis.conf 에 설정한 명령이 작동을 안할 때
+
+도커 접속
+docker exec -it redis /bin/bash redis-cli
+
+확인
+CONFIG GET notify-keyspace-events
+
+CONFIG SET notify-keyspace-events ex
+
+
+
+SET test_key "test_value"
+EXPIRE test_key 5

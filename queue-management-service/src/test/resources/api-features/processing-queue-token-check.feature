@@ -1,5 +1,6 @@
 Feature: 처리열 토큰 확인
   Background:
+    Given 레디스 데이터 초기화
     Given 다음과 같은 유저 정보가 주어지고 대기열 토큰 생성을 요청하면 성공 응답을 받는다
       | userId | priority | requestAt |
       | user1  | 1        | now       |
@@ -13,15 +14,14 @@ Feature: 처리열 토큰 확인
       | userId | tokenValue |
       | user1  | retrieved  |
     Then 조회된 처리열 토큰의 정보가 아래와 같이 확인되어야 한다
-      | userId | tokenValue | position | validUntil | status     |
-      | user1  | notNull    | notNull  | notNull    | PROCESSING |
+      | userId | tokenValue  | status     |
+      | user1  | notNull        | PROCESSING |
 
 
-
-  Scenario: 잘못된 userId로 처리열 토큰 유효성을 조회 요청하면 실패 응답을 받는다
-    Given 잘못된 유저 아이디와 토큰으로 처리열 토큰 유효성을 조회 요청하면 204 응답을 받는다
-      | userId | tokenValue |
-      | user2  | retrieved  |
+#  Scenario: 잘못된 userId로 처리열 토큰 유효성을 조회 요청하면 실패 응답을 받는다 - redis 구현에서는 tokenvalue로 조회
+#    Given 잘못된 유저 아이디와 토큰으로 처리열 토큰 유효성을 조회 요청하면 204 응답을 받는다
+#      | userId | tokenValue |
+#      | user2  | retrieved  |
 
   Scenario: 잘못된 tokenValue로 처리열 토큰 유효성을 조회 요청하면 실패 응답을 받는다
     Given 다음과 같은 유저 아이디와 토큰으로 처리열 토큰 유효성을 조회 요청하면 204 응답을 받는다

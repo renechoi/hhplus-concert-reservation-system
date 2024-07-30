@@ -9,8 +9,8 @@ spring:
     password: ${SPRING_DATASOURCE_PASSWORD:1234}  # 기본값 설정
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
-      maximum-pool-size: 50
-      minimum-idle: 50
+      maximum-pool-size: 100
+      minimum-idle: 100
   jpa:
     hibernate:
       ddl-auto: update

@@ -1,6 +1,7 @@
 package io.reservationservice.common.mapper;
 
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -14,7 +15,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-
+import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 
 /**
  * @author : Rene Choi
@@ -28,6 +29,7 @@ public class ObjectMapperBasedVoMapper {
     static {
         objectMapper = new ObjectMapper();
         objectMapper.registerModule(new Jdk8Module());
+        objectMapper.registerModule(new ParameterNamesModule());
         JavaTimeModule javaTimeModule = new JavaTimeModule();
         objectMapper.registerModule(javaTimeModule);
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -38,6 +40,10 @@ public class ObjectMapperBasedVoMapper {
 
     public static ObjectMapper getObjectMapper() {
         return objectMapper;
+    }
+
+    public static JsonNode readTree(String content) throws JsonProcessingException {
+        return objectMapper.readTree(content);
     }
 
     public static <T, U> U convert(T from, Class<U> to) {
@@ -115,6 +121,28 @@ public class ObjectMapperBasedVoMapper {
         }
     }
 
+
+
+    public static <T, U> U convertForCollectionObject(T from, Class<U> to) {
+        try {
+            JsonNode jsonNode = objectMapper.valueToTree(from);
+            if (jsonNode.isObject()) {
+                ObjectNode objectNode = (ObjectNode) jsonNode;
+				for (Iterator<String> it = objectNode.fieldNames(); it.hasNext(); ) {
+					String fieldName = it.next();
+					JsonNode fieldNode = objectNode.get(fieldName);
+					if (fieldNode.isArray()) {
+						List<?> list = objectMapper.convertValue(fieldNode, List.class);
+						objectNode.set(fieldName, objectMapper.valueToTree(convert(list, Object.class)));
+					}
+				}
+                return objectMapper.treeToValue(objectNode, to);
+            }
+            return objectMapper.treeToValue(jsonNode, to);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Object mapping failed", e);
+        }
+    }
 
 
 

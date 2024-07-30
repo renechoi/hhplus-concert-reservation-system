@@ -73,7 +73,7 @@ dependencies {
 
 
     // Redisson for Redis Pub/Sub and Lock
-    implementation 'org.redisson:redisson-spring-boot-starter:3.19.0'
+    implementation 'org.redisson:redisson-spring-boot-starter:3.33.0'
 
 
     // QueryDSL dependencies

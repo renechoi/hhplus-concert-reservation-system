@@ -40,6 +40,9 @@ public class ObjectMapperBasedVoMapper {
         return objectMapper;
     }
 
+    public static JsonNode readTree(String content) throws JsonProcessingException {
+        return objectMapper.readTree(content);
+    }
     public static <T, U> U convert(T from, Class<U> to) {
         try {
             String json = objectMapper.writeValueAsString(from);

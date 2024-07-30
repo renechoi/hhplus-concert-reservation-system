@@ -21,7 +21,7 @@ public class QueuePaymentEventHandler implements PaymentEventHandler{
 	@Override
 	@EventListener
 	public void handlePaymentCompleteEvent(PaymentCompleteEvent event) {
-		queueManagementFacade.completeTokens(event.getUserId());
+		queueManagementFacade.completeToken(event.toCompletedTokenHandlingRequest());
 	}
 
 	@Override
