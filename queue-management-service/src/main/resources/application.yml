@@ -18,7 +18,9 @@ spring:
         concertReservationPaymentConsumer-in-0:
           destination: concert-reservation-payment
           group: concert-reservation-payment-group
-
+  redis:
+    host: localhost
+    port: 6379
 
 
 
@@ -41,8 +43,8 @@ waiting-queue:
 
 processing-queue:
   policy:
-    max-limit: 100
-
+    max-limit: 1000
+    token-expiry-as-seconds: 30
 
 
 scheduler:

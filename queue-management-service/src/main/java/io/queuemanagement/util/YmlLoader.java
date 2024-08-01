@@ -147,9 +147,14 @@ public class YmlLoader {
 		return Integer.parseInt(loader.configMap.getOrDefault("processing-queue.policy.max-limit", "10000"));
 	}
 
-	public static int getTokenExpiryInSeconds() {
+	public static int getWaitingTokenExpiryInSeconds() {
 		YmlLoader loader = YmlLoader.ymlLoader();
 		return Integer.parseInt(loader.configMap.getOrDefault("waiting-queue.policy.token-expiry-as-seconds", "300"));
+	}
+
+	public static int getProcessingTokenExpiryInSeconds() {
+		YmlLoader loader = YmlLoader.ymlLoader();
+		return Integer.parseInt(loader.configMap.getOrDefault("processing-queue.policy.token-expiry-as-seconds", "300"));
 	}
 
 	public static long getSchedulerFixedRate(String key) {
