@@ -8,6 +8,7 @@ import static org.mockito.Mockito.*;
 import java.time.LocalDateTime;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -16,7 +17,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import io.queuemanagement.api.business.domainmodel.ProcessingQueueToken;
-import io.queuemanagement.api.business.dto.inport.ProcessingQueueTokenSearchCommand;
 import io.queuemanagement.api.business.dto.outport.ProcessingQueueTokenGeneralInfo;
 import io.queuemanagement.api.business.persistence.ProcessingQueueRetrievalRepository;
 
@@ -26,14 +26,14 @@ import io.queuemanagement.api.business.persistence.ProcessingQueueRetrievalRepos
  */
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("SimpleProcessingQueueTokenService 테스트")
-public class SimpleProcessingQueueTokenServiceTest {
+@DisplayName("SimpleProcessingQueueService 테스트")
+public class SimpleProcessingQueueServiceTest {
 
 	@Mock
 	private ProcessingQueueRetrievalRepository processingQueueRetrievalRepository;
 
 	@InjectMocks
-	private SimpleProcessingQueueTokenService simpleProcessingQueueTokenService;
+	private SimpleProcessingQueueService simpleProcessingQueueTokenService;
 
 
 	private ProcessingQueueToken mockProcessingQueueToken;
@@ -51,6 +51,7 @@ public class SimpleProcessingQueueTokenServiceTest {
 
 	@Test
 	@DisplayName("토큰과 사용자 ID로 처리 중인 토큰의 가용성 확인")
+	@Disabled("RDB 유효 테스트 - Redis 변경시 불필요")
 	void testCheckProcessingQueueTokenAvailability_withTokenAndUserId() {
 		String tokenValue = "token123";
 		String userId = "user123";
@@ -69,6 +70,7 @@ public class SimpleProcessingQueueTokenServiceTest {
 
 	@Test
 	@DisplayName("토큰으로 처리 중인 토큰의 가용성 확인")
+	@Disabled("RDB 유효 테스트 - Redis 변경시 불필요")
 	void testCheckProcessingQueueTokenAvailability_withToken() {
 		String tokenValue = "token123";
 

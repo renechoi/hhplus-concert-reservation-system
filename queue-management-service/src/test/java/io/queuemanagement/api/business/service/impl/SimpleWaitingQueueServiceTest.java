@@ -3,6 +3,7 @@ package io.queuemanagement.api.business.service.impl;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -48,6 +49,7 @@ public class SimpleWaitingQueueServiceTest {
 
 	@Test
 	@DisplayName("토큰 생성 및 큐에 삽입 - 중복 토큰이 있는 경우")
+	@Disabled("RDB 유효 테스트 - Redis 변경시 불필요")
 	void testGenerateAndEnqueue_withDuplicate() {
 		String userId = "user1";
 		WaitingQueueTokenGenerateCommand command = new WaitingQueueTokenGenerateCommand(userId);
@@ -67,6 +69,7 @@ public class SimpleWaitingQueueServiceTest {
 
 	@Test
 	@DisplayName("대기열 토큰 조회 - 정상 케이스")
+	@Disabled("RDB 유효 테스트 - Redis 변경시 불필요")
 	void testRetrieve() throws Exception {
 		String userId = "user1";
 		WaitingQueueToken token = WaitingQueueToken.builder()
@@ -80,7 +83,7 @@ public class SimpleWaitingQueueServiceTest {
 		when(waitingQueueRepository.findSingleByCondition(any(WaitingQueueTokenSearchCommand.class)))
 			.thenReturn(token);
 
-		WaitingQueueTokenGeneralInfo result = simpleWaitingQueueService.retrieveByAiAtOnceCalculation(userId);
+		WaitingQueueTokenGeneralInfo result = simpleWaitingQueueService.retrieveToken(userId);
 
 		assertEquals(expectedInfo, result);
 	}

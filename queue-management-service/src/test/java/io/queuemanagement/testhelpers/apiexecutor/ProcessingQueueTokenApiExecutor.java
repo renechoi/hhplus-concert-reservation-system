@@ -29,4 +29,12 @@ public class ProcessingQueueTokenApiExecutor extends AbstractRequestExecutor {
 			.then()
 			.extract();
 	}
+
+	public static ExtractableResponse<Response> checkProcessingQueueTokenAvailability(String userId) {
+		return given()
+			.spec(getRequestSpecification(getPort()))
+			.get(TOKEN_API_URL_PATH + "/check-availability/" + userId)
+			.then()
+			.extract();
+	}
 }
