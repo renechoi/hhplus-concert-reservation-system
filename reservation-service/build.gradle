@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '3.3.1'
     id 'io.spring.dependency-management' version '1.1.5'
+    id 'io.gatling.gradle' version '3.10.3'
 }
 
 group = 'io'
@@ -39,6 +40,12 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-web'
 
+    implementation 'org.springframework.boot:spring-boot-starter-cache'
+    implementation 'org.ehcache:ehcache:3.9.5'
+    implementation 'javax.cache:cache-api:1.1.1'
+    implementation 'javax.xml.bind:jaxb-api:2.3.1'
+    implementation 'org.glassfish.jaxb:jaxb-runtime:2.3.1'
+    implementation 'javax.activation:activation:1.1.1'
 
     implementation 'io.micrometer:micrometer-registry-prometheus'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
@@ -118,4 +125,19 @@ tasks.withType(JavaCompile) {
 
 clean.doLast {
     file(querydslDir).deleteDir()
+}
+
+
+
+
+
+// ./gradlew gatlingRun
+gatling {
+    jvmArgs = ['-server', '-Xms512M', '-Xmx512M']
+    systemProperties = ['file.encoding': 'UTF-8']
+    simulations = {
+        include "**/io/reservationservice/ReservationStatusSimulation.java"
+        include "**/io/reservationservice/AvailableDatesSimulation.java"
+        include "**/io/reservationservice/AvailableSeatsSimulation.java"
+    }
 }

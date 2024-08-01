@@ -2,6 +2,7 @@ plugins {
 	id 'java'
 	id 'org.springframework.boot' version '3.3.1'
 	id 'io.spring.dependency-management' version '1.1.5'
+	id 'io.gatling.gradle' version '3.10.3'
 }
 
 group = 'io'
@@ -69,6 +70,8 @@ dependencies {
 	implementation 'org.springframework.cloud:spring-cloud-stream-binder-kafka'
 	implementation 'org.springframework.cloud:spring-cloud-stream-binder-kafka-streams'
 
+	// redis
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 
 
 	// shedlock
@@ -127,4 +130,18 @@ tasks.withType(JavaCompile) {
 
 clean.doLast {
 	file(querydslDir).deleteDir()
+}
+
+
+
+
+// ./gradlew gatlingRun
+gatling {
+	jvmArgs = ['-server', '-Xms512M', '-Xmx512M']
+	systemProperties = ['file.encoding': 'UTF-8']
+	simulations = {
+//		include "**/io/queuemanagement/TokenCombinedSimulation.java"
+//		include "**/io/queuemanagement/WaitingQueueTokenRetrievalSimulation.java"
+		include "**/io/queuemanagement/WaitingQueueTokenGenerationSimulation.java"
+	}
 }
