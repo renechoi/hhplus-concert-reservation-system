@@ -18,6 +18,7 @@ import io.reservationservice.api.business.dto.outport.AvailableSeatsInfos;
 import io.reservationservice.api.business.persistence.ConcertOptionRepository;
 import io.reservationservice.api.business.persistence.SeatRepository;
 import io.reservationservice.api.business.service.AvailabilityService;
+import io.reservationservice.common.annotation.GlobalCacheable;
 import lombok.RequiredArgsConstructor;
 
 /**
@@ -31,9 +32,9 @@ public class SimpleAvailabilityService implements AvailabilityService {
 	private final ConcertOptionRepository concertOptionRepository;
 	private final SeatRepository seatRepository;
 
-	// todo -> 요구 사항에 따라 seat 정보도 (seat total count / available seats를 리턴할지 판단)
 	@Override
 	@Transactional(readOnly = true)
+	@GlobalCacheable(prefix = "availableDates", keys = {"#concertId"}, ttl = 60 * 60 * 24)
 	public AvailableDateInfos getAvailableDates(Long concertId) {
 		List<ConcertOption> concertOptions = concertOptionRepository.findMultipleByCondition(onUpcomingDates(concertId));
 		return AvailableDateInfos.from(concertOptions.stream().map(AvailableDateInfo::from).collect(Collectors.toList()));
@@ -43,6 +44,7 @@ public class SimpleAvailabilityService implements AvailabilityService {
 
 	@Override
 	@Transactional(readOnly = true)
+	@GlobalCacheable(prefix = "availableSeats", keys = {"#concertOptionId"}, ttl = 300)
 	public AvailableSeatsInfos getAvailableSeats(Long concertOptionId, Long requestAt) {
 		List<Seat> seats = seatRepository.findMultipleByCondition(onConcertOption(concertOptionId));
 

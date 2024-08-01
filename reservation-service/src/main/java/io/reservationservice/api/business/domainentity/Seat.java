@@ -7,8 +7,10 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 
 import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.domain.AbstractAggregateRoot;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import io.reservationservice.api.business.dto.event.SeatChangedEvent;
 import io.reservationservice.common.exception.definitions.ReservationUnAvailableException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -18,6 +20,9 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PostPersist;
+import jakarta.persistence.PostRemove;
+import jakarta.persistence.PostUpdate;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -34,7 +39,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @Getter
 @EntityListeners({AuditingEntityListener.class})
-public class Seat {
+public class Seat extends AbstractAggregateRoot<Seat> {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -54,6 +59,14 @@ public class Seat {
 	@Column(updatable = false)
 	@Setter
 	private LocalDateTime createdAt;
+
+
+	@PostPersist
+	@PostUpdate
+	@PostRemove
+	private void publishSeatChangedEvent() {
+		registerEvent(new SeatChangedEvent(this.concertOption.getConcertOptionId(), this.seatId));
+	}
 
 
 	public static Seat createSeatWithConcertOptionAndNumber(ConcertOption concertOption, Long seatNumber) {

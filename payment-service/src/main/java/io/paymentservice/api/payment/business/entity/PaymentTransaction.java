@@ -7,8 +7,10 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.domain.AbstractAggregateRoot;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import io.paymentservice.api.common.cache.business.dto.event.LocalCacheEvictEvent;
 import io.paymentservice.common.exception.definitions.PaymentCancelUnAvailableException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -18,6 +20,9 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.PostPersist;
+import jakarta.persistence.PostRemove;
+import jakarta.persistence.PostUpdate;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
@@ -39,7 +44,7 @@ import lombok.NoArgsConstructor;
 // @Table(name = "PaymentTransaction", uniqueConstraints = {
 // 	@UniqueConstraint(columnNames = {"targetId", "userId", "amount", "paymentMethod"})
 // })
-public class PaymentTransaction {
+public class PaymentTransaction extends AbstractAggregateRoot<PaymentTransaction> {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -60,6 +65,14 @@ public class PaymentTransaction {
 	@CreatedDate
 	@Column(updatable = false)
 	private LocalDateTime createdAt;
+
+	@PostPersist
+	@PostUpdate
+	@PostRemove
+	private void publishSeatChangedEvent() {
+		registerEvent(new LocalCacheEvictEvent("paymentTransaction", String.valueOf(userId)));
+	}
+
 
 	public PaymentTransaction withCompleted() {
 		this.paymentStatus = COMPLETE;
