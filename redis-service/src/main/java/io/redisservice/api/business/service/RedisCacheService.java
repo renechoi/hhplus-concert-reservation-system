@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import io.redisservice.api.business.dto.command.CacheCommand;
+import io.redisservice.api.business.dto.command.EvictCacheCommand;
 import io.redisservice.api.business.dto.info.CacheInfo;
 import io.redisservice.api.business.dto.info.EvictCacheInfo;
 import io.redisservice.api.business.repository.RedisCacheRepository;
@@ -32,8 +33,8 @@ public class RedisCacheService {
 		return CacheInfo.of(cacheKey,redisCacheRepository.getCache(cacheKey));
 	}
 
-	public EvictCacheInfo evictCache(String cacheKey) {
-		boolean evicted = redisCacheRepository.evictCache(cacheKey);
-		return EvictCacheInfo.createEvictCacheInfo(cacheKey, evicted);
+	public EvictCacheInfo evictCache(EvictCacheCommand evictCacheCommand) {
+		boolean evicted = redisCacheRepository.evictCache(evictCacheCommand);
+		return EvictCacheInfo.createEvictCacheInfo(evictCacheCommand.getCacheKey(), evicted);
 	}
 }

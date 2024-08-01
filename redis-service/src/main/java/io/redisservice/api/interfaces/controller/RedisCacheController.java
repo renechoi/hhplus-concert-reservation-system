@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.redisservice.api.application.dto.request.CacheRequest;
+import io.redisservice.api.application.dto.request.EvictCacheRequest;
 import io.redisservice.api.application.dto.response.CacheResponse;
 import io.redisservice.api.application.dto.response.EvictCacheResponse;
 import io.redisservice.api.application.facade.RedisCacheFacade;
@@ -41,9 +42,9 @@ public class RedisCacheController {
 		return CommonApiResponse.OK(redisCacheFacade.getCache(cacheKey));
 	}
 
-	@DeleteMapping("/cache/{cacheKey}")
+	@DeleteMapping("/cache")
 	@Operation(summary = "Evict Cache API")
-	public CommonApiResponse<EvictCacheResponse> evictCache(@PathVariable String cacheKey) {
-		return CommonApiResponse.OK(redisCacheFacade.evictCache(cacheKey));
+	public CommonApiResponse<EvictCacheResponse> evictCache(@RequestBody EvictCacheRequest evictCacheRequest) {
+		return CommonApiResponse.OK(redisCacheFacade.evictCache(evictCacheRequest));
 	}
 }

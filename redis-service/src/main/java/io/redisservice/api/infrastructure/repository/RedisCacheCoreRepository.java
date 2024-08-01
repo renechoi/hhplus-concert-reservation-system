@@ -12,6 +12,7 @@ import org.springframework.web.server.ResponseStatusException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.redisservice.api.business.dto.command.CacheCommand;
+import io.redisservice.api.business.dto.command.EvictCacheCommand;
 import io.redisservice.api.business.repository.RedisCacheRepository;
 import io.redisservice.common.exception.definitions.CacheValueNotFoundException;
 import io.redisservice.common.exception.definitions.CacheValueNotRetrievableException;
@@ -50,8 +51,8 @@ public class RedisCacheCoreRepository implements RedisCacheRepository {
     }
 
     @Override
-    public boolean evictCache(String cacheKey) {
-        RBucket<Object> bucket = redissonClient.getBucket(cacheKey);
+    public boolean evictCache(EvictCacheCommand evictCacheCommand) {
+        RBucket<Object> bucket = redissonClient.getBucket(evictCacheCommand.getCacheKey());
         return bucket.delete();
     }
 }

@@ -97,8 +97,9 @@ public abstract class AbstractRequestExecutor {
 			.extract();
 	}
 
-	protected static ExtractableResponse<Response> doDelete(RequestSpecification requestSpecification, String urlPath) {
+	protected static <T> ExtractableResponse<Response> doDelete(RequestSpecification requestSpecification, String urlPath, T requestBody) {
 		return requestSpecification
+			.body(requestBody)
 			.when().delete(urlPath)
 			.then().log().all()
 			.extract();

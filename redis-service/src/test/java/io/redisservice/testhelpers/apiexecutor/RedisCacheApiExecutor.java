@@ -5,6 +5,7 @@ import static io.restassured.RestAssured.*;
 import static org.springframework.http.MediaType.*;
 
 import io.redisservice.api.application.dto.request.CacheRequest;
+import io.redisservice.api.application.dto.request.EvictCacheRequest;
 import io.redisservice.util.YmlLoader;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
@@ -33,7 +34,7 @@ public class RedisCacheApiExecutor extends AbstractRequestExecutor {
 		return doGet(getRequestSpecification(getPort()), CACHE_API_URL_PATH + "/" + cacheKey);
 	}
 
-	public static ExtractableResponse<Response> evictCache(String cacheKey) {
-		return doDelete(getRequestSpecification(getPort()), CACHE_API_URL_PATH + "/" + cacheKey);
+	public static ExtractableResponse<Response> evictCache(EvictCacheRequest request) {
+		return doDelete(getRequestSpecification(getPort()), CACHE_API_URL_PATH, request);
 	}
 }

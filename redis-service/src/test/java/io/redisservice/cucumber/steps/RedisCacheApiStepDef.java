@@ -15,6 +15,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.cucumber.datatable.DataTable;
 import io.cucumber.java8.En;
 import io.redisservice.api.application.dto.request.CacheRequest;
+import io.redisservice.api.application.dto.request.EvictCacheRequest;
 import io.redisservice.api.application.dto.response.CacheResponse;
 import io.redisservice.api.application.dto.response.EvictCacheResponse;
 import io.restassured.response.ExtractableResponse;
@@ -69,7 +70,8 @@ public class RedisCacheApiStepDef implements En {
 	private void sendEvictCacheRequest(DataTable dataTable) {
 		dataTable.asMaps().forEach(row -> {
 			String cacheKey = row.get("cacheKey");
-			EvictCacheResponse evictCacheResponse = parseEvictCacheResponse(evictCache(cacheKey));
+			EvictCacheRequest request = EvictCacheRequest.builder().cacheKey(cacheKey).build();
+			EvictCacheResponse evictCacheResponse = parseEvictCacheResponse(evictCache(request));
 
 			putCacheRequest(cacheKey, getCacheRequest(cacheKey));
 			putEvictCacheResponse(cacheKey, evictCacheResponse);
