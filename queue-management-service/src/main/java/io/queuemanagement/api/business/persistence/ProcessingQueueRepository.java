@@ -11,10 +11,17 @@ import io.queuemanagement.api.business.dto.inport.ProcessingQueueTokenSearchComm
  * @author : Rene Choi
  * @since : 2024/07/06
  */
-public interface ProcessingQueueRetrievalRepository {
+public interface ProcessingQueueRepository {
+	ProcessingQueueToken enqueue(ProcessingQueueToken processingQueueToken);
 
 	AvailableSlots countAvailableSlots();
+
+	// key - tokenvalue, value - userId
 	ProcessingQueueToken getToken(String tokenValue);
+
+	void increaseCounter(int counts);
+
+	void decreaseCounter(int counts);
 
 	ProcessingQueueToken findSingleByCondition(ProcessingQueueTokenSearchCommand searchCommand);
 
@@ -22,5 +29,5 @@ public interface ProcessingQueueRetrievalRepository {
 
 	List<ProcessingQueueToken> findAllByCondition(ProcessingQueueTokenSearchCommand searchCommand);
 
-	void increase(int counts);
+	ProcessingQueueToken store(ProcessingQueueToken processingQueueToken);
 }

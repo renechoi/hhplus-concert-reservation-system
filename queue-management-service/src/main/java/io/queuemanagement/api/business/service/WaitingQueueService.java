@@ -16,5 +16,5 @@ public interface WaitingQueueService {
 
 
 	@Transactional(readOnly = true)
-	WaitingQueueTokenGeneralInfo retrieveByAiAtOnceCalculation(String userId);
+	WaitingQueueTokenGeneralInfo retrieveToken(String userId);
 }

@@ -8,7 +8,9 @@ import static java.time.LocalDateTime.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import io.queuemanagement.api.business.persistence.ProcessingQueueEnqueueRepository;
+import io.queuemanagement.api.business.domainmodel.AvailableSlots;
+import io.queuemanagement.api.business.dto.inport.ExpiredTokenHandlingCommand;
+import io.queuemanagement.api.business.persistence.ProcessingQueueRepository;
 import io.queuemanagement.api.business.persistence.ProcessingQueueRetrievalRepository;
 import io.queuemanagement.api.business.persistence.ProcessingQueueStoreRepository;
 import io.queuemanagement.api.business.persistence.WaitingQueueTokenCounterCrudRepository;
@@ -26,41 +28,55 @@ import lombok.RequiredArgsConstructor;
 public class SimpleQueueManagementService implements QueueManagementService {
 	private final WaitingQueueTokenRetrievalRepository waitingQueueRepository;
 	private final WaitingQueueTokenManagementRepository waitingQueueManagementRepository;
-	private final ProcessingQueueRetrievalRepository processingQueueRepository;
-	private final ProcessingQueueEnqueueRepository processingQueueEnqueueRepository;
-	private final ProcessingQueueStoreRepository processingQueueStoreRepository;
+	private final ProcessingQueueRepository processingQueueRepository;
 	private final WaitingQueueTokenCounterCrudRepository waitingQueueCounterRepository;
 
-	@Transactional
+	// @Transactional
 	@Override
 	public void processQueueTransfer() {
-		long availableSlots = processingQueueRepository.countAvailableSlots(processingTokensMaxLimit());
+		// AvailableSlots availableSlots = processingQueueRepository.countAvailableSlots();
+		// if (availableSlots.isSlotLimited()) {
+		// 	return;
+		// }
+		// waitingQueueRepository.findAllByCondition(onTopWaitingToken()).stream()
+		// 	.toList()
+		// 	.forEach(waitingToken -> {
+		// 		processingQueueRepository.enqueue(waitingToken.toProcessing());
+		// 		waitingQueueManagementRepository.updateStatus(waitingToken.proccessed());
+		// 	});
+		// waitingQueueCounterRepository.save(waitingQueueCounterRepository.getCounter().decrease(availableSlots.getAvailableSlots()));
 
-		if (isNotAvailable(availableSlots)) {
+
+
+		// // 1. Redis에서 counter 값을 조회
+		AvailableSlots availableSlots = processingQueueRepository.countAvailableSlots();
+
+		if(availableSlots.isSlotLimited()){
 			return;
 		}
 
-		waitingQueueRepository.findAllByCondition(onTopWaitingToken()).stream()
-			.limit(availableSlots)
+		// 2. 카운터 값이 설정된 max limit보다 작다면 그 차액만큼 처리열로 이관 진행
+		waitingQueueRepository.findTopTokens(availableSlots.counts()).stream()
 			.toList()
 			.forEach(waitingToken -> {
-				processingQueueEnqueueRepository.enqueue(waitingToken.toProcessing());
-				waitingQueueManagementRepository.updateStatus(waitingToken.proccessed());
+				processingQueueRepository.enqueue(waitingToken.toProcessing());
+				waitingQueueManagementRepository.remove(waitingToken);
 			});
-
-		waitingQueueCounterRepository.save(waitingQueueCounterRepository.getCounter().decrease(availableSlots));
 	}
 
-	private boolean isNotAvailable(long availableSlots) {
-		return availableSlots <= 0;
+
+	@Override
+	public void completeTokensByKeys(ExpiredTokenHandlingCommand command) {
+		processingQueueRepository.decreaseCounter(command.getSize());
 	}
+
 
 	@Transactional
 	@Override
 	public void expireProcessingQueueTokens() {
 		processingQueueRepository
 			.findAllByCondition(onProcessingTokensExpiring(now()))
-			.forEach(token -> processingQueueStoreRepository.store(token.expire()));
+			.forEach(token -> processingQueueRepository.store(token.expire()));
 	}
 
 	@Override
@@ -74,7 +90,7 @@ public class SimpleQueueManagementService implements QueueManagementService {
 	@Transactional
 	@Override
 	public void completeProcessingQueueToken(String userId) {
-		processingQueueStoreRepository.store(
+		processingQueueRepository.store(
 			processingQueueRepository.findSingleByCondition(onActiveProcessing(userId)).complete());
 	}
 
@@ -85,4 +101,6 @@ public class SimpleQueueManagementService implements QueueManagementService {
 			.findAllByCondition(onActiveWaiting(userId))
 			.forEach(item -> waitingQueueManagementRepository.updateStatus(item.complete()));
 	}
+
+
 }

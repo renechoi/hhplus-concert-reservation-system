@@ -21,4 +21,8 @@ public record ProcessingQueueTokenGeneralInfo(
 	public static ProcessingQueueTokenGeneralInfo from(ProcessingQueueToken processingQueueToken) {
 		return ObjectMapperBasedVoMapper.convert(processingQueueToken, ProcessingQueueTokenGeneralInfo.class);
 	}
+
+	public ProcessingQueueTokenGeneralInfo withProcessingAndUserInfo(String userId) {
+		return new ProcessingQueueTokenGeneralInfo(processingQueueTokenId(), userId, tokenValue(), validUntil(), QueueStatus.PROCESSING);
+	}
 }

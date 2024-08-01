@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum QueueStatus {
+	FAIL("인입 실패", "대기열 인입이 불가능한 상태"),
 	WAITING("대기중", "대기열에서 기다리고 있는 상태"),
 	PROCESSING("처리중", "처리열로 이동하여 활성 상태인 유저"),
 	COMPLETED("완료", "예약을 성공적으로 마친 상태"),
