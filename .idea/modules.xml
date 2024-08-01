@@ -10,8 +10,10 @@
       <module fileurl="file://$PROJECT_DIR$/message-service/message-service.iml" filepath="$PROJECT_DIR$/message-service/message-service.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/message-service.main.iml" filepath="$PROJECT_DIR$/.idea/modules/message-service.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/message-service.test.iml" filepath="$PROJECT_DIR$/.idea/modules/message-service.test.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/payment-service.gatling.iml" filepath="$PROJECT_DIR$/.idea/modules/payment-service.gatling.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/payment-service.main.iml" filepath="$PROJECT_DIR$/.idea/modules/payment-service.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/payment-service.test.iml" filepath="$PROJECT_DIR$/.idea/modules/payment-service.test.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/queue-management-service.gatling.iml" filepath="$PROJECT_DIR$/.idea/modules/queue-management-service.gatling.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/queue-management-service.main.iml" filepath="$PROJECT_DIR$/.idea/modules/queue-management-service.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/queue-management-service.test.iml" filepath="$PROJECT_DIR$/.idea/modules/queue-management-service.test.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/redis-service.main.iml" filepath="$PROJECT_DIR$/.idea/modules/redis-service.main.iml" />
