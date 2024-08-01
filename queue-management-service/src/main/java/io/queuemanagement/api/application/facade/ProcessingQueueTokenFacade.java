@@ -1,7 +1,7 @@
 package io.queuemanagement.api.application.facade;
 
 import io.queuemanagement.api.application.dto.response.ProcessingQueueTokenGeneralResponse;
-import io.queuemanagement.api.business.service.ProcessingQueueTokenService;
+import io.queuemanagement.api.business.service.ProcessingQueueService;
 import io.queuemanagement.common.annotation.Facade;
 import lombok.RequiredArgsConstructor;
 
@@ -13,14 +13,14 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ProcessingQueueTokenFacade {
 
-	private final ProcessingQueueTokenService processingQueueTokenService;
+	private final ProcessingQueueService processingQueueService;
 
 	public ProcessingQueueTokenGeneralResponse checkProcessingQueueTokenAvailability(String tokenValue, String userId) {
-		return ProcessingQueueTokenGeneralResponse.from(processingQueueTokenService.checkProcessingTokenAvailability(tokenValue,userId));
+		return ProcessingQueueTokenGeneralResponse.from(processingQueueService.checkProcessingTokenAvailability(tokenValue,userId));
 	}
 
 	public ProcessingQueueTokenGeneralResponse checkProcessingQueueTokenAvailability(String tokenValue) {
-		return ProcessingQueueTokenGeneralResponse.from(processingQueueTokenService.checkProcessingTokenAvailability(tokenValue));
+		return ProcessingQueueTokenGeneralResponse.from(processingQueueService.checkProcessingTokenAvailability(tokenValue));
 	}
 
 

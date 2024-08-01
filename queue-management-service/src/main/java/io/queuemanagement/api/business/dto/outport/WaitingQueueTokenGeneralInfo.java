@@ -17,18 +17,16 @@ public record WaitingQueueTokenGeneralInfo(
 	Long position,
 	LocalDateTime validUntil,
 	QueueStatus status,
-	LocalDateTime requestAt
+	LocalDateTime requestAt,
+	Boolean isEmpty
 ) {
 
 	public static WaitingQueueTokenGeneralInfo from(WaitingQueueToken waitingQueueToken) {
 		return ObjectMapperBasedVoMapper.convert(waitingQueueToken, WaitingQueueTokenGeneralInfo.class);
 	}
 
-	public static WaitingQueueTokenGeneralInfo empty() {
-		return new WaitingQueueTokenGeneralInfo(null, null, null, null, null, null, null);
-	}
 
-	public boolean isEmpty() {
-		return this.waitingQueueTokenId == null;
+	public boolean empty() {
+		return Boolean.TRUE.equals(isEmpty);
 	}
 }

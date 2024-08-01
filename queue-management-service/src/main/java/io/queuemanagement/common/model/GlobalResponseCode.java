@@ -29,10 +29,11 @@ public enum GlobalResponseCode implements ResponseCapable{
 
 	// 실패 응답
 	UNKNOWN_ERROR("9000", "unknown error", HttpStatus.INTERNAL_SERVER_ERROR),
-
+	FEIGN_EXCHANGE_EXCEPTION("9001","feign exchange exception", HttpStatus.BAD_REQUEST),
 
 	// domain
 	DUPLICATE_ENTRY("24030", "duplicate entry", HttpStatus.BAD_REQUEST),
+	TOKEN_TRANSFER_CURRENTLY_NOT_AVAILABLE("24031", "token transfer not available currently", HttpStatus.BAD_REQUEST),
 
 
 	;

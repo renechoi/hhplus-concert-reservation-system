@@ -1,9 +1,9 @@
 package io.queuemanagement.api.business.domainmodel;
 
+import static io.queuemanagement.common.token.QueueTokenGenerator.*;
 import static io.queuemanagement.util.YmlLoader.*;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 import io.queuemanagement.api.business.dto.inport.WaitingQueueTokenGenerateCommand;
 import io.queuemanagement.common.annotation.DomainModel;
@@ -31,18 +31,49 @@ public class WaitingQueueToken implements DomainRecordable{
 	private QueueStatus status;
 
 	private LocalDateTime requestAt;
+	private Boolean isEmpty;
 
+	public static WaitingQueueToken valueOf(String tokenValue) {
+		return WaitingQueueToken.builder().tokenValue(tokenValue).build();
+	}
+
+	public static WaitingQueueToken empty() {
+		return WaitingQueueToken.builder().isEmpty(true).build();
+	}
 
 	public WaitingQueueToken init(WaitingQueueTokenCounter waitingQueueTokenCounter) {
-		return withValidUntil(getTokenExpiryInSeconds()).withPositionValue(waitingQueueTokenCounter.getCount());
+		return withValidUntil(getWaitingTokenExpiryInSeconds()).withPositionValue(waitingQueueTokenCounter.getCount());
 	}
+
 
 	public static WaitingQueueToken createToken(WaitingQueueTokenGenerateCommand command) {
 		return WaitingQueueToken.builder()
 			.userId(command.getUserId())
-			.tokenValue(UUID.randomUUID().toString())
+			.tokenValue(generateToken(command.getUserId()))
 			.status(QueueStatus.WAITING)
 			.requestAt(command.getRequestAt())
+			.build();
+	}
+
+
+	public static WaitingQueueToken tokenWithPosition(String userId, long position) {
+		return WaitingQueueToken.builder()
+			.userId(userId)
+			.tokenValue(generateToken(userId))
+			.position(position)
+			.status(QueueStatus.WAITING)
+			.build();
+	}
+
+
+
+	public static WaitingQueueToken fail(WaitingQueueToken originalToken) {
+		return WaitingQueueToken.builder()
+			.waitingQueueTokenId(originalToken.getWaitingQueueTokenId())
+			.userId(originalToken.getUserId())
+			.tokenValue(originalToken.getTokenValue())
+			.status(QueueStatus.FAIL)
+			.requestAt(originalToken.getRequestAt())
 			.build();
 	}
 
@@ -81,4 +112,6 @@ public class WaitingQueueToken implements DomainRecordable{
 		Long position = this.waitingQueueTokenId - minTokenId + 1;
 		return this.withPositionValue(position);
 	}
+
+	
 }

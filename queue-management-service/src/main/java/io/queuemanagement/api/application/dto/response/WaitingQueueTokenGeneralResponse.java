@@ -3,6 +3,7 @@ package io.queuemanagement.api.application.dto.response;
 import java.time.LocalDateTime;
 
 import io.queuemanagement.api.business.domainmodel.QueueStatus;
+import io.queuemanagement.api.business.dto.outport.ProcessingQueueTokenGeneralInfo;
 import io.queuemanagement.api.business.dto.outport.WaitingQueueTokenGeneralInfo;
 import io.queuemanagement.common.mapper.ObjectMapperBasedVoMapper;
 
@@ -22,5 +23,30 @@ public record WaitingQueueTokenGeneralResponse(
 
 	public static WaitingQueueTokenGeneralResponse from(WaitingQueueTokenGeneralInfo info) {
 		return ObjectMapperBasedVoMapper.convert(info, WaitingQueueTokenGeneralResponse.class);
+	}
+
+	public static WaitingQueueTokenGeneralResponse from(ProcessingQueueTokenGeneralInfo info) {
+		// 매핑 구현
+		return new WaitingQueueTokenGeneralResponse(
+			info.processingQueueTokenId(),
+			info.userId(),
+			info.tokenValue(),
+			null,
+			info.validUntil(),
+			QueueStatus.PROCESSING,
+			null
+		);
+	}
+
+	public WaitingQueueTokenGeneralResponse withUserId(String userId) {
+		return new WaitingQueueTokenGeneralResponse(
+			this.waitingQueueTokenId(),
+			userId,
+			this.tokenValue(),
+			this.position(),
+			this.validUntil(),
+			this.status(),
+			this.requestAt()
+		);
 	}
 }

@@ -1,5 +1,6 @@
 package io.queuemanagement.api.business.persistence;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,4 +20,8 @@ public interface WaitingQueueTokenRetrievalRepository {
 	List<WaitingQueueToken> findAllByCondition(WaitingQueueTokenSearchCommand searchCommand);
 
 	Optional<WaitingQueueToken> findOptionalByConditionWithLock(WaitingQueueTokenSearchCommand searchCommand);
+
+	WaitingQueueToken findToken(String userId);
+
+	List<WaitingQueueToken> findTopTokens(int count);
 }

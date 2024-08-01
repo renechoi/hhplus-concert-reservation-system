@@ -20,4 +20,8 @@ public class CounterDomainServiceRequest {
 	public static CounterDomainServiceRequest incrementRequest(String counterKey, long value){
 		return CounterDomainServiceRequest.builder().counterKey(counterKey).value(value).build();
 	}
+
+	public static CounterDomainServiceRequest decrementRequest(String counterKey, long value){
+		return CounterDomainServiceRequest.builder().counterKey(counterKey).value(value).build();
+	}
 }

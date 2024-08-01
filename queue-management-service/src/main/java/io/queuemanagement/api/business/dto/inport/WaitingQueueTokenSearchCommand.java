@@ -103,6 +103,12 @@ public class WaitingQueueTokenSearchCommand extends AbstractCommonRequestInfo im
 			.build();
 	}
 
+	public static WaitingQueueTokenSearchCommand onToken(String tokenValue) {
+		return WaitingQueueTokenSearchCommand.builder()
+			.tokenValue(tokenValue)
+			.build();
+	}
+
 	public boolean isStatuesNotEmpty() {
 		return !isStatuesEmpty();
 	}
