@@ -3,7 +3,9 @@ spring:
     active: stage
   application:
     name: payment-service
-
+  cache:
+    jcache:
+      config: classpath:ehcache.xml
 
 
 eureka:

@@ -3,6 +3,7 @@ package io.reservationservice.api.business.dto.outport;
 import static io.reservationservice.common.model.GlobalResponseCode.*;
 import static org.springframework.util.CollectionUtils.*;
 
+import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
 
@@ -12,7 +13,7 @@ import io.reservationservice.common.exception.definitions.ReservationUnAvailable
  * @author : Rene Choi
  * @since : 2024/07/11
  */
-public record ReservationStatusInfos(List<ReservationStatusInfo> reservationStatusInfos) {
+public record ReservationStatusInfos(List<ReservationStatusInfo> reservationStatusInfos) implements Serializable {
 	public ReservationStatusInfos {
 		reservationStatusInfos = reservationStatusInfos != null ? List.copyOf(reservationStatusInfos) : Collections.emptyList();
 	}
