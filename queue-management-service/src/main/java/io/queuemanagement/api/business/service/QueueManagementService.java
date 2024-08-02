@@ -1,5 +1,6 @@
 package io.queuemanagement.api.business.service;
 
+import io.queuemanagement.api.business.dto.inport.CompletedTokenHandlingCommand;
 import io.queuemanagement.api.business.dto.inport.ExpiredTokenHandlingCommand;
 
 /**
@@ -8,6 +9,9 @@ import io.queuemanagement.api.business.dto.inport.ExpiredTokenHandlingCommand;
  */
 public interface QueueManagementService {
 	void processQueueTransfer();
+
+	void completeToken(CompletedTokenHandlingCommand command);
+
 	void expireProcessingQueueTokens();
 	void expireWaitingQueueTokens();
 	void completeProcessingQueueToken(String userId);

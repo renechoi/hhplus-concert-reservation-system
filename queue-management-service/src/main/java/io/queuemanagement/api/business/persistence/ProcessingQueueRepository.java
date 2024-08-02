@@ -13,6 +13,7 @@ import io.queuemanagement.api.business.dto.inport.ProcessingQueueTokenSearchComm
  */
 public interface ProcessingQueueRepository {
 	ProcessingQueueToken enqueue(ProcessingQueueToken processingQueueToken);
+	ProcessingQueueToken dequeue(ProcessingQueueToken processingQueueToken);
 
 	AvailableSlots countAvailableSlots();
 

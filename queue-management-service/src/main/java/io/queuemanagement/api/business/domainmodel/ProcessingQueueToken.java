@@ -49,4 +49,9 @@ public class ProcessingQueueToken  {
 	public boolean isNoMoreActive() {
 		return this.status!=null && (this.status == QueueStatus.COMPLETED || this.status == QueueStatus.EXPIRED);
 	}
+
+	public ProcessingQueueToken withTokenValue(String tokenValue) {
+		this.tokenValue = tokenValue;
+		return this;
+	}
 }

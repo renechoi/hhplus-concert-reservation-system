@@ -1,5 +1,7 @@
 package io.queuemanagement.api.application.facade;
 
+import io.queuemanagement.api.application.dto.request.CompletedTokenHandlingRequest;
+import io.queuemanagement.api.application.dto.request.ExpiredTokenHandlingRequest;
 import io.queuemanagement.api.application.dto.request.ExpiredTokenHandlingRequest;
 import io.queuemanagement.api.business.service.QueueManagementService;
 import io.queuemanagement.common.annotation.Facade;
@@ -35,5 +37,9 @@ public class QueueManagementFacade {
 	// redis 방식
 	public void completeTokens(ExpiredTokenHandlingRequest request) {
 		queueManagementService.completeTokensByKeys(request.toCommand());
+	}
+
+	public void completeToken(CompletedTokenHandlingRequest request) {
+		queueManagementService.completeToken(request.toCommand());
 	}
 }

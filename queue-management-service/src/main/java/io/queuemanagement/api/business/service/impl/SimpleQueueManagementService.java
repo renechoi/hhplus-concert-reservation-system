@@ -2,17 +2,16 @@ package io.queuemanagement.api.business.service.impl;
 
 import static io.queuemanagement.api.business.dto.inport.ProcessingQueueTokenSearchCommand.*;
 import static io.queuemanagement.api.business.dto.inport.WaitingQueueTokenSearchCommand.*;
-import static io.queuemanagement.util.YmlLoader.*;
+import static io.queuemanagement.common.token.QueueTokenGenerator.*;
 import static java.time.LocalDateTime.*;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import io.queuemanagement.api.business.domainmodel.AvailableSlots;
+import io.queuemanagement.api.business.dto.inport.CompletedTokenHandlingCommand;
 import io.queuemanagement.api.business.dto.inport.ExpiredTokenHandlingCommand;
 import io.queuemanagement.api.business.persistence.ProcessingQueueRepository;
-import io.queuemanagement.api.business.persistence.ProcessingQueueRetrievalRepository;
-import io.queuemanagement.api.business.persistence.ProcessingQueueStoreRepository;
 import io.queuemanagement.api.business.persistence.WaitingQueueTokenCounterCrudRepository;
 import io.queuemanagement.api.business.persistence.WaitingQueueTokenManagementRepository;
 import io.queuemanagement.api.business.persistence.WaitingQueueTokenRetrievalRepository;
@@ -68,6 +67,11 @@ public class SimpleQueueManagementService implements QueueManagementService {
 	@Override
 	public void completeTokensByKeys(ExpiredTokenHandlingCommand command) {
 		processingQueueRepository.decreaseCounter(command.getSize());
+	}
+
+	@Override
+	public void completeToken(CompletedTokenHandlingCommand command) {
+		processingQueueRepository.dequeue(command.toProcessingQueueToken().withTokenValue(generateToken(command.getUserId())));
 	}
 
 

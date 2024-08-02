@@ -1,5 +1,8 @@
 package io.queuemanagement.api.infrastructure.clients.redisservice.dto;
 
+import static io.queuemanagement.util.YmlLoader.*;
+
+import io.queuemanagement.api.business.domainmodel.ProcessingQueueToken;
 import io.queuemanagement.api.business.dto.inport.EvictCacheCommand;
 import io.queuemanagement.common.mapper.ObjectMapperBasedVoMapper;
 import lombok.AllArgsConstructor;
@@ -16,5 +19,9 @@ public class EvictCacheDomainServiceRequest {
 
 	public static EvictCacheDomainServiceRequest from(EvictCacheCommand command) {
 		return ObjectMapperBasedVoMapper.convert(command, EvictCacheDomainServiceRequest.class);
+	}
+
+	public static EvictCacheDomainServiceRequest processingTokenQueue(ProcessingQueueToken processingQueueToken) {
+		return EvictCacheDomainServiceRequest.builder().cacheKey(processingQueueToken.getTokenValue()).build();
 	}
 }

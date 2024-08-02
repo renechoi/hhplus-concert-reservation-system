@@ -18,6 +18,7 @@ import io.queuemanagement.api.business.persistence.ProcessingQueueRepository;
 import io.queuemanagement.api.infrastructure.clients.redisservice.RedisServiceClient;
 import io.queuemanagement.api.infrastructure.clients.redisservice.dto.CacheDomainServiceResponse;
 import io.queuemanagement.api.infrastructure.clients.redisservice.dto.CounterDomainServiceResponse;
+import io.queuemanagement.api.infrastructure.clients.redisservice.dto.EvictCacheDomainServiceRequest;
 import io.queuemanagement.api.infrastructure.entity.ProcessingQueueTokenEntity;
 import io.queuemanagement.api.infrastructure.persistence.orm.ProcessingQueueTokenJpaRepository;
 import io.queuemanagement.common.exception.definitions.ProcessingQueueTokenNotFoundException;
@@ -45,6 +46,12 @@ public class ProcessingQueueCoreRepository implements ProcessingQueueRepository 
 		return processingQueueToken;
 	}
 
+	@Override
+	public ProcessingQueueToken dequeue(ProcessingQueueToken processingQueueToken) {
+		redisServiceClient.evictCache(EvictCacheDomainServiceRequest.processingTokenQueue(processingQueueToken));
+		redisServiceClient.decrement(decrementRequest(PROCESSING_QUEUE_COUNTER.getValue(), 1));
+		return processingQueueToken;
+	}
 
 	@Override
 	public AvailableSlots countAvailableSlots() {
