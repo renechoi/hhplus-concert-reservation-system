@@ -1,5 +1,7 @@
 package io.queuemanagement.api.business.service;
 
+import io.queuemanagement.api.business.dto.inport.CompletedTokenHandlingCommand;
+import io.queuemanagement.api.business.dto.inport.ExpiredTokenHandlingCommand;
 import io.queuemanagement.api.business.dto.outport.ProcessingQueueTokenGeneralInfo;
 
 /**
@@ -8,9 +10,14 @@ import io.queuemanagement.api.business.dto.outport.ProcessingQueueTokenGeneralIn
  */
 public interface ProcessingQueueService {
 
-	ProcessingQueueTokenGeneralInfo checkProcessingTokenAvailability(String queueToken, String userId);
+	ProcessingQueueTokenGeneralInfo checkAvailability(String queueToken, String userId);
 
-	ProcessingQueueTokenGeneralInfo checkProcessingTokenAvailability(String tokenValue);
+	ProcessingQueueTokenGeneralInfo checkAvailability(String tokenValue);
 
 	ProcessingQueueTokenGeneralInfo retrieve(String userId);
+
+
+	void processQueueTransfer();
+	void completeToken(CompletedTokenHandlingCommand command);
+	void completeTokens(ExpiredTokenHandlingCommand command);
 }

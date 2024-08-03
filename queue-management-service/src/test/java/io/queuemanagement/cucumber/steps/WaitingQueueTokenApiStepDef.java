@@ -23,17 +23,13 @@ import java.util.stream.IntStream;
 import org.junit.jupiter.api.Assertions;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import com.netflix.discovery.converters.Auto;
-
 import io.cucumber.datatable.DataTable;
 import io.cucumber.java8.En;
 import io.queuemanagement.api.application.dto.request.WaitingQueueTokenGenerateRequest;
 import io.queuemanagement.api.application.dto.response.WaitingQueueTokenGeneralResponse;
 import io.queuemanagement.api.application.dto.response.WaitingQueueTokenGenerationResponse;
-import io.queuemanagement.api.business.persistence.WaitingQueueTokenRetrievalRepository;
 import io.queuemanagement.api.infrastructure.clients.redisservice.RedisServiceClient;
 import io.queuemanagement.api.infrastructure.persistence.orm.WaitingQueueTokenJpaRepository;
-import io.queuemanagement.util.UrlEncodingHelper;
 import io.restassured.internal.RestAssuredResponseImpl;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
