@@ -12,9 +12,9 @@ import io.queuemanagement.api.business.dto.outport.WaitingQueueTokenGenerateInfo
  */
 public interface WaitingQueueService {
 
-	WaitingQueueTokenGenerateInfo generateAndEnqueue(WaitingQueueTokenGenerateCommand waitingQueueTokenGenerateCommand);
+	WaitingQueueTokenGenerateInfo enqueue(WaitingQueueTokenGenerateCommand waitingQueueTokenGenerateCommand);
 
 
 	@Transactional(readOnly = true)
-	WaitingQueueTokenGeneralInfo retrieveToken(String userId);
+	WaitingQueueTokenGeneralInfo retrieve(String userId);
 }

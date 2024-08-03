@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.queuemanagement.api.application.dto.response.ProcessingQueueTokenGeneralResponse;
-import io.queuemanagement.api.application.facade.ProcessingQueueTokenFacade;
+import io.queuemanagement.api.application.facade.ProcessingQueueFacade;
 import io.queuemanagement.common.model.CommonApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -25,7 +25,7 @@ import lombok.RequiredArgsConstructor;
 @Tag(name = "처리열 토큰 API")
 public class ProcessingQueueTokenController {
 
-	private final ProcessingQueueTokenFacade processingQueueTokenFacade;
+	private final ProcessingQueueFacade processingQueueFacade;
 
 	@GetMapping({"/check-availability/{userId}", "/check-availability"})
 	@Operation(summary = "처리열 토큰 유효성 조회")
@@ -33,9 +33,9 @@ public class ProcessingQueueTokenController {
 		@RequestHeader("X-Queue-Token") String tokenValue,
 		@PathVariable(required = false) String userId) {
 		if (userId != null) {
-			return OK(processingQueueTokenFacade.checkProcessingQueueTokenAvailability(tokenValue, userId));
+			return OK(processingQueueFacade.checkAvailability(tokenValue, userId));
 		} else {
-			return OK(processingQueueTokenFacade.checkProcessingQueueTokenAvailability(tokenValue));
+			return OK(processingQueueFacade.checkAvailability(tokenValue));
 		}
 	}
 

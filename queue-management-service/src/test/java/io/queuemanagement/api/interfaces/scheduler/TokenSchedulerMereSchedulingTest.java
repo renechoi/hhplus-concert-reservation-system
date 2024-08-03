@@ -5,7 +5,6 @@ import static org.mockito.Mockito.*;
 import java.util.concurrent.TimeUnit;
 
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,7 +13,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import io.queuemanagement.api.application.facade.QueueManagementFacade;
+import io.queuemanagement.api.application.facade.ProcessingQueueFacade;
 
 /**
  * @author : Rene Choi
@@ -30,22 +29,14 @@ import io.queuemanagement.api.application.facade.QueueManagementFacade;
 class TokenSchedulerMereSchedulingTest {
 
 	@MockBean
-	private QueueManagementFacade queueManagementFacade;
+	private ProcessingQueueFacade processingQueueFacade;
 
 	@Test
 	@DisplayName("대기열 -> 처리열 이동 스케줄러 테스트")
 	void testProcessScheduledQueueTransfer() {
 		Awaitility.await()
 			.atMost(2, TimeUnit.SECONDS)
-			.untilAsserted(() -> verify(queueManagementFacade, atLeastOnce()).processQueueTransfer());
+			.untilAsserted(() -> verify(processingQueueFacade, atLeastOnce()).processQueueTransfer());
 	}
 
-	@Test
-	@DisplayName("만료 토큰 처리 스케줄러 테스트")
-	@Disabled("RDB 유효 테스트 - Redis 변경시 불필요")
-	void testExpireTokens() {
-		Awaitility.await()
-			.atMost(2, TimeUnit.SECONDS)
-			.untilAsserted(() -> verify(queueManagementFacade, atLeastOnce()).expireQueueTokens());
-	}
 }

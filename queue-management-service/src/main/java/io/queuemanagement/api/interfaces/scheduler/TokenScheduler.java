@@ -3,9 +3,7 @@ package io.queuemanagement.api.interfaces.scheduler;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
-
-import io.queuemanagement.api.application.facade.QueueManagementFacade;
+import io.queuemanagement.api.application.facade.ProcessingQueueFacade;
 import lombok.RequiredArgsConstructor;
 
 /**
@@ -15,27 +13,15 @@ import lombok.RequiredArgsConstructor;
 @Component
 @RequiredArgsConstructor
 public class TokenScheduler {
-	private final QueueManagementFacade queueManagementFacade;
-
+	private final ProcessingQueueFacade processingQueueFacade;
 
 	/**
 	 * 대기열 -> 처리열 이동
 	 */
 	@Scheduled(fixedRateString = "${scheduler.queueTransferRate}")
-	// @SchedulerLock(name = "processScheduledQueueTransfer", lockAtMostFor = "PT5S", lockAtLeastFor = "PT2S")
 	public void processScheduledQueueTransfer() {
-		queueManagementFacade.processQueueTransfer();
+		processingQueueFacade.processQueueTransfer();
 	}
 
-	/**
-	 * 만료 토큰 처리
-	 * 저장소를 Redis로 변경함에 따라 Deprecated
-	 */
-	@Scheduled(fixedRateString = "${scheduler.expireTokensRate}")
-	// @SchedulerLock(name = "expireTokens", lockAtMostFor = "PT15S", lockAtLeastFor = "PT10S")
-	@Deprecated
-	public void expireTokens() {
-		queueManagementFacade.expireQueueTokens();
-	}
 
 }
