@@ -19,7 +19,7 @@ public class WaitingQueueFacade {
 	private final WaitingQueueService waitingQueueService;
 	private final ProcessingQueueService processingQueueService;
 
-	public WaitingQueueTokenGenerationResponse generateAndEnqueue(WaitingQueueTokenGenerateRequest tokenRequest) {
+	public WaitingQueueTokenGenerationResponse enqueue(WaitingQueueTokenGenerateRequest tokenRequest) {
 		return WaitingQueueTokenGenerationResponse.from(waitingQueueService.enqueue(tokenRequest.toCommand()));
 	}
 

@@ -34,12 +34,12 @@ public class WaitingQueueTokenController {
 	@PostMapping
 	@Operation(summary = "대기열 토큰 생성 및 인입")
 	public CommonApiResponse<WaitingQueueTokenGenerationResponse> generateAndEnqueue(@RequestBody @Validated WaitingQueueTokenGenerateRequest tokenRequest) {
-		return created(waitingQueueFacade.generateAndEnqueue(tokenRequest));
+		return created(waitingQueueFacade.enqueue(tokenRequest));
 	}
 
 	@GetMapping("/{userId}")
 	@Operation(summary = "대기열 토큰 정보 조회")
-	public CommonApiResponse<WaitingQueueTokenGeneralResponse> retrieveWaitingQueueToken(@PathVariable String userId) {
+	public CommonApiResponse<WaitingQueueTokenGeneralResponse> retrieve(@PathVariable String userId) {
 		return OK(waitingQueueFacade.retrieve(userId));
 	}
 }

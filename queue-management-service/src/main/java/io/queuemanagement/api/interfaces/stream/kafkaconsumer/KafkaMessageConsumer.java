@@ -1,4 +1,4 @@
-package io.queuemanagement.api.infrastructure.stream.kafkaconsumer;
+package io.queuemanagement.api.interfaces.stream.kafkaconsumer;
 
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.messaging.Message;

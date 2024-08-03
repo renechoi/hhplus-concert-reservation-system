@@ -8,7 +8,7 @@ import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.messaging.Message;
 
-import io.queuemanagement.api.infrastructure.stream.kafkaconsumer.ConcertReservationPaymentMessageConsumer;
+import io.queuemanagement.api.interfaces.stream.kafkaconsumer.ConcertReservationPaymentMessageConsumer;
 import lombok.RequiredArgsConstructor;
 
 /**
