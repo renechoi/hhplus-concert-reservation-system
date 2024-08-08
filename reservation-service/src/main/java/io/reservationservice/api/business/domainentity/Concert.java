@@ -11,6 +11,8 @@ import jakarta.persistence.EntityListeners;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -27,6 +29,10 @@ import lombok.Setter;
 @NoArgsConstructor
 @Getter
 @EntityListeners({AuditingEntityListener.class})
+@Table(indexes = {
+	@Index(name = "idx_concert_title", columnList = "title"),
+	@Index(name = "idx_concert_createdAt", columnList = "createdAt")
+})
 public class Concert implements EntityRecordable{
 
 	@Id

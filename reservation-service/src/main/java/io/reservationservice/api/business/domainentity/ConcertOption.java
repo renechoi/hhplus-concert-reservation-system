@@ -8,13 +8,17 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.ConstraintMode;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
+import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -31,6 +35,13 @@ import lombok.Setter;
 @NoArgsConstructor
 @Getter
 @EntityListeners({AuditingEntityListener.class})
+@Table(
+	indexes = {
+		@Index(name = "idx_concert_date", columnList = "concertDate"),
+		@Index(name = "idx_concert_option_id", columnList = "concertOptionId"),
+		@Index(name = "idx_concert_id_date", columnList = "concert_id, concertDate"),
+	}
+)
 public class ConcertOption implements EntityRecordable{
 
 	@Id
@@ -38,7 +49,7 @@ public class ConcertOption implements EntityRecordable{
 	private Long concertOptionId;
 
 	@ManyToOne
-	@JoinColumn(name = "concert_id")
+	@JoinColumn(name = "concert_id", nullable = false, foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
 	private Concert concert;
 
 	private LocalDateTime concertDate;
