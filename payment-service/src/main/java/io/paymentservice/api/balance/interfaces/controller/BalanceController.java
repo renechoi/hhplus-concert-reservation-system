@@ -19,6 +19,7 @@ import io.paymentservice.api.balance.interfaces.dto.response.BalanceChargeRespon
 import io.paymentservice.api.balance.interfaces.dto.response.BalanceSearchResponse;
 import io.paymentservice.api.balance.interfaces.dto.response.BalanceUseResponse;
 import io.paymentservice.common.model.CommonApiResponse;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 
@@ -40,6 +41,7 @@ public class BalanceController {
 	 * 특정 유저의 잔액을 조회하는 기능
 	 */
 	@GetMapping("/{userId}")
+	@Operation(summary = "잔액 조회")
 	public CommonApiResponse<BalanceSearchResponse> balanceSearch(@PathVariable long userId) {
 		return OK(BalanceSearchResponse.from(service.search(searchCommandById(userId))));
 	}
@@ -48,6 +50,7 @@ public class BalanceController {
 	 * 특정 유저의 잔액 충전/이용 내역을 조회하는 기능
 	 */
 	@GetMapping("/histories/{userId}")
+	@Operation(summary = "잔액 충전/사용 이용 내역 조회")
 	public CommonApiResponse<BalanceTransactionResponses> history(@PathVariable long userId) {
 		return OK(BalanceTransactionResponses.from(service.getHistories(userId)));
 	}
@@ -56,6 +59,7 @@ public class BalanceController {
 	 * 특정 유저의 잔액을 충전하는 기능
 	 */
 	@PutMapping("/charge/{userId}")
+	@Operation(summary = "잔액 충전")
 	public CommonApiResponse<BalanceChargeResponse> charge(@PathVariable long userId, @RequestBody @Validated BalanceChargeRequest userPointChargeRequest) {
 		return OK(BalanceChargeResponse.from(service.charge(userPointChargeRequest.withUserId(userId).toCommand())));
 	}
@@ -64,6 +68,7 @@ public class BalanceController {
 	 * 특정 유저의 잔액을 사용하는 기능
 	 */
 	@PutMapping("/use/{userId}")
+	@Operation(summary = "잔액 사용")
 	public CommonApiResponse<BalanceUseResponse> use(@PathVariable long userId, @RequestBody @Validated BalanceUseRequest userPointUseRequest) {
 		return OK(BalanceUseResponse.from(service.use(userPointUseRequest.withUserId(userId).toCommand())));
 	}
