@@ -5204,11 +5204,10 @@ GC 횟수에서도 Redis가 RDB보다 낮은 수치를 보이고 있어, 메모�
 
 
 <details>
-<summary><b>레디스 구현 다양한 방법들 장단점 및 한계 분석 (feat. 카프카 pub/sub을 이용한 최종 해결)</b></summary>
+<summary><b>레디스 기반의 은행 창구 대기열 큐 메커니즘 분석 및 최적 방안 탐구</b></summary>
 
 
-#
-
+# TBD 
 
 
 </details>
@@ -5221,12 +5220,22 @@ GC 횟수에서도 Redis가 RDB보다 낮은 수치를 보이고 있어, 메모�
 <summary><b>API 쿼리 분석 및 개선</b></summary>
 
 
-#
+# TBD
 
 
 </details>
 
 
+
+
+<details>
+<summary><b> MSA 아키텍처에서 느슨한 결합 추구하기</b></summary>
+
+
+# TBD
+
+
+</details>
 
 
 
