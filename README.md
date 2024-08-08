@@ -1802,6 +1802,19 @@ Opaque 토큰은 클라이언트가 토큰의 내용을 해석할 수 없게 하
 
 
 
+
+</details>
+
+
+<details>
+
+
+
+<summary><b>Trouble Shooting</b></summary>
+
+
+
+
 <details>
 <summary><b>동시성 문제와 극복</b></summary>
 
@@ -5187,6 +5200,31 @@ GC 횟수에서도 Redis가 RDB보다 낮은 수치를 보이고 있어, 메모�
 
 </details>
 
+
+
+
+<details>
+<summary><b>레디스 구현 다양한 방법들 장단점 및 한계 분석 (feat. 카프카 pub/sub을 이용한 최종 해결)</b></summary>
+
+
+#
+
+
+
+</details>
+
+
+
+
+
+<details>
+<summary><b>API 쿼리 분석 및 개선</b></summary>
+
+
+#
+
+
+</details>
 
 
 
