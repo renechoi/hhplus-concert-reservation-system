@@ -17,10 +17,10 @@
 
 
 
-## AS-IS 사용되는 쿼리
+## 사용되는 쿼리
 
 
-##### 예약 가능 날짜 조회 
+### 예약 가능 날짜 조회 
 
 - 설명: 사용자가 특정 콘서트의 예약 가능 날짜를 확인하기 위해 사용된다. ConcertOption 테이블과 concert 테이블에서 concertId와 concertDate 조건에 맞는 데이터를 조회한다.
 - 빈도: ★★★★★ 
@@ -29,7 +29,12 @@
   - 두 개의 테이블을 조회하며, 날짜와 ID 조건을 사용하여 필터링한다.
   - 특히, concertId를 기준으로 ConcertOption 테이블과 Concert 테이블을 조인한다.
 
-**쿼리 1:** `Seat` 테이블에서 `concertOptionId`로 특정 콘서트 옵션에 해당하는 좌석을 조회하는 쿼리
+
+
+
+<details>
+<summary><b>쿼리 1:</b> Seat 테이블에서 concertOptionId로 특정 콘서트 옵션에 해당하는 좌석을 조회하는 쿼리</summary>
+
 ```sql
 SELECT
          co1_0.concert_option_id,
@@ -48,8 +53,14 @@ SELECT
         AND co1_0.concert_id = ?
         AND co1_0.concert_date > ?
 ```
+</details>
 
-**쿼리 2:** `ConcertOption` 테이블에서 `concertOptionId`로 특정 콘서트 옵션과 관련된 콘서트 정보를 조회하는 쿼리
+
+<details>
+
+<summary><b>쿼리 2:</b> ConcertOption 테이블에서 concertOptionId로 특정 콘서트 옵션과 관련된 콘서트 정보를 조회하는 쿼리</summary>
+
+
 ```sql
 select
     c1_0.concert_id,
@@ -62,13 +73,20 @@ where
     c1_0.concert_id=?
 ```
 
-##### 예약 가능 좌석 조회
+</details>
+
+
+### 예약 가능 좌석 조회
 - **설명:** 특정 콘서트 옵션에 대해 예약 가능한 좌석을 조회한다. `Seat` 테이블과 `ConcertOption` 테이블을 조인하여 `concertOptionId`와 `requestAt` 조건에 맞는 데이터를 가져온다.
 - **빈도:** ★★★★☆
     - 예약 가능한 좌석 정보를 조회할 때마다 호출되며, 사용 빈도가 높다.
 - **복잡도:** ★★★☆☆
     - 좌석의 예약 가능 여부를 필터링해야 하므로 단순한 조회보다 복잡하다. 좌석이 예약되었는지 여부를 확인하기 위해 `occupied` 필드를 검사하며, 또한 `concertOptionId`를 기준으로 `Seat` 테이블과 `ConcertOption` 테이블을 조인하여 관련 데이터를 가져온다. 이러한 과정에서 여러 조건을 사용하여 데이터를 필터링하고, 조인 연산을 통해 테이블 간의 관계를 처리해야 한다. 특히, 좌석의 예약 가능 상태를 정확히 판별하기 위해 `requestAt` 매개변수를 사용하여 요청 시점에서의 예약 가능 상태를 확인한다. 
     - 따라서 단순한 조회 쿼리보다 더 많은 조건과 연산을 포함하게 되어 복잡도가 증가한다.
+
+
+<details>
+<summary><b>쿼리 1:</b> Seat 테이블에서 concertOptionId로 좌석 정보를 조회하는 쿼리</summary>
 
 ```sql
 select
@@ -79,6 +97,11 @@ where
      seat is not null 
      and seat.concertOption.concertOptionId = ?
 ```
+
+</details>
+
+<details>
+<summary><b>쿼리 2:</b> ConcertOption 테이블에서 concert_id로 옵션과 콘서트 정보를 조회하는 쿼리</summary>
 
 ```sql
 select
@@ -103,7 +126,10 @@ where
     co1_0.concert_option_id=?
 ```
 
-##### 예약 요청
+</details>
+
+
+### 예약 요청
 
 - **설명:** 특정 콘서트 옵션에 대한 좌석 정보를 조회하고, 좌석 예약을 처리한다. `ConcertOption` 테이블과 `Seat` 테이블을 조인하여 필요한 데이터를 가져오고, 필요한 경우 임시 예약 테이블에 데이터를 삽입하거나 기존 데이터를 업데이트한다.
 
@@ -115,7 +141,10 @@ where
     - 여러 테이블을 조회하고, 데이터를 삽입하거나 업데이트한다. 좌석의 예약 가능 여부를 확인하고, 임시 예약을 처리하는 과정에서 동시성 제어와 데이터 무결성을 유지해야 한다. 또한, 여러 조건을 만족하는 데이터를 조회하고, 필요한 경우 행 잠금을 사용하여 동시성 문제를 해결한다.
 
 
-**쿼리 1:** `ConcertOption` 테이블에서 `concertOptionId`로 조회하는 쿼리.
+
+<details>
+<summary><b>쿼리 2:</b> ConcertOption 테이블에서 `concertOptionId`로 조회하는 쿼리</summary>
+
 ```sql
 select concertOption
 from ConcertOption concertOption
@@ -135,7 +164,13 @@ where co1_0.concert_option_id=?
 for share
 ```
 
-**쿼리 2:** `Seat` 테이블에서 특정 조건을 만족하는 좌석 데이터를 조회하는 쿼리.
+</details>
+
+
+
+<details>
+<summary><b>쿼리 2:</b> Seat 테이블에서 특정 조건을 만족하는 좌석 데이터를 조회하는 쿼리</summary>
+
 ```sql
 select seat
 from Seat seat
@@ -154,14 +189,21 @@ and s1_0.concert_option_id=?
 and s1_0.seat_number=?
 for update
 ```
+</details>
 
-**쿼리 3:** `TemporalReservation` 테이블에 새로운 임시 예약 데이터를 삽입하는 쿼리.
+<details>
+<summary><b>쿼리 3:</b> TemporalReservation 테이블에 새로운 임시 예약 데이터를 삽입하는 쿼리</summary>
+
 ```sql
 insert into temporal_reservation (concert_option_id, created_at, expire_at, is_canceled, is_confirmed, request_at, reserve_at, seat_id, user_id)
 values (?, ?, ?, ?, ?, ?, ?, ?, ?)
 ```
+</details>
 
-**쿼리 4:** `Seat` 테이블에서 특정 좌석의 상태를 업데이트하는 쿼리.
+
+
+<details>
+<summary><b>쿼리 4:</b> `Seat` 테이블에서 특정 좌석의 상태를 업데이트하는 쿼리</summary>
 ```sql
 update seat
 set concert_option_id=?,
@@ -170,9 +212,11 @@ set concert_option_id=?,
 where seat_id=?
 ```
 
+</details>
 
 
-##### 임시 예약 확정
+
+### 임시 예약 확정
 
 - **설명:** 임시 예약 확정을 처리하는 쿼리들로, 사용자가 임시로 예약한 좌석을 확정된 예약으로 전환하는 작업을 수행한다. `temporal_reservation`, `concert_option`, `concert`, `seat` 테이블을 조회하여 필요한 정보를 가져오고, 임시 예약을 확정하거나 새로운 예약을 삽입한다.
 
@@ -183,7 +227,11 @@ where seat_id=?
 - **복잡도:** ★★★★★
     - 이 쿼리들은 여러 테이블 간의 조인과 데이터 삽입 및 업데이트 작업을 포함하며, 특히 동시성 제어와 데이터 무결성을 유지해야 한다. 임시 예약을 확정하는 과정에서 여러 조건을 만족해야 하며, 데이터의 일관성을 유지하기 위해 행 잠금을 사용하여 동시성 문제를 해결한다. 이러한 작업은 높은 복잡도를 가진다.
 
-**쿼리 1:** 임시 예약과 관련된 정보를 조회하는 쿼리로, 임시 예약 ID와 연결된 콘서트 옵션, 콘서트, 좌석의 상세 정보를 가져온다. 
+
+
+<details>
+<summary><b>쿼리 1:</b>임시 예약 ID와 연결된 콘서트 옵션, 콘서트, 좌석의 상세 정보를 가져오는 쿼리 </summary>
+
 ```sql
 select
   tr1_0.temporal_reservation_id,
@@ -244,8 +292,12 @@ insert into
 values
   (?, ?, ?, ?, ?, ?, ?, ?)
 ```
+</details>
 
-**쿼리 3:** 기존 임시 예약 데이터를 업데이트하는 쿼리로, 임시 예약의 상태를 확정된 상태로 변경한다.
+
+<details>
+<summary><b>쿼리 2:</b> 기존 임시 예약 데이터를 업데이트하는 쿼리로, 임시 예약의 상태를 확정된 상태로 변경하는 쿼리</summary>
+
 ```sql
 update temporal_reservation 
 set
@@ -260,8 +312,12 @@ set
 where
   temporal_reservation_id=?
 ```
+</details>
 
-##### 예약 상태 조회
+
+
+
+### 예약 상태 조회
 
 - **설명:** 특정 사용자와 콘서트 옵션에 대한 예약 정보를 조회하며, 예약된 좌석의 세부 정보를 가져온다. `Reservation`, `ConcertOption`, `Seat`, 그리고 `TemporalReservation` 테이블을 사용하여 예약 및 임시 예약 상태를 조회한다.
 
@@ -272,7 +328,10 @@ where
     - 이 쿼리들은 여러 테이블을 조인하여 데이터를 조회하고, 사용자와 콘서트 옵션에 대한 다양한 조건을 만족해야 한다. 또한, 데이터 무결성을 유지하고 최신 상태를 반영해야 하므로 복잡도가 높다.
 
 
-**쿼리 1:** `Reservation` 테이블에서 특정 사용자와 콘서트 옵션에 대한 예약 데이터를 조회하는 쿼리.
+<details>
+<summary><b>쿼리 1:</b>  Reservation 테이블에서 특정 사용자와 콘서트 옵션에 대한 예약 데이터를 조회하는 쿼리
+</summary>
+
 ```sql
 select
   reservation1 
@@ -301,7 +360,13 @@ where
   and r1_0.concert_option_id=?
 ```
 
-**쿼리 2:** `ConcertOption` 테이블에서 특정 콘서트 옵션에 대한 세부 정보를 조회하는 쿼리.
+</details>
+
+
+
+<details>
+<summary><b>쿼리 2:</b> ConcertOption 테이블에서 특정 콘서트 옵션에 대한 세부 정보를 조회하는 쿼리</summary>
+
 ```sql
 select
   co1_0.concert_option_id,
@@ -325,7 +390,13 @@ where
   co1_0.concert_option_id=?
 ```
 
-**쿼리 3:** `Seat` 테이블에서 특정 좌석에 대한 정보를 조회하는 쿼리이다.
+</details>
+
+
+<details>
+<summary><b>쿼리 3:</b> Seat 테이블에서 특정 좌석에 대한 정보를 조회하는 쿼리 </summary>
+
+
 ```sql
 select
   s1_0.seat_id,
@@ -356,7 +427,14 @@ where
   s1_0.seat_id=?
 ```
 
-**쿼리 4:** `TemporalReservation` 테이블에서 특정 사용자와 콘서트 옵션에 대한 임시 예약 데이터를 조회하는 쿼리.
+</details>
+
+
+
+<details>
+<summary><b>쿼리 4:</b> TemporalReservation 테이블에서 특정 사용자와 콘서트 옵션에 대한 임시 예약 데이터를 조회하는 쿼리</summary>
+
+
 ```sql
 select
   temporalReservation 
@@ -385,9 +463,14 @@ where
      and tr1_0.concert_option_id=?
 ```
 
+</details>
 
 
-##### 콘서트 생성
+
+
+
+
+### 콘서트 생성
 
 - **설명:** `concert` 테이블에 새로운 콘서트를 삽입한다. 
 
@@ -396,6 +479,11 @@ where
 
 - **복잡도:** ★☆☆☆☆
     - 단일 테이블에 데이터를 삽입하는 단순한 구조로, 입력 값의 유효성만 검증하면 되므로 복잡도는 낮다.
+
+
+<details>
+<summary><b>쿼리 1:</b> Concert를 생성하는 쿼리</summary>
+
 
 ```sql
 insert for
@@ -406,7 +494,11 @@ insert for
         (?, ?, ?)
 ```
 
-##### 콘서트 옵션 생성
+</details>
+
+
+
+### 콘서트 옵션 생성
 
 - **설명:** 특정 콘서트에 대한 다양한 옵션을 설정하고 저장하며, 각 콘서트 옵션에 대한 세부 정보를 데이터베이스에 추가한다. 또한, 콘서트 옵션과 관련된 좌석 정보를 함께 저장하여 사용자가 선택할 수 있도록 한다.
 
@@ -416,7 +508,11 @@ insert for
 - **복잡도:** ★★★★☆
     - 이 쿼리들은 여러 테이블에 데이터를 삽입해야 하며, 콘서트 옵션과 관련된 다양한 정보를 처리한다. 특히, 좌석 정보와 관련된 테이블을 함께 업데이트해야 하므로 복잡도가 높다.
 
-**쿼리 1:** `concert` 테이블에서 콘서트 ID로 콘서트를 조회하는 쿼리.
+
+<details>
+<summary><b>쿼리 1:</b> concert 테이블에서 콘서트 ID로 콘서트를 조회하는 쿼리.</summary>
+
+
 ```sql
 select
     c1_0.concert_id,
@@ -428,22 +524,34 @@ from
 where
     c1_0.concert_id=?
 ```
+</details>
 
-**쿼리 2:** `concert_option` 테이블에 새로운 콘서트 옵션을 삽입하는 쿼리.
+
+<details>
+<summary><b>쿼리 2:</b> concert_option 테이블에 새로운 콘서트 옵션을 삽입하는 쿼리</summary>
+
 ```sql
 insert into
     concert_option (concert_id, concert_date, concert_duration, created_at, description, price, request_at, title) 
 values
     (?, ?, ?, ?, ?, ?, ?, ?)
 ```
+</details>
 
-**쿼리 3:** `seat` 테이블에 새로운 좌석 정보를 삽입하는 쿼리.
+
+
+<details>
+<summary><b>쿼리 3:</b> seat 테이블에 새로운 좌석 정보를 삽입하는 쿼리</summary>
+
 ```sql
 insert into
     seat (concert_option_id, created_at, occupied, seat_number) 
 values
     (?, ?, ?, ?)
 ```
+
+</details>
+
 
 
 ## 인덱스 적절성 판단 및 설정
@@ -466,9 +574,15 @@ Concert 엔티티는 생성 빈도가 낮아 인덱스 생성이 큰 부담이 �
    - **변경 빈도**: 낮음 (생성된 후 변경되지 않음)
    
 
-##### 종합 결론
+#### 종합 결론
 
 따라서, 현재 검색 조건이 없더라도 `title`과 `createdAt` 컬럼에 인덱스를 설정하여 향후 검색 요구에 대비할 수 있다.
+
+
+<details>
+<summary>JPA 엔티티 인덱스 설정 코드</summary>
+
+
 
 ```java
 @Table(indexes = {
@@ -482,6 +596,10 @@ public class Concert implements EntityRecordable{
     private LocalDateTime requestAt;
 }
 ```
+
+</details>
+
+
 
 
 
@@ -512,7 +630,7 @@ public class Concert implements EntityRecordable{
    - **카디널리티**: 중간 (두 컬럼의 조합으로 유일한 식별자가 될 수 있음)
    - **변경 빈도**: 낮음 (두 값 모두 생성 후 변경되지 않음)
    
-##### 종합 결론
+#### 종합 결론
 
 
 1. **단일 인덱스**
@@ -522,6 +640,9 @@ public class Concert implements EntityRecordable{
 2. **복합 인덱스**
     - `concertId, concertDate`
 
+
+<details>
+<summary>JPA 엔티티 인덱스 설정 코드</summary>
 
 ```java
 @Table(
@@ -543,6 +664,11 @@ public class ConcertOption implements EntityRecordable {
     private LocalDateTime requestAt;
 }
 ```
+
+
+</details>
+
+
 
 
 ### Seat
@@ -571,7 +697,7 @@ public class ConcertOption implements EntityRecordable {
    - **카디널리티**: 중간 (여러 좌석이 동일한 `concertOptionId`와 `occupied` 값을 가질 수 있음)
    - **변경 빈도**: 중간 (좌석의 예약 상태는 자주 변경될 수 있음)
 
-##### 종합 결론
+#### 종합 결론
 
 
 1. **단일 인덱스**
@@ -586,6 +712,10 @@ public class ConcertOption implements EntityRecordable {
 - **좌석 예약 여부 확인** 쿼리는 `concertOptionId`와 `occupied` 컬럼을 자주 사용하므로 이들에 대한 복합 인덱스가 유용하다.
 - 단일 인덱스는 `concertOptionId`와 `seatNumber`에 설정하여 기본적인 조회 성능을 향상시킬 수 있다. 다만, `concertOption`에 대한 복합 인덱스가 이미 존재하므로 `concertOption`에 대한 단일 인덱스는 불필요하다.
 
+
+
+<details>
+<summary>JPA 엔티티 인덱스 설정 코드</summary>
 
 ```java
 @Table(
@@ -603,6 +733,10 @@ public class Seat extends AbstractAggregateRoot<Seat> {
     private LocalDateTime createdAt;
 }
 ```
+
+</details>
+
+
 
 
 ### TemporalReservation
@@ -645,7 +779,7 @@ public class Seat extends AbstractAggregateRoot<Seat> {
    - **카디널리티**: 중간 (시간의 정밀도에 따라 다름, range 검색 고려)
    - **변경 빈도**: 낮음 (예약 생성 시 설정되며, 이후 잘 변경되지 않음)
    
-##### 종합 결론
+#### 종합 결론
 
 
 1. **단일 인덱스**
@@ -662,6 +796,8 @@ public class Seat extends AbstractAggregateRoot<Seat> {
 - 단일 인덱스는 `userId`와 `concertOptionId`에 설정하여 기본적인 조회 성능을 향상시킬 수 있다. 다만, 두 필드 모두 복합 인덱스로 사용되고 있으므로, 단일 인덱스는 제외한다. 
 
 
+<details>
+<summary>JPA 엔티티 인덱스 설정 코드</summary>
 
 ```java
 @Table(
@@ -684,6 +820,9 @@ public class TemporalReservation extends AbstractAggregateRoot<TemporalReservati
     private Boolean isCanceled;
 }
 ```
+
+</details>
+
 
 
 
@@ -717,7 +856,12 @@ public class TemporalReservation extends AbstractAggregateRoot<TemporalReservati
    - **변경 빈도**: 낮음 (예약 생성 시 설정되며 이후 거의 변경되지 않음)
 
 
-##### 종합 결론
+#### 종합 결론
+
+
+
+<details>
+<summary>JPA 엔티티 인덱스 설정 코드</summary>
 
 ```java
 @Table(
@@ -740,6 +884,10 @@ public class Reservation extends AbstractAggregateRoot<Reservation> {
 }
 ```
 
+</details>
+
+
+
 
 
 
@@ -750,7 +898,10 @@ public class Reservation extends AbstractAggregateRoot<Reservation> {
 
 ### 예약 가능 날짜 조회 API
 
-**`Seat` 테이블에서 `concertOptionId`로 특정 콘서트 옵션에 해당하는 좌석을 조회하는 쿼리**
+<details>
+<summary>EXPLAIN & EXPLAIN ANALYZE</summary>
+
+ConcertOption 테이블에서 concertId와 date로 조회하는 쿼리
 
 ```sql
 EXPLAIN ANALYZE
@@ -771,8 +922,13 @@ WHERE
   AND co1_0.concert_id = 123
   AND co1_0.concert_date > '2024-01-01'
 ```
+</details>
 
-**before**
+
+
+<details>
+<summary>Before</summary>
+
 
 ```sql
 1,SIMPLE,co1_0,,ALL,,,,,992058,3.33,Using where
@@ -783,7 +939,11 @@ WHERE
     -> Table scan on co1_0  (cost=107117 rows=992058) (actual time=1.43..1998 rows=1e+6 loops=1)
 ```
 
-**after**
+</details>
+
+
+<details>
+<summary>After</summary>
 
 ```sql
 1,SIMPLE,co1_0,,range,"idx_concert_date,idx_concert_id_date",idx_concert_id_date,18,,100,100,Using index condition
@@ -793,7 +953,12 @@ WHERE
 ```sql
 -> Index range scan on co1_0 using idx_concert_id_date over (concert_id = 123 AND '2024-01-01 00:00:00.000000' < concert_date), with index condition: ((co1_0.concert_id = 123) and (co1_0.concert_date > TIMESTAMP'2024-01-01 00:00:00'))  (cost=119 rows=100) (actual time=0.916..28.9 rows=100 loops=1)
 ```
-##### 결과 분석
+
+</details>
+
+
+
+#### 결과 분석
 
 | 항목              | Before                                                                                                      | After                                                                                                            |
 |-------------------|-------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------|
@@ -807,7 +972,15 @@ WHERE
 Before의 쿼리는 인덱스를 사용하지 않고 전체 테이블을 스캔하여 데이터를 필터링하기 때문에 실행 시간이 길고 비용이 높다. After의 쿼리는 적절한 인덱스를 사용하여 `concert_id`와 `concert_date`에 대한 조건을 만족하는 데이터를 효율적으로 검색하여 실행 시간을 대폭 단축시킨다.
 
 
-**`ConcertOption` 테이블에서 `concertOptionId`로 특정 콘서트 옵션과 관련된 콘서트 정보를 조회하는 쿼리**
+
+
+
+<details>
+<summary>EXPLAIN & EXPLAIN ANALYZE</summary>
+
+`ConcertOption` 테이블에서 `concertOptionId`로 특정 콘서트 옵션과 관련된 콘서트 정보를 조회하는 쿼리
+
+
 ```sql
 EXPLAIN ANALYZE
 SELECT
@@ -821,7 +994,12 @@ WHERE
     c1_0.concert_id = 123
 ```
 
-**before**
+</details>
+
+
+
+<details>
+<summary>Before</summary>
 
 ```sql
 1,SIMPLE,c1_0,,const,PRIMARY,PRIMARY,8,const,1,100,
@@ -831,7 +1009,11 @@ WHERE
 -> Rows fetched before execution  (cost=0..0 rows=1) (actual time=250e-6..333e-6 rows=1 loops=1)
 ```
 
-**after**
+</details>
+
+
+<details>
+<summary>After</summary>
 
 ```sql
 1,SIMPLE,c1_0,,const,PRIMARY,PRIMARY,8,const,1,100,
@@ -841,14 +1023,23 @@ WHERE
 -> Rows fetched before execution  (cost=0..0 rows=1) (actual time=167e-6..250e-6 rows=1 loops=1)
 ```
 
-##### 결과 분석
+</details>
+
+
+#### 결과 분석
 
 큰 변화 없음 
 
 
 ### 예약 가능 좌석 조회
 
-**Seat 테이블에서 concert_option_id로 특정 콘서트 옵션에 해당하는 좌석을 조회하는 쿼리**
+
+<details>
+<summary>EXPLAIN & EXPLAIN ANALYZE</summary>
+
+Seat 테이블에서 concert_option_id로 특정 콘서트 옵션에 해당하는 좌석을 조회하는 쿼리
+
+
 ```sql
 EXPLAIN ANALYZE
 SELECT
@@ -863,7 +1054,12 @@ WHERE
    s.concert_option_id = 123;
 ```
 
-**before**
+</details>
+
+
+<details>
+<summary>Before</summary>
+
 ```sql
 1,SIMPLE,s,,ALL,,,,,996761,10,Using where
 ```
@@ -874,7 +1070,12 @@ WHERE
     -> Table scan on s  (cost=103169 rows=996761) (actual time=4.96..1896 rows=1.01e+6 loops=1)
 ```
 
-**after**
+</details>
+
+
+<details>
+<summary>After</summary>
+
 
 ```sql
 1,SIMPLE,s,,ref,"idx_concert_option_seat_number,idx_concert_option_occupied",idx_concert_option_seat_number,9,const,1,100,
@@ -884,7 +1085,12 @@ WHERE
 -> Index lookup on s using idx_concert_option_seat_number (concert_option_id=123)  (cost=1.1 rows=1) (actual time=0.534..0.539 rows=1 loops=1)
 ```
 
-##### 결과 분석
+
+</details>
+
+
+
+#### 결과 분석
 
 | 항목              | Before                                                                                                 | After                                                                                                     |
 |-------------------|--------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------|
@@ -899,7 +1105,13 @@ Before의 쿼리는 인덱스를 사용하지 않고 전체 테이블을 스캔�
 After의 쿼리는 적절한 인덱스를 사용하여 `concert_option_id`에 대한 조건을 만족하는 데이터를 효율적으로 검색하여 실행 시간을 대폭 단축시킨다.
 
 
-**ConcertOption 테이블과 Concert 테이블을 조인하여 concert_option_id로 특정 콘서트 옵션과 관련된 콘서트 정보를 조회하는 쿼리**
+
+
+<details>
+<summary>EXPLAIN & EXPLAIN ANALYZE</summary>
+
+ConcertOption 테이블과 Concert 테이블을 조인하여 concert_option_id로 특정 콘서트 옵션과 관련된 콘서트 정보를 조회하는 쿼리
+
 ```sql
 EXPLAIN ANALYZE
 select
@@ -924,7 +1136,13 @@ where
     co1_0.concert_option_id= 123
 ```
 
-**before**
+
+</details>
+
+
+
+<details>
+<summary>Before</summary>
 
 
 ```sql
@@ -936,8 +1154,12 @@ where
 ```sql
 -> Rows fetched before execution  (cost=0..0 rows=1) (actual time=83e-6..125e-6 rows=1 loops=1)
 ```
+</details>
 
-**after**
+
+
+<details>
+<summary>After</summary>
 
 ```sql
 1,SIMPLE,co1_0,,const,"PRIMARY,idx_concert_option_id",PRIMARY,8,const,1,100,
@@ -949,9 +1171,11 @@ where
 -> Rows fetched before execution  (cost=0..0 rows=1) (actual time=42e-6..125e-6 rows=1 loops=1)
 ```
 
-##### 결과 분석
+</details>
 
-### 결과 분석
+
+
+#### 결과 분석
 
 | 항목              | Before                                                                                                  | After                                                                                                   |
 |-------------------|---------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------|
@@ -968,7 +1192,13 @@ where
 
 ### 예약 요청
 
-**`ConcertOption` 테이블에서 `concertOptionId`로 조회하는 쿼리.**
+
+
+<details>
+<summary>EXPLAIN & EXPLAIN ANALYZE</summary>
+
+`ConcertOption` 테이블에서 `concertOptionId`로 조회하는 쿼리
+
 ```sql
 EXPLAIN ANALYZE
 SELECT *
@@ -976,7 +1206,14 @@ FROM concert_option concert_option
 WHERE concert_option.concert_option_id = 123
     FOR SHARE;
 ```
-**before**
+
+</details>
+
+
+
+
+<details>
+<summary>Before</summary>
 
 ```sql
 1,SIMPLE,concert_option,,const,PRIMARY,PRIMARY,8,const,1,100,
@@ -986,7 +1223,11 @@ WHERE concert_option.concert_option_id = 123
 -> Rows fetched before execution  (cost=0..0 rows=1) (actual time=84e-6..125e-6 rows=1 loops=1)
 ```
 
-**after**
+</details>
+
+
+<details>
+<summary>After</summary>
 
 ```sql
 1,SIMPLE,concert_option,,const,"PRIMARY,idx_concert_option_id",PRIMARY,8,const,1,100,
@@ -996,12 +1237,21 @@ WHERE concert_option.concert_option_id = 123
 -> Rows fetched before execution  (cost=0..0 rows=1) (actual time=83e-6..124e-6 rows=1 loops=1)
 ```
 
-##### 결과 분석
+</details>
+
+
+
+#### 결과 분석
 
 큰 차이 없음
 
 
-**`Seat` 테이블에서 특정 조건을 만족하는 좌석 데이터를 조회하는 쿼리.**
+
+<details>
+<summary>EXPLAIN & EXPLAIN ANALYZE</summary>
+
+`Seat` 테이블에서 특정 조건을 만족하는 좌석 데이터를 조회하는 쿼리
+
 ```sql
 EXPLAIN ANALYZE
 SELECT
@@ -1016,7 +1266,12 @@ WHERE
    s.concert_option_id = 123 AND s.seat_number = 1 FOR UPDATE
 ```
 
-**before**
+</details>
+
+
+
+<details>
+<summary>Before</summary>
 
 ```sql
 1,SIMPLE,s,,ALL,,,,,996761,1,Using where
@@ -1027,7 +1282,11 @@ WHERE
     -> Table scan on s  (cost=101189 rows=996761) (actual time=14.6..3810 rows=1.01e+6 loops=1)
 ```
 
-**after**
+</details>
+
+
+<details>
+<summary>After</summary>
 
 ```sql
 1,SIMPLE,s,,ref,"idx_seat_number,idx_concert_option_seat_number,idx_concert_option_occupied",idx_concert_option_seat_number,18,"const,const",1,100,
@@ -1038,7 +1297,11 @@ WHERE
 -> Index lookup on s using idx_concert_option_seat_number (concert_option_id=123, seat_number=1)  (cost=1.1 rows=1) (actual time=0.0417..0.0417 rows=0 loops=1)
 ```
 
-##### 결과 분석
+</details>
+
+
+
+#### 결과 분석
 
 | 항목              | Before                                                                                                  | After                                                                                                   |
 |-------------------|---------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------|
@@ -1053,7 +1316,14 @@ Before의 쿼리는 인덱스를 사용하지 않고 전체 테이블을 스캔�
 After의 쿼리는 적절한 인덱스를 사용하여 `concert_option_id`와 `seat_number`에 대한 조건을 만족하는 데이터를 효율적으로 검색하여 실행 시간을 대폭 단축시킨다.
 
 
-**`Seat` 테이블에서 특정 좌석의 상태를 업데이트하는 쿼리.**
+
+
+
+<details>
+<summary>EXPLAIN & EXPLAIN ANALYZE</summary>
+
+
+`Seat` 테이블에서 특정 좌석의 상태를 업데이트하는 쿼리
 ```sql
 EXPLAIN 
 update seat
@@ -1063,20 +1333,35 @@ set concert_option_id=123,
 where seat_id=123
 ```
 
-**before**
+
+</details>
+
+
+
+
+<details>
+<summary>Before</summary>
 
 ```sql
 1,UPDATE,seat,,range,PRIMARY,PRIMARY,8,const,1,100,Using where
 ```
 
-**after**
+</details>
+
+
+
+<details>
+<summary>After</summary>
 
 ```sql
 1,UPDATE,seat,,range,PRIMARY,PRIMARY,8,const,1,100,Using where
 ```
 
+</details>
 
-##### 결과 분석
+
+
+#### 결과 분석
 
 큰 차이 없음
 
@@ -1086,7 +1371,11 @@ where seat_id=123
 ### 임시 예약 확정 
 
 
-**임시 예약 ID와 연결된 콘서트 옵션, 콘서트, 좌석의 상세 정보를 가져오는 쿼리**
+<details>
+<summary>EXPLAIN & EXPLAIN ANALYZE</summary>
+
+임시 예약 ID와 연결된 콘서트 옵션, 콘서트, 좌석의 상세 정보를 가져오는 쿼리
+
 ```sql
 EXPLAIN ANALYZE
 select
@@ -1141,7 +1430,14 @@ where
   tr1_0.temporal_reservation_id=123
 ```
 
-**before**
+
+</details>
+
+
+
+<details>
+<summary>Before</summary>
+
 
 ```sql
 1,SIMPLE,tr1_0,,const,PRIMARY,PRIMARY,8,const,1,100,
@@ -1153,11 +1449,19 @@ where
 
 
 
+
 ```sql
 -> Rows fetched before execution  (cost=0..0 rows=1) (actual time=125e-6..167e-6 rows=1 loops=1)
 ```
 
-**after**
+
+</details>
+
+
+
+<details>
+<summary>After</summary>
+
 
 ```sql
 1,SIMPLE,tr1_0,,const,PRIMARY,PRIMARY,8,const,1,100,
@@ -1171,8 +1475,11 @@ where
 -> Rows fetched before execution  (cost=0..0 rows=1) (actual time=41e-6..82e-6 rows=1 loops=1)
 ```
 
+</details>
 
-##### 결과 분석
+
+
+#### 결과 분석
 
 
 | 항목              | Before                                                                                                  | After                                                                                                   |
@@ -1190,7 +1497,12 @@ where
 
 
 
-**임시 예약의 상태를 확정된 상태로 변경하는 쿼리**
+
+<details>
+<summary>EXPLAIN & EXPLAIN ANALYZE</summary>
+
+임시 예약의 상태를 확정된 상태로 변경하는 쿼리
+
 ```sql
 EXPLAIN
 UPDATE temporal_reservation
@@ -1207,23 +1519,35 @@ WHERE
    temporal_reservation_id = 123
 ```
 
+</details>
 
-**before**
 
+<details>
+<summary>Before</summary>
 
 
 ```sql
 1,UPDATE,temporal_reservation,,range,PRIMARY,PRIMARY,8,const,1,100,Using where
 ```
 
+</details>
 
-**after**
+
+
+<details>
+<summary>After</summary>
+
 
 ```sql
 1,UPDATE,temporal_reservation,,range,PRIMARY,PRIMARY,8,const,1,100,Using where
 ```
 
-##### 결과 분석
+</details>
+
+
+
+
+#### 결과 분석
 
 큰 차이 없음
 
@@ -1231,7 +1555,14 @@ WHERE
 
 ### 예약 상태 조회 
 
-**`Reservation` 테이블에서 특정 사용자와 콘서트 옵션에 대한 예약 데이터를 조회하는 쿼리**
+
+
+
+<details>
+<summary>EXPLAIN & EXPLAIN ANALYZE</summary>
+
+`Reservation` 테이블에서 특정 사용자와 콘서트 옵션에 대한 예약 데이터를 조회하는 쿼리
+
 ```sql
 EXPLAIN
 SELECT
@@ -1242,7 +1573,13 @@ WHERE r.user_id = 123
   AND r.concert_option_id = 123
 ```
 
-**before**
+</details>
+
+
+
+<details>
+<summary>Before</summary>
+
 
 ```sql
 1,SIMPLE,r,,ALL,,,,,994703,1,Using where
@@ -1255,7 +1592,13 @@ WHERE r.user_id = 123
 ```
 
 
-**after**
+</details>
+
+
+
+<details>
+<summary>After</summary>
+
 
 ```sql
 1,SIMPLE,r,,ref,"idx_user_concert_option,idx_concert_option_seat",idx_user_concert_option,18,"const,const",1,100,
@@ -1265,8 +1608,12 @@ WHERE r.user_id = 123
 -> Index lookup on r using idx_user_concert_option (user_id=123, concert_option_id=123)  (cost=1.1 rows=1) (actual time=6.85..6.85 rows=1 loops=1)
 ```
 
+</details>
 
-##### 결과 분석
+
+
+
+#### 결과 분석
 
 | 항목                 | Before                                                                                             | After                                                                                              |
 |----------------------|----------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------|
@@ -1281,9 +1628,12 @@ Before의 쿼리는 인덱스를 사용하지 않고 전체 테이블을 스캔�
 After의 쿼리는 적절한 인덱스를 사용하여 `user_id`와 `concert_option_id`에 대한 조건을 만족하는 데이터를 효율적으로 검색하여 실행 시간을 대폭 단축시킨다.
 
 
+<details>
+<summary>EXPLAIN & EXPLAIN ANALYZE</summary>
 
 
-**`ConcertOption` 테이블에서 특정 콘서트 옵션에 대한 세부 정보를 조회하는 쿼리**
+`ConcertOption` 테이블에서 특정 콘서트 옵션에 대한 세부 정보를 조회하는 쿼리
+
 ```sql
 EXPLAIN ANALYZE
 select
@@ -1309,7 +1659,13 @@ where
 ```
 
 
-**before**
+
+</details>
+
+
+
+<details>
+<summary>Before</summary>
 
 ```sql
 1,SIMPLE,co1_0,,const,PRIMARY,PRIMARY,8,const,1,100,
@@ -1320,7 +1676,13 @@ where
 -> Rows fetched before execution  (cost=0..0 rows=1) (actual time=84e-6..126e-6 rows=1 loops=1)
 ```
 
-**after**
+</details>
+
+
+
+<details>
+<summary>After</summary>
+
 
 ```sql
 1,SIMPLE,co1_0,,const,"PRIMARY,idx_concert_option_id",PRIMARY,8,const,1,100,
@@ -1331,7 +1693,11 @@ where
 -> Rows fetched before execution  (cost=0..0 rows=1) (actual time=125e-6..167e-6 rows=1 loops=1)
 ```
 
-##### 결과 분석
+</details>
+
+
+
+#### 결과 분석
 
 
 | 항목                | Before                                                                                     | After                                                                                      |
@@ -1350,8 +1716,11 @@ where
 
 
 
+<details>
+<summary>EXPLAIN & EXPLAIN ANALYZE</summary>
 
-**`Seat` 테이블에서 특정 좌석에 대한 정보를 조회하는 쿼리.**
+`Seat` 테이블에서 특정 좌석에 대한 정보를 조회하는 쿼리
+
 ```sql
 EXPLAIN ANALYZE
 select
@@ -1383,7 +1752,13 @@ where
   s1_0.seat_id=123
 ```
 
-**before**
+
+</details>
+
+
+
+<details>
+<summary>Before</summary>
 
 ```sql
 1,SIMPLE,s1_0,,const,PRIMARY,PRIMARY,8,const,1,100,
@@ -1395,7 +1770,12 @@ where
 -> Rows fetched before execution  (cost=0..0 rows=1) (actual time=84e-6..126e-6 rows=1 loops=1)
 ```
 
-**after**
+</details>
+
+
+
+<details>
+<summary>After</summary>
 
 ```sql
 1,SIMPLE,s1_0,,const,PRIMARY,PRIMARY,8,const,1,100,
@@ -1407,7 +1787,11 @@ where
 -> Rows fetched before execution  (cost=0..0 rows=1) (actual time=42e-6..83e-6 rows=1 loops=1)
 ```
 
-##### 결과 분석
+
+</details>
+
+
+#### 결과 분석
 
 
 | 항목              | Before                                                                                                  | After                                                                                                   |
@@ -1422,7 +1806,12 @@ where
 
 
 
-**`TemporalReservation` 테이블에서 특정 사용자와 콘서트 옵션에 대한 임시 예약 데이터를 조회하는 쿼리.**
+
+<details>
+<summary>EXPLAIN & EXPLAIN ANALYZE</summary>
+
+`TemporalReservation` 테이블에서 특정 사용자와 콘서트 옵션에 대한 임시 예약 데이터를 조회하는 쿼리
+
 ```sql
 EXPLAIN
 select
@@ -1434,7 +1823,13 @@ where t.user_id = 123
 ```
 
 
-**before**
+</details>
+
+
+
+<details>
+<summary>Before</summary>
+
 
 
 ```sql
@@ -1447,7 +1842,12 @@ where t.user_id = 123
     -> Table scan on t  (cost=105186 rows=994525) (actual time=1.19..1530 rows=1e+6 loops=1)
 ```
 
-**after**
+</details>
+
+
+
+<details>
+<summary>After</summary>
 
 
 ```sql
@@ -1458,7 +1858,12 @@ where t.user_id = 123
 -> Index lookup on t using idx_user_concert_option (user_id=123, concert_option_id=123)  (cost=1.1 rows=1) (actual time=0.337..0.345 rows=1 loops=1)
 ```
 
-##### 결과 분석
+</details>
+
+
+
+
+#### 결과 분석
 
 
 | 항목              | Before                                                                                                  | After                                                                                                   |
@@ -1491,9 +1896,9 @@ After의 쿼리는 적절한 인덱스를 사용하여 `user_id`와 `concert_opt
 
 
 
-## AS-IS 사용되는 쿼리
+## 사용되는 쿼리
 
-##### 잔액 조회 
+### 잔액 조회 
 
 
 - **설명:** 잔액 조회는 특정 사용자의 현재 잔액 정보를 조회하는 쿼리이다. 이 쿼리는 `balance` 테이블에서 사용자의 잔액 관련 데이터를 가져온다. 사용자 ID를 조건으로 하여 해당 사용자의 잔액 정보를 반환한다. 반환되는 정보는 잔액 ID, 금액, 생성일자, 수정일자, 사용자 ID 등이다.
@@ -1505,7 +1910,12 @@ After의 쿼리는 적절한 인덱스를 사용하여 `user_id`와 `concert_opt
     - 이 쿼리는 단일 테이블에서 데이터를 조회하며, 간단한 조건(`user_id`)만을 사용하기 때문에 복잡도가 낮다.
 
 
-**쿼리 1:** `Balance` 테이블에서 `userId`로 특정 사용자의 잔액 정보를 조회하는 쿼리
+
+
+<details>
+<summary><b>쿼리 1:</b> Balance 테이블에서 userId로 특정 사용자의 잔액 정보를 조회하는 쿼리</summary>
+
+
 ```sql
 select
     b1_0.balance_id,
@@ -1519,7 +1929,11 @@ where
     b1_0.user_id=?
 ```
 
-##### 잔액 충전/사용 내역 조회
+</details>
+
+
+
+### 잔액 충전/사용 내역 조회
 
 - **설명:** 특정 사용자의 잔액 충전 및 사용 내역을 조회하는 쿼리이다. 이 쿼리는 `balance_transaction` 테이블을 사용하여 사용자의 거래 ID, 금액, 생성 시간, 거래 사유, 거래 유형, 사용자 ID 및 버전 정보를 가져온다. 주로 사용자의 잔액 내역을 확인하거나 재무 분석에 사용된다.
 
@@ -1530,7 +1944,11 @@ where
     - 이 쿼리는 단일 테이블을 대상으로 하며, 사용자 ID에 기반한 단순한 조건을 사용한다. 조인이 없고 데이터 무결성을 유지하는 복잡한 로직이 포함되지 않아 비교적 단순하다.
 
 
-**쿼리 2:** `BalanceTransaction` 테이블에서 `userId`로 특정 사용자의 잔액 거래 내역을 조회하는 쿼리
+
+<details>
+<summary><b>쿼리 1:</b> BalanceTransaction 테이블에서 userId로 특정 사용자의 잔액 거래 내역을 조회하는 쿼리</summary>
+
+
 ```sql
 select
         bt1_0.transaction_id,
@@ -1546,7 +1964,11 @@ select
         bt1_0.user_id=?
 ```
 
-##### 잔액 충전
+</details>
+
+
+
+### 잔액 충전
 
 - **설명:** 이 섹션의 쿼리는 사용자의 잔액을 조회, 충전, 그리고 업데이트하는 데 사용된다. `Balance` 및 `BalanceTransaction` 테이블을 사용하여 사용자의 잔액 상태를 관리하며, 트랜잭션의 무결성을 유지하기 위해 동시성 제어를 포함한다. `select` 쿼리는 사용자의 잔액을 조회하고, `insert` 쿼리는 잔액 충전 트랜잭션을 기록하며, `update` 쿼리는 사용자의 잔액을 업데이트한다.
 
@@ -1557,7 +1979,11 @@ select
     - 쿼리들은 단일 테이블을 대상으로 하며, 비교적 단순한 조건을 사용하여 데이터를 조회, 삽입, 업데이트한다. 그러나 동시성 제어를 위한 `for update` 및 `optimistic locking`의 사용으로 인해 복잡도가 증가할 수 있다.
 
 
-**쿼리 1:** `Balance` 테이블에서 특정 사용자의 잔액을 조회하는 쿼리.
+
+<details>
+<summary><b>쿼리 1:</b> Balance 테이블에서 특정 사용자의 잔액을 조회하는 쿼리</summary>
+
+
 ```sql
 select
     balance 
@@ -1580,7 +2006,13 @@ where
     and b1_0.user_id=? for update
 ```
 
-**쿼리 2:** `BalanceTransaction` 테이블에 새로운 잔액 충전 트랜잭션을 기록하는 쿼리.
+</details>
+
+
+
+<details>
+<summary><b>쿼리 2:</b> BalanceTransaction 테이블에 새로운 잔액 충전 트랜잭션을 기록하는 쿼리</summary>
+
 ```sql
 insert into
     balance_transaction (amount, created_at, transaction_reason, transaction_type, user_id, version) 
@@ -1588,7 +2020,12 @@ values
     (?, ?, ?, ?, ?, ?)
 ```
 
-**쿼리 3:** `Balance` 테이블에서 사용자의 잔액을 업데이트하는 쿼리.
+</details>
+
+
+<details>
+<summary><b>쿼리 3:</b>Balance 테이블에서 사용자의 잔액을 업데이트하는 쿼리.</summary>
+
 ```sql
 update balance 
 set
@@ -1598,6 +2035,10 @@ set
 where
     balance_id=?
 ```
+
+</details>
+
+
 
 
 ### 잔액 사용
@@ -1610,7 +2051,10 @@ where
 - **복잡도:** ★★★☆☆
     - 잔액 사용 쿼리는 비교적 간단한 구조로, 단일 테이블에 대한 조회 및 업데이트 작업을 포함한다. 그러나 트랜잭션 처리와 동시성 제어를 위한 `for update` 구문이 사용되어 약간의 복잡도가 추가된다.
 
-**쿼리 1:** `Balance` 테이블에서 특정 사용자의 잔액을 조회하는 쿼리.
+
+<details>
+<summary><b>쿼리 1:</b>Balance 테이블에서 특정 사용자의 잔액을 조회하는 쿼리.</summary>
+
 ```sql
 select
         balance 
@@ -1633,7 +2077,13 @@ select
         for update
 ```
 
-**쿼리 2:** `BalanceTransaction` 테이블에 잔액 사용 내역을 삽입하는 쿼리.
+
+</details>
+
+
+<details>
+<summary><b>쿼리 2:</b> BalanceTransaction 테이블에 잔액 사용 내역을 삽입하는 쿼리</summary>
+
 ```sql
 insert into
         balance_transaction (amount, created_at, transaction_reason, transaction_type, user_id, version) 
@@ -1641,7 +2091,12 @@ insert into
         (?, ?, ?, ?, ?, ?)
 ```
 
-**쿼리 3:** `Balance` 테이블의 특정 사용자의 잔액을 업데이트하는 쿼리.
+</details>
+
+
+<details>
+<summary><b>쿼리 3:</b>Balance 테이블의 특정 사용자의 잔액을 업데이트하는 쿼리</summary>
+
 ```sql
 update balance 
     set
@@ -1651,6 +2106,11 @@ update balance
     where
         balance_id=?
 ```
+
+</details>
+
+
+
 
 
 #### 결제 처리
@@ -1663,7 +2123,12 @@ update balance
 - **복잡도:** ★★★☆☆
     - 결제 처리 쿼리들은 주로 단일 테이블에서 실행되지만, 데이터의 일관성을 유지하고 트랜잭션을 처리해야 하므로 중간 수준의 복잡도를 가진다. 특히 `for update` 절을 포함한 쿼리는 동시성 문제를 해결하는 데 중요하다.
 
-**쿼리 1:** `Balance` 테이블에서 특정 사용자의 잔액을 조회하는 쿼리.
+
+
+<details>
+<summary><b>쿼리 1:</b>Balance 테이블에서 특정 사용자의 잔액을 조회하는 쿼리</summary>
+
+
 ```sql
 select
         balance 
@@ -1686,7 +2151,11 @@ select
             and b1_0.user_id=? for update
 ```
 
-**쿼리 2:** `BalanceTransaction` 테이블에 잔액 충전 내역을 삽입하는 쿼리.
+</details>
+
+
+<details>
+<summary><b>쿼리 2:</b> BalanceTransaction 테이블에 잔액 충전 내역을 삽입하는 쿼리</summary>
 ```sql
 insert into
         balance_transaction (amount, created_at, transaction_reason, transaction_type, user_id, version) 
@@ -1694,7 +2163,13 @@ insert into
         (?, ?, ?, ?, ?, ?)
 ```
 
-**쿼리 3:** `Balance` 테이블에서 잔액을 업데이트하는 쿼리.
+</details>
+
+
+
+<details>
+<summary><b>쿼리 3:</b>Balance 테이블에서 잔액을 업데이트하는 쿼리</summary>
+
 ```sql
 update balance 
     set
@@ -1705,13 +2180,24 @@ update balance
         balance_id=?
 ```
 
-**쿼리 4:** `PaymentTransaction` 테이블에 결제 내역을 삽입하는 쿼리.
+</details>
+
+
+
+<details>
+<summary><b>쿼리 4:</b>PaymentTransaction 테이블에 결제 내역을 삽입하는 쿼리</summary>
+
+
 ```sql
 insert into
         payment_transaction (amount, created_at, payment_method, payment_status, target_id, user_id) 
     values
         (?, ?, ?, ?, ?, ?)
 ```
+
+
+</details>
+
 
 
 
@@ -1725,7 +2211,13 @@ insert into
 - **복잡도:** ★★★★☆
     - 결제 취소는 여러 테이블 간의 상호작용을 필요로 하며, 데이터 무결성을 유지하기 위해 트랜잭션 관리가 중요하다. 결제 상태 업데이트, 잔액 조정, 트랜잭션 기록 등 다양한 작업이 포함되어 있어 복잡도가 높다.
 
-**쿼리 1:** `PaymentTransaction` 테이블에서 특정 결제 트랜잭션의 정보를 조회하는 쿼리.
+
+
+
+<details>
+<summary><b>쿼리 1:</b>PaymentTransaction 테이블에서 특정 결제 트랜잭션의 정보를 조회하는 쿼리</summary>
+
+
 ```sql
 select
         pt1_0.transaction_id,
@@ -1741,7 +2233,13 @@ select
         pt1_0.transaction_id=?
 ```
 
-**쿼리 2:** 잔액이 존재하는지 확인하고, 결제 취소 시 잔액을 업데이트하는 데 사용되는 쿼리.
+</details>
+
+
+
+<details>
+<summary><b>쿼리 2:</b> 잔액이 존재하는지 확인하고, 결제 취소 시 잔액을 업데이트하는 데 사용되는 쿼리</summary>
+
 ```sql
 select
         balance 
@@ -1764,7 +2262,13 @@ select
             and b1_0.user_id=? for update
 ```
 
-**쿼리 3:** `BalanceTransaction` 테이블에 새로운 트랜잭션 기록을 삽입하여 결제 취소 시 잔액 변경을 기록하기 위해 사용되는 쿼리.
+</details>
+
+
+
+<details>
+<summary><b>쿼리 3:</b>BalanceTransaction 테이블에 새로운 트랜잭션 기록을 삽입하여 결제 취소 시 잔액 변경을 기록하기 위해 사용되는 쿼리</summary>
+
 ```sql
 insert into
         balance_transaction (amount, created_at, transaction_reason, transaction_type, user_id, version) 
@@ -1772,7 +2276,13 @@ insert into
         (?, ?, ?, ?, ?, ?)
 ```
 
-**쿼리 4:** `PaymentTransaction` 테이블에서 결제 취소 시 트랜잭션의 상태를 '취소됨'으로 변경하는 쿼리.
+</details>
+
+
+
+<details>
+<summary><b>쿼리 4:</b> PaymentTransaction 테이블에서 결제 취소 시 트랜잭션의 상태를 '취소됨'으로 변경하는 쿼리</summary>
+
 ```sql
 update
         payment_transaction 
@@ -1786,7 +2296,11 @@ update
         transaction_id=?
 ```
 
-**쿼리 5:** `Balance` 테이블에서 특정 사용자의 잔액을 업데이트하여 결제 취소 시 잔액을 조정하는 쿼리. 
+</details>
+
+<details>
+<summary><b>쿼리 5:</b>Balance 테이블에서 특정 사용자의 잔액을 업데이트하여 결제 취소 시 잔액을 조정하는 쿼리. </summary>
+
 ```sql
 update
         balance 
@@ -1798,9 +2312,13 @@ update
         balance_id=?
 ```
 
+</details>
 
 
-##### 결제 내역 조회
+
+
+
+### 결제 내역 조회
 
 
 - **설명:** 결제 내역을 조회하는 쿼리이다. 이 쿼리는 특정 사용자의 결제 기록을 가져오며, 트랜잭션 ID, 결제 금액, 생성 일자, 결제 방법, 결제 상태, 타겟 ID, 사용자 ID를 포함한 다양한 정보를 조회한다. `PaymentTransaction` 테이블을 사용하여 특정 사용자 ID에 대한 결제 내역을 가져온다.
@@ -1811,7 +2329,14 @@ update
 - **복잡도:** ★★☆☆☆
     - 이 쿼리는 단일 테이블에서 데이터를 조회하는 단순한 구조를 가지므로 복잡도가 낮다. 다만, 결제 기록의 양이 많을 수 있으므로 효율적인 인덱스 사용이 필요하다.
   
-**쿼리 1:** `payment_transaction` 테이블에서 `user_id`로 특정 사용자의 결제 트랜잭션을 조회하는 쿼리
+
+
+
+
+<details>
+<summary><b>쿼리 1:</b>payment_transaction 테이블에서 user_id로 특정 사용자의 결제 트랜잭션을 조회하는 쿼리</summary>
+
+
 ```sql
 select
         pt1_0.transaction_id,
@@ -1828,12 +2353,16 @@ select
 ```
 
 
+</details>
+
+
+
 
 
 ## 인덱스 적절성 판단 및 설정
 
 ### Balance
-##### 단일 인덱스 검토
+#### 단일 인덱스 검토
 
 1. **userId**
    - **필요성**: 사용자 잔액 조회 및 충전/사용 내역 조회에서 빈번히 사용된다. 사용자의 잔액 정보를 확인하거나 잔액 변동 내역을 조회하는 주요 조건으로 사용된다.
@@ -1845,7 +2374,7 @@ select
    - **카디널리티**: 중간 (동일한 날짜에 여러 잔액이 생성될 수 있으므로 중복도가 존재할 수 있음)
    - **변경 빈도**: 낮음 (생성된 후 변경되지 않음)
 
-##### 복합 인덱스 검토
+#### 복합 인덱스 검토
 
 1. **userId, createdAt**
    - **필요성**: 특정 사용자의 잔액 변동 내역을 시간순으로 조회할 때 유용하다. 사용자별 잔액 이력 조회에서 빈번히 사용된다.
@@ -1860,7 +2389,11 @@ select
 
 
 
-##### 종합 결론
+#### 종합 결론
+
+
+<details>
+<summary>JPA 엔티티 인덱스 설정 코드</summary>
 
 `userId, createdAt`에 대한 복합 인덱스로 자주 사용되는 쿼리의 성능을 최적화한다.
 
@@ -1879,6 +2412,8 @@ public class Balance extends AbstractAggregateRoot<Balance> {
     private LocalDateTime updatedAt;
 }
 ```
+</details>
+
 
 ### BalanceTransaction
 
@@ -1908,7 +2443,12 @@ public class Balance extends AbstractAggregateRoot<Balance> {
    - **카디널리티**: 중간 (두 컬럼의 조합으로 유일한 식별자가 될 가능성이 높음)
    - **변경 빈도**: 낮음 (거래 생성 시 설정되며 이후 변경되지 않음)
 
-##### 종합 결론
+#### 종합 결론
+
+
+
+<details>
+<summary>JPA 엔티티 인덱스 설정 코드</summary>
 
 `userId, createdAt`, `userId, transactionType`에 대한 복합 인덱스는 자주 사용되는 쿼리의 성능을 최적화한다.
 
@@ -1930,11 +2470,13 @@ public class BalanceTransaction {
     private LocalDateTime createdAt;
 }
 ```
+</details>
+
 
 ### PaymentTransaction
 
 
-##### 단일 인덱스 검토
+#### 단일 인덱스 검토
 
 
 1. **userId**
@@ -1947,7 +2489,7 @@ public class BalanceTransaction {
    - **카디널리티**: 높음 (다양한 타겟 ID 사용)
    - **변경 빈도**: 낮음 (결제 생성 시 설정되며 이후 변경되지 않음)
 
-##### 복합 인덱스 검토
+#### 복합 인덱스 검토
 
 1. **userId, targetId**
    - **필요성**: 특정 사용자가 특정 타겟에 대해 결제한 내역을 조회할 때 유용하다. 결제 내역 조회, 결제 상태 확인 등에서 자주 사용된다.
@@ -1960,10 +2502,15 @@ public class BalanceTransaction {
    - **변경 빈도**: 중간 (결제 상태는 자주 변경될 수 있음)
 
 
-##### 종합 결론
+#### 종합 결론
 
 `userId, targetId`에 대한 복합 인덱스는 자주 사용되는 쿼리의 성능을 최적화한다.
 
+
+
+
+<details>
+<summary>JPA 엔티티 인덱스 설정 코드</summary>
 
 ```java
 @Table(
@@ -1984,6 +2531,9 @@ public class PaymentTransaction extends AbstractAggregateRoot<PaymentTransaction
 ```
 
 
+</details>
+
+
 
 
 
@@ -1995,8 +2545,11 @@ public class PaymentTransaction extends AbstractAggregateRoot<PaymentTransaction
 ### 잔액 조회 API
 
 
+<details>
+<summary>EXPLAIN & EXPLAIN ANALYZE</summary>
 
-**`Balance` 테이블에서 `userId`로 특정 사용자의 잔액 정보를 조회하는 쿼리**
+`Balance` 테이블에서 `userId`로 특정 사용자의 잔액 정보를 조회하는 쿼리
+
 ```sql
 Explain 
 select
@@ -2011,7 +2564,13 @@ where
     b1_0.user_id=123
 ```
 
-**before**
+</details>
+
+
+
+<details>
+<summary>Before</summary>
+
 
 ```sql
 1,SIMPLE,b1_0,,ALL,,,,,2378402,10,Using where
@@ -2022,7 +2581,13 @@ where
     -> Table scan on b1_0  (cost=248638 rows=2.38e+6) (actual time=16.4..2466 rows=2.65e+6 loops=1)
 ```
 
-**after**
+</details>
+
+
+
+<details>
+<summary>After</summary>
+
 
 ```sql
 1,SIMPLE,b1_0,,ref,idx_user_created_at,idx_user_created_at,9,const,1,100,
@@ -2032,7 +2597,10 @@ where
 -> Index lookup on b1_0 using idx_user_created_at (user_id=123)  (cost=1.1 rows=1) (actual time=18.4..18.4 rows=1 loops=1)
 ```
 
-##### 결과 분석
+</details>
+
+
+#### 결과 분석
 
 | 항목              | Before                             | After                                                                                                   |
 |-------------------|------------------------------------|---------------------------------------------------------------------------------------------------------------|
@@ -2050,9 +2618,11 @@ where
 ### 잔액 충전/사용 내역 조회 API
 
 
+<details>
+<summary>EXPLAIN & EXPLAIN ANALYZE</summary>
 
+`BalanceTransaction` 테이블에서 `userId`로 특정 사용자의 잔액 거래 내역을 조회하는 쿼리
 
-**`BalanceTransaction` 테이블에서 `userId`로 특정 사용자의 잔액 거래 내역을 조회하는 쿼리**
 ```sql
 Explain 
 select
@@ -2070,7 +2640,12 @@ select
 ```
 
 
-**before**
+</details>
+
+
+
+<details>
+<summary>Before</summary>
 
 ```sql
 1,SIMPLE,bt1_0,,ALL,,,,,1991966,10,Using where
@@ -2081,7 +2656,12 @@ select
     -> Table scan on bt1_0  (cost=207496 rows=1.99e+6) (actual time=8.37..2492 rows=2e+6 loops=1)
 ```
 
-**after**
+</details>
+
+
+
+<details>
+<summary>After</summary>
 
 ```sql
 1,SIMPLE,bt1_0,,ref,"idx_user_created_at,idx_user_transaction_type",idx_user_created_at,9,const,2,100,
@@ -2091,7 +2671,12 @@ select
 -> Index lookup on bt1_0 using idx_user_created_at (user_id=123)  (cost=2.2 rows=2) (actual time=27..27.1 rows=2 loops=1)
 ```
 
-##### 결과 분석
+</details>
+
+
+
+
+#### 결과 분석
 
 | 항목              | Before                                                                                                  | After                                                                                                   |
 |-------------------|---------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------|
@@ -2111,7 +2696,12 @@ select
 ### 결제 내역 조회 API 
 
 
-**`payment_transaction` 테이블에서 `user_id`로 특정 사용자의 결제 트랜잭션을 조회하는 쿼리**
+
+<details>
+<summary>EXPLAIN & EXPLAIN ANALYZE</summary>
+
+`payment_transaction` 테이블에서 `user_id`로 특정 사용자의 결제 트랜잭션을 조회하는 쿼리
+
 ```sql
 Explain select
         pt1_0.transaction_id,
@@ -2126,11 +2716,12 @@ Explain select
     where
         pt1_0.user_id=123
 ```
+</details>
 
 
 
-
-**before**
+<details>
+<summary>Before</summary>
 
 ```sql
 1,SIMPLE,pt1_0,,ALL,,,,,915320,10,Using where
@@ -2141,7 +2732,12 @@ Explain select
     -> Table scan on pt1_0  (cost=95987 rows=915320) (actual time=21.9..750 rows=1e+6 loops=1)
 ```
 
-**after**
+</details>
+
+
+
+<details>
+<summary>After</summary>
 
 ```sql
 1,SIMPLE,pt1_0,,ref,idx_user_target,idx_user_target,9,const,1,100,
@@ -2151,9 +2747,14 @@ Explain select
 -> Index lookup on pt1_0 using idx_user_target (user_id=123)  (cost=0.817 rows=1) (actual time=8.63..8.64 rows=1 loops=1)
 ```
 
+</details>
 
 
-##### 결과 분석
+
+
+
+
+#### 결과 분석
 
 | 항목              | Before                                                                                           | After                                                                                          |
 |-------------------|--------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------|
