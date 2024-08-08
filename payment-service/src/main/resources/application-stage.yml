@@ -18,6 +18,8 @@ spring:
       hibernate:
         show-sql: true
         generate-ddl: true
+        format_sql: true
+        use_sql_comments: true
       jakarta:
         persistence:
           lock:
@@ -34,6 +36,21 @@ spring:
 logging:
   level:
     root: info
+    org:
+      hibernate:
+        SQL: debug
+        type: debug
+      springframework:
+        actuate:
+          endpoint:
+            prometheus: off
+
+    io:
+      prometheus:
+        client: error
+        exporter: error
   config: classpath:log/logback-spring.xml
+
+
 
 
