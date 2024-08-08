@@ -27,8 +27,7 @@ public class LoggingFilter implements Filter {
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
-
-        if (isLoggingDisabled()) {
+        if (isLoggingDisabled() || isExcludedRequest((HttpServletRequest) request)) {
             chain.doFilter(request, response);
             return;
         }
@@ -53,5 +52,10 @@ public class LoggingFilter implements Filter {
 
     private boolean isLoggingDisabled() {
         return !ymlLoader().isLoggingFilterEnabled();
+    }
+
+    private boolean isExcludedRequest(HttpServletRequest request) {
+        String uri = request.getRequestURI();
+        return uri.startsWith("/payment/actuator") || uri.startsWith("/payment/prometheus");
     }
 }

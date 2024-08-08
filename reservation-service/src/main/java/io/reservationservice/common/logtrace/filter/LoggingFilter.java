@@ -22,6 +22,7 @@ import lombok.RequiredArgsConstructor;
  * @author : Rene Choi
  * @since : 2024/07/17
  */
+
 @RequiredArgsConstructor
 public class LoggingFilter implements Filter {
 
@@ -29,8 +30,7 @@ public class LoggingFilter implements Filter {
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
-
-        if (isLoggingDisabled()) {
+        if (isLoggingDisabled() || isExcludedRequest((HttpServletRequest) request)) {
             chain.doFilter(request, response);
             return;
         }
@@ -55,5 +55,10 @@ public class LoggingFilter implements Filter {
 
     private boolean isLoggingDisabled() {
         return !ymlLoader().isLoggingFilterEnabled();
+    }
+
+    private boolean isExcludedRequest(HttpServletRequest request) {
+        String uri = request.getRequestURI();
+        return uri.startsWith("/reservation/actuator") || uri.startsWith("/reservation/prometheus");
     }
 }
