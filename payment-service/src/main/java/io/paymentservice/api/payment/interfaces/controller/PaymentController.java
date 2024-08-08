@@ -15,6 +15,7 @@ import io.paymentservice.api.payment.interfaces.dto.request.PaymentRequest;
 import io.paymentservice.api.payment.interfaces.dto.response.PaymentResponse;
 import io.paymentservice.api.payment.interfaces.dto.response.PaymentResponses;
 import io.paymentservice.common.model.CommonApiResponse;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 
@@ -35,17 +36,20 @@ public class PaymentController {
 	 * 결제 처리하고 결제 내역을 생성하는 API
 	 */
 	@PostMapping("/payment")
+	@Operation(summary = "결제 처리")
 	public CommonApiResponse<PaymentResponse> processPayment(@RequestBody @Validated PaymentRequest paymentRequest) {
 		return OK(PaymentResponse.from(paymentService.processPayment(paymentRequest.toCommand())));
 	}
 
 	@PostMapping("/payment/cancel/{transactionId}")
+	@Operation(summary = "결제 취소")
 	public CommonApiResponse<PaymentResponse> cancelPayment(@PathVariable Long transactionId) {
 		return OK(PaymentResponse.from(paymentService.cancelPayment(transactionId)));
 	}
 
 
 	@GetMapping("/payment/history/{userId}")
+	@Operation(summary = "결제 내역 조회")
 	public CommonApiResponse<PaymentResponses> retrievePaymentHistory(@PathVariable Long userId) {
 		return OK(PaymentResponses.from(paymentService.retrievePaymentHistory(userId)));
 	}
