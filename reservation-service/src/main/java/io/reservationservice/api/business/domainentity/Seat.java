@@ -13,16 +13,20 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import io.reservationservice.api.business.dto.event.SeatChangedEvent;
 import io.reservationservice.common.exception.definitions.ReservationUnAvailableException;
 import jakarta.persistence.Column;
+import jakarta.persistence.ConstraintMode;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
+import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PostPersist;
 import jakarta.persistence.PostRemove;
 import jakarta.persistence.PostUpdate;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -39,6 +43,13 @@ import lombok.Setter;
 @NoArgsConstructor
 @Getter
 @EntityListeners({AuditingEntityListener.class})
+@Table(
+	indexes = {
+		@Index(name = "idx_seat_number", columnList = "seatNumber"),
+		@Index(name = "idx_concert_option_seat_number", columnList = "concertOptionId, seatNumber"),
+		@Index(name = "idx_concert_option_occupied", columnList = "concertOptionId, occupied"),
+	}
+)
 public class Seat extends AbstractAggregateRoot<Seat> {
 
 	@Id
@@ -49,7 +60,7 @@ public class Seat extends AbstractAggregateRoot<Seat> {
 	// private Long version;
 
 	@ManyToOne
-	@JoinColumn(name = "concert_option_id")
+	@JoinColumn(name = "concert_option_id", nullable = false, foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
 	private ConcertOption concertOption;
 
 	private Long seatNumber;

@@ -13,16 +13,20 @@ import io.reservationservice.api.business.dto.event.ReservationChangedEvent;
 import io.reservationservice.api.business.dto.event.TemporalReservationChangedEvent;
 import io.reservationservice.api.business.dto.inport.ReservationCreateCommand;
 import jakarta.persistence.Column;
+import jakarta.persistence.ConstraintMode;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
+import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PostPersist;
 import jakarta.persistence.PostRemove;
 import jakarta.persistence.PostUpdate;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -39,6 +43,12 @@ import lombok.Setter;
 @NoArgsConstructor
 @Getter
 @EntityListeners({AuditingEntityListener.class})
+@Table(
+	indexes = {
+		@Index(name = "idx_user_concert_option", columnList = "userId, concertOptionId"),
+		@Index(name = "idx_concert_option_reserve_at", columnList = "concertOptionId, reserveAt")
+	}
+)
 public class TemporalReservation extends AbstractAggregateRoot<TemporalReservation> {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -47,11 +57,11 @@ public class TemporalReservation extends AbstractAggregateRoot<TemporalReservati
 	private Long userId;
 
 	@ManyToOne
-	@JoinColumn(name = "concert_option_id")
+	@JoinColumn(name = "concert_option_id", nullable = false, foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
 	private ConcertOption concertOption;
 
 	@ManyToOne
-	@JoinColumn(name = "seat_id")
+	@JoinColumn(name = "seat_id", nullable = false, foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
 	private Seat seat;
 
 	private Boolean isConfirmed;

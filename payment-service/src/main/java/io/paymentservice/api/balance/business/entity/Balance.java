@@ -20,7 +20,8 @@ import jakarta.persistence.EntityListeners;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Version;
+import jakarta.persistence.Index;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -37,6 +38,11 @@ import lombok.Setter;
 @NoArgsConstructor
 @Getter
 @EntityListeners({AuditingEntityListener.class})
+@Table(
+	indexes = {
+		@Index(name = "idx_user_created_at", columnList = "userId, createdAt")
+	}
+)
 public class Balance extends AbstractAggregateRoot<Balance> {
 
 	@Id

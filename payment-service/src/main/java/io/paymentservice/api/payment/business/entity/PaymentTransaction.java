@@ -20,6 +20,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.PostPersist;
 import jakarta.persistence.PostRemove;
 import jakarta.persistence.PostUpdate;
@@ -44,6 +45,11 @@ import lombok.NoArgsConstructor;
 // @Table(name = "PaymentTransaction", uniqueConstraints = {
 // 	@UniqueConstraint(columnNames = {"targetId", "userId", "amount", "paymentMethod"})
 // })
+@Table(
+	indexes = {
+		@Index(name = "idx_user_target", columnList = "userId, targetId"),
+	}
+)
 public class PaymentTransaction extends AbstractAggregateRoot<PaymentTransaction> {
 
 	@Id
