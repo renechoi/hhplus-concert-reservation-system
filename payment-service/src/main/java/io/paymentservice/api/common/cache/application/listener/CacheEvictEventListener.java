@@ -3,6 +3,8 @@ package io.paymentservice.api.common.cache.application.listener;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 import io.paymentservice.api.common.cache.business.dto.command.PropagateCacheEvictionCommand;
 import io.paymentservice.api.common.cache.business.dto.event.LocalCacheEvictEvent;
@@ -21,7 +23,7 @@ public class CacheEvictEventListener {
 
 	private final CacheEvictionPropagationService cacheEvictionPropagationService;
 
-	@EventListener
+	@TransactionalEventListener
 	@Async
 	public void handleLocalCacheEvictEvent(LocalCacheEvictEvent event) {
 		try {

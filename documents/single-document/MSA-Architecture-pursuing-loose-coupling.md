@@ -186,11 +186,11 @@ public class QueuePaymentEventHandler {
 public class PaymentFacade {
 
 	public PaymentResponse processPayment(PaymentProcessRequest request) {
-        // ... 
-		
+        // ...
 			reservationService.confirmReservation(createConfirmCommand(request));
 		// ... 
-		// 내부 이벤트 발행		applicationEventPublisher.publishEvent(paymentResponse.toPaymentInternalEventAsComplete());
+		// 내부 이벤트 발행		
+        applicationEventPublisher.publishEvent(paymentResponse.toPaymentInternalEventAsComplete());
 		return paymentResponse;
 	}
 }
@@ -320,7 +320,7 @@ public class CacheEvictEventListener {
 
 	private final CacheEvictionPropagationService cacheEvictionPropagationService;
 
-	@EventListener
+	@TransactionalEventListener
 	@Async
 	public void handleLocalCacheEvictEvent(LocalCacheEvictEvent event) {
 		try {
