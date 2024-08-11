@@ -3,6 +3,7 @@ package io.reservationservice.api.application.eventlistener;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 import io.reservationservice.api.business.dto.event.LocalCacheEvictEvent;
 import io.reservationservice.api.business.dto.inport.PropagateCacheEvictionCommand;
@@ -23,7 +24,7 @@ public class CacheEvictEventListener {
 
 	private final CacheEvictionPropagationService cacheEvictionPropagationService;
 
-	@EventListener
+	@TransactionalEventListener
 	@Async
 	public void handleLocalCacheEvictEvent(LocalCacheEvictEvent event) {
 		try {
