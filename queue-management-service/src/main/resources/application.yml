@@ -5,7 +5,7 @@ spring:
     name: queue-management-service
   cloud:
     function:
-      definition: concertReservationPaymentConsumer;
+      definition: concertReservationPaymentConsumer;concertReservationConfirmConsumer;
     stream:
       kafka:
         default:
@@ -18,6 +18,9 @@ spring:
         concertReservationPaymentConsumer-in-0:
           destination: concert-reservation-payment
           group: concert-reservation-payment-group
+        concertReservationConfirmConsumer-in-0:
+          destination: concert-reservation-confirm
+          group: queue-management-group
   redis:
     host: localhost
     port: 6379
