@@ -4,6 +4,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 import io.reservationservice.api.application.dto.request.ReservationCreateRequest;
+import io.reservationservice.api.application.dto.response.ReservationConfirmResponse;
 import io.reservationservice.api.application.dto.response.ReservationStatusResponses;
 import io.reservationservice.api.application.dto.response.TemporalReservationCreateResponse;
 
@@ -19,6 +20,8 @@ public class ReservationContextHolder implements TestDtoContextHolder {
 	private static final AtomicReference<Long> mostRecentReservationId = new AtomicReference<>();
 	private static final AtomicReference<Long> mostRecentUserId = new AtomicReference<>();
 	private static final AtomicReference<Long> mostRecentConcertOptionId = new AtomicReference<>();
+	private static final ConcurrentHashMap<Long, ReservationConfirmResponse> reservationConfirmResponseMap = new ConcurrentHashMap<>();
+	private static final AtomicReference<Long> mostRecentReservationConfirmId = new AtomicReference<>();
 
 	public static void initFields() {
 		reservationResponseMap.clear();
@@ -27,6 +30,8 @@ public class ReservationContextHolder implements TestDtoContextHolder {
 		mostRecentReservationId.set(null);
 		mostRecentUserId.set(null);
 		mostRecentConcertOptionId.set(null);
+		reservationConfirmResponseMap.clear();
+		mostRecentReservationConfirmId.set(null);
 	}
 
 	public static void putReservationCreateRequest(Long reservationId, ReservationCreateRequest request) {
@@ -75,5 +80,29 @@ public class ReservationContextHolder implements TestDtoContextHolder {
 	public static ReservationStatusResponses getMostRecentReservationStatusResponse() {
 		Long recentUserId = mostRecentUserId.get();
 		return recentUserId != null ? getReservationStatusResponse(recentUserId) : null;
+	}
+
+
+
+
+	// 예약 확정 응답 저장 메서드
+	public static void putReservationConfirmResponse(Long reservationId, ReservationConfirmResponse response) {
+		reservationConfirmResponseMap.put(reservationId, response);
+		mostRecentReservationConfirmId.set(reservationId);
+	}
+
+	// 최근 예약 확정 응답 저장 메서드
+	public static void putReservationConfirmResponse(ReservationConfirmResponse response) {
+		Long reservationId = getMostRecentReservationId();
+		putReservationConfirmResponse(reservationId, response);
+	}
+
+	public static ReservationConfirmResponse getReservationConfirmResponse(Long reservationId) {
+		return reservationConfirmResponseMap.get(reservationId);
+	}
+
+	public static ReservationConfirmResponse getMostRecentReservationConfirmResponse() {
+		Long recentReservationId = mostRecentReservationConfirmId.get();
+		return recentReservationId != null ? getReservationConfirmResponse(recentReservationId) : null;
 	}
 }

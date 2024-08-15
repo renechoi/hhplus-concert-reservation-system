@@ -13,7 +13,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import io.cucumber.datatable.DataTable;
 import io.cucumber.java8.En;
+import io.reservationservice.api.application.dto.request.ReservationConfirmRequest;
 import io.reservationservice.api.application.dto.request.ReservationCreateRequest;
+import io.reservationservice.api.application.dto.response.ReservationConfirmResponse;
 import io.reservationservice.api.application.dto.response.ReservationStatusResponses;
 import io.reservationservice.api.application.dto.response.SeatResponse;
 import io.reservationservice.api.application.dto.response.TemporalReservationCreateResponse;
@@ -44,6 +46,11 @@ public class ReservationApiStepDef implements En {
 		Then("예약이 만료되어 취소되었음을 확인한다", this::verifyReservationExpiration);
 
 		Then("전체 예약을 repository에서 조회하여 다음과 같은 1개의 예약이 생성되었음을 확인한다", this::verifyReservationCountByRepository);
+
+
+		When("다음과 같은 예약 확정 요청을 보내고 성공 응답을 받는다", this::confirmReservationWithSuccessResponse);
+		Then("예약이 성공적으로 확정되었음을 확인한다", this::verifyReservationConfirmation);
+
 	}
 
 	private void verifyReservationCountByRepository(DataTable dataTable) {
@@ -105,5 +112,25 @@ public class ReservationApiStepDef implements En {
 	private void verifyReservationExpiration() {
 		ReservationStatusResponses response = getMostRecentReservationStatusResponse();
 		assertTrue(response.reservationStatusResponses().get(0).isCanceled());
+	}
+
+
+	// 예약 확정 요청을 보내고 성공 응답을 받는 메서드
+	private void confirmReservationWithSuccessResponse(DataTable dataTable) {
+		Map<String, String> requestData = dataTable.asMaps().get(0);
+		ReservationConfirmRequest request = updateFields(new ReservationConfirmRequest(), requestData);
+		ReservationConfirmResponse response = parseReservationConfirmResponse(confirmReservationWithOk(request));
+		putReservationConfirmResponse(response);
+	}
+
+	// 예약이 성공적으로 확정되었음을 확인하는 메서드
+	private void verifyReservationConfirmation(DataTable dataTable) {
+		Map<String, String> expectedData = dataTable.asMaps().get(0);
+		ReservationConfirmResponse actualResponse = getMostRecentReservationConfirmResponse();
+
+		assertNotNull(actualResponse, "예약 확정 응답이 존재하지 않습니다.");
+
+		assertEquals(Long.parseLong(expectedData.get("userId")), actualResponse.userId(), "userId가 일치하지 않습니다.");
+		assertEquals(Long.parseLong(expectedData.get("concertOptionId")), actualResponse.concertOption().concertOptionId(), "concertOptionId가 일치하지 않습니다.");
 	}
 }

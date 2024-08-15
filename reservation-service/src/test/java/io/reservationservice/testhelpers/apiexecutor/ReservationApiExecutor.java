@@ -4,6 +4,7 @@ import static io.reservationservice.testhelpers.apiexecutor.DynamicPortHolder.*;
 import static io.restassured.RestAssured.*;
 import static org.springframework.http.MediaType.*;
 
+import io.reservationservice.api.application.dto.request.ReservationConfirmRequest;
 import io.reservationservice.api.application.dto.request.ReservationCreateRequest;
 import io.reservationservice.util.YmlLoader;
 import io.restassured.response.ExtractableResponse;
@@ -18,6 +19,7 @@ public class ReservationApiExecutor extends AbstractRequestExecutor {
 	private static final String CONTEXT_PATH = YmlLoader.ymlLoader().getContextPath();
 	private static final String CONCERT_API_URL_PATH = CONTEXT_PATH + "/api/reservations";
 	private static final String RESERVATION_STATUS_API_URL_PATH = CONCERT_API_URL_PATH + "/status";
+	private static final String RESERVATION_CONFIRM_API_URL_PATH = CONCERT_API_URL_PATH + "/confirm";
 
 
 	private static RequestSpecification getRequestSpecification(int port) {
@@ -40,5 +42,14 @@ public class ReservationApiExecutor extends AbstractRequestExecutor {
 
 	public static ExtractableResponse<Response> getReservationStatusWithOk(Long userId, Long concertOptionId) {
 		return doGetWithOk(getRequestSpecification(getPort()), String.format("%s/%d/%d", RESERVATION_STATUS_API_URL_PATH, userId, concertOptionId));
+	}
+
+
+	public static ExtractableResponse<Response> confirmReservation(ReservationConfirmRequest request) {
+		return doPost(getRequestSpecification(getPort()), RESERVATION_CONFIRM_API_URL_PATH, request);
+	}
+
+	public static ExtractableResponse<Response> confirmReservationWithOk(ReservationConfirmRequest request) {
+		return doPostWithOk(getRequestSpecification(getPort()), RESERVATION_CONFIRM_API_URL_PATH, request);
 	}
 }
