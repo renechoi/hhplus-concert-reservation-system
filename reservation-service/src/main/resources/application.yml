@@ -6,12 +6,30 @@ spring:
   cache:
     jcache:
       config: classpath:ehcache.xml
+  cloud:
+    function:
+      definition: concertReservationConfirmConsumer;
+    stream:
+      kafka:
+        default:
+          consumer:
+            autoCommitOffset: false
+        binder:
+          brokers:
+            - localhost:9092
+      bindings:
+        concertReservationConfirmConsumer-in-0:
+          destination: concert-reservation-confirm
+          group: reservation-self-group
 eureka:
   client:
     serviceUrl:
       defaultZone: http://localhost:24010/eureka/
   instance:
     preferIpAddress: true
+
+
+
 
 server:
   port: 24071
@@ -31,7 +49,8 @@ custom-logging-filter:
 
 
 scheduler:
-  temporalReservationExpireRate: 1000  # 1초마다 실행
+  temporalReservationExpireRate: 10000  # 1초마다 실행
+  outboxResendRate: 5000  # 1초마다 실행
 
 
 
