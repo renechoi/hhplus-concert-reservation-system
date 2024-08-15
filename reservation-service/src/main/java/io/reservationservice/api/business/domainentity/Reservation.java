@@ -7,6 +7,7 @@ import org.springframework.data.domain.AbstractAggregateRoot;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import io.reservationservice.api.business.dto.event.ReservationChangedEvent;
+import io.reservationservice.common.mapper.ObjectMapperBasedVoMapper;
 import jakarta.persistence.Column;
 import jakarta.persistence.ConstraintMode;
 import jakarta.persistence.Entity;
@@ -27,6 +28,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.SneakyThrows;
 
 /**
  * @author : Rene Choi
@@ -83,4 +85,9 @@ public class Reservation extends AbstractAggregateRoot<Reservation> {
 		registerEvent(new ReservationChangedEvent(this.userId, this.concertOption.getConcertOptionId()));
 	}
 
+
+	@SneakyThrows
+	public String toJson() {
+		return ObjectMapperBasedVoMapper.getObjectMapper().writeValueAsString(this);
+	}
 }

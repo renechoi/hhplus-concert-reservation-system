@@ -1,9 +1,11 @@
 package io.reservationservice.api.business.service.impl;
 
+import static io.reservationservice.api.business.domainentity.OutboxEvent.*;
 import static io.reservationservice.api.business.domainentity.TemporalReservation.*;
 import static io.reservationservice.api.business.dto.inport.ReservationSearchCommand.*;
 import static io.reservationservice.api.business.dto.inport.SeatSearchCommand.*;
 import static io.reservationservice.api.business.dto.inport.TemporalReservationSearchCommand.*;
+import static io.reservationservice.common.model.Topic.*;
 import static java.time.LocalDateTime.*;
 import static java.util.stream.Collectors.*;
 
@@ -11,10 +13,13 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import io.reservationservice.api.business.domainentity.ConcertOption;
+import io.reservationservice.api.business.domainentity.OutboxEvent;
+import io.reservationservice.api.business.domainentity.OutboxRepository;
 import io.reservationservice.api.business.domainentity.Reservation;
 import io.reservationservice.api.business.domainentity.Seat;
 import io.reservationservice.api.business.domainentity.TemporalReservation;
@@ -42,6 +47,8 @@ public class SimpleReservationCrudService implements ReservationCrudService {
 	private final TemporalReservationRepository temporalReservationRepository;
 	private final ConcertOptionRepository concertOptionRepository;
 	private final SeatRepository seatRepository;
+	private final OutboxRepository outboxRepository;
+	private final ApplicationEventPublisher applicationEventPublisher;
 
 	/**
 	 * 임시 예약을 생성합니다.
@@ -74,7 +81,12 @@ public class SimpleReservationCrudService implements ReservationCrudService {
 	public ReservationConfirmInfo confirmReservation(Long temporalReservationId) {
 		TemporalReservation temporalReservation = temporalReservationRepository.findById(temporalReservationId);
 		temporalReservation.confirm();
-		return ReservationConfirmInfo.from(reservationRepository.save(temporalReservation.toConfirmedReservation()));
+		Reservation reservation = reservationRepository.save(temporalReservation.toConfirmedReservation());
+
+		OutboxEvent outboxEvent = outboxRepository.save(createConfirmOutbox(reservation.toJson(), CONCERT_RESERVATION_CONFIRM.getValue()));
+		applicationEventPublisher.publishEvent(outboxEvent);
+
+		return ReservationConfirmInfo.from(reservation);
 	}
 
 	@Override
