@@ -32,14 +32,16 @@ public class WaitingQueueTokenRetrievalSimulation extends Simulation {
 	{
 		setUp(createScenario()
 			.injectOpen(getOpenInjectionSteps()))
-			.protocols(httpProtocolBuilder);
+			.protocols(httpProtocolBuilder)
+			.maxDuration(Duration.ofMinutes(1))
+		.assertions(global().requestsPerSec().gte(150.0));
 	}
 
 	private OpenInjectionStep[] getOpenInjectionSteps() {
 		return new OpenInjectionStep[] {
-			rampUsersPerSec(10).to(50).during(Duration.ofSeconds(30)),
-			constantUsersPerSec(5).during(Duration.ofSeconds(30)),
-			rampUsersPerSec(50).to(1).during(Duration.ofSeconds(30))
+			rampUsersPerSec(100).to(200).during(Duration.ofSeconds(20)),
+			constantUsersPerSec(200).during(Duration.ofSeconds(20)),
+			rampUsersPerSec(200).to(100).during(Duration.ofSeconds(20))
 		};
 	}
 
