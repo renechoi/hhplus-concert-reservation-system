@@ -12,7 +12,7 @@ import io.reservationservice.common.mapper.ObjectMapperBasedVoMapper;
 public record ReservationConfirmResponse(
     Long reservationId,
     Long userId,
-    ConcertResponse concertOption,
+    ConcertOptionResponse concertOption,
     SeatResponse seat,
     LocalDateTime reserveAt,
     LocalDateTime createdAt,

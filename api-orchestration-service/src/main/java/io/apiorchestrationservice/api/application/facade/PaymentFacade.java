@@ -8,6 +8,7 @@ import org.springframework.context.ApplicationEventPublisher;
 
 import io.apiorchestrationservice.api.application.dto.request.PaymentProcessRequest;
 import io.apiorchestrationservice.api.application.dto.response.PaymentResponse;
+import io.apiorchestrationservice.api.business.service.OutboxService;
 import io.apiorchestrationservice.api.business.service.PaymentService;
 import io.apiorchestrationservice.api.business.service.ReservationService;
 import io.apiorchestrationservice.common.annotation.DistributedLock;
@@ -39,10 +40,11 @@ public class PaymentFacade {
 			reservationService.confirmReservation(createConfirmCommand(request));
 		} catch (Exception e){
 			paymentService.cancelPayment(paymentResponse.transactionId());
+			// applicationEventPublisher.publishEvent(paymentResponse.toPaymentInternalEventAsFail());
 			return createRolledBackResponse(paymentResponse);
 		}
 
-		applicationEventPublisher.publishEvent(paymentResponse.toPaymentInternalEventAsComplete());
+		// applicationEventPublisher.publishEvent(paymentResponse.toPaymentInternalEventAsComplete());
 		return paymentResponse;
 	}
 }
