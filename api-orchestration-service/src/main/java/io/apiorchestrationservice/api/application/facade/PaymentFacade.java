@@ -8,7 +8,6 @@ import org.springframework.context.ApplicationEventPublisher;
 
 import io.apiorchestrationservice.api.application.dto.request.PaymentProcessRequest;
 import io.apiorchestrationservice.api.application.dto.response.PaymentResponse;
-import io.apiorchestrationservice.api.business.service.OutboxService;
 import io.apiorchestrationservice.api.business.service.PaymentService;
 import io.apiorchestrationservice.api.business.service.ReservationService;
 import io.apiorchestrationservice.common.annotation.DistributedLock;

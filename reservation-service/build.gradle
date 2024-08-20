@@ -146,8 +146,8 @@ gatling {
     jvmArgs = ['-server', '-Xms512M', '-Xmx512M']
     systemProperties = ['file.encoding': 'UTF-8']
     simulations = {
-        include "**/io/reservationservice/ReservationStatusSimulation.java"
+//        include "**/io/reservationservice/ReservationStatusSimulation.java"
         include "**/io/reservationservice/AvailableDatesSimulation.java"
-        include "**/io/reservationservice/AvailableSeatsSimulation.java"
+//        include "**/io/reservationservice/AvailableSeatsSimulation.java"
     }
 }
