@@ -28,14 +28,14 @@ public class WaitingQueueTokenGenerationSimulation extends Simulation {
 			.injectOpen(getOpenInjectionSteps())
 			.protocols(httpProtocolBuilder))
 			.maxDuration(Duration.ofMinutes(1))
-			.assertions(global().requestsPerSec().gte(1.0));
+			.assertions(global().requestsPerSec().gte(500.0));
 	}
 
 	private OpenInjectionStep[] getOpenInjectionSteps() {
 		return new OpenInjectionStep[]{
-			rampUsersPerSec(50).to(150).during(Duration.ofSeconds(20)),
-			constantUsersPerSec(150).during(Duration.ofSeconds(20)),
-			rampUsersPerSec(150).to(1).during(Duration.ofSeconds(20))
+			rampUsersPerSec(20).to(50).during(Duration.ofSeconds(20)),
+			constantUsersPerSec(50).during(Duration.ofSeconds(20)),
+			rampUsersPerSec(50).to(1).during(Duration.ofSeconds(20))
 		};
 	}
 

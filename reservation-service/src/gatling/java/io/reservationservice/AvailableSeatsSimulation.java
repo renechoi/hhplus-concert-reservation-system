@@ -31,14 +31,16 @@ public class AvailableSeatsSimulation extends Simulation {
 	{
 		setUp(createScenario()
 			.injectOpen(getOpenInjectionSteps()))
-			.protocols(httpProtocolBuilder);
+			.protocols(httpProtocolBuilder)
+			.maxDuration(Duration.ofMinutes(1))
+			.assertions(global().requestsPerSec().gte(50.0));
 	}
 
 	private OpenInjectionStep[] getOpenInjectionSteps() {
 		return new OpenInjectionStep[] {
-			rampUsersPerSec(1).to(5).during(Duration.ofSeconds(30)),
-			constantUsersPerSec(5).during(Duration.ofSeconds(30)),
-			rampUsersPerSec(5).to(1).during(Duration.ofSeconds(30))
+			rampUsersPerSec(20).to(80).during(Duration.ofSeconds(30)),
+			constantUsersPerSec(80).during(Duration.ofSeconds(30)),
+			rampUsersPerSec(80).to(20).during(Duration.ofSeconds(30))
 		};
 	}
 
