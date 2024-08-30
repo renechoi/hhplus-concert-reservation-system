@@ -5202,15 +5202,289 @@ GC 횟수에서도 Redis가 RDB보다 낮은 수치를 보이고 있어, 메모�
 
 
 
-
 <details>
 <summary><b>레디스 기반의 은행 창구 대기열 큐 메커니즘 분석 및 최적 방안 탐구</b></summary>
 
 
-# TBD 
+# 개요
+
+대기열 큐를 구현하는 방식으로 두 가지 메커니즘을 고려해볼 수 있다. 첫 번째는 은행 창구 방식이고 두 번째는 놀이 공원 방식이다. 은행 창구 방식은 한 명이 처리열에서 빠져나가면 한 명이 대기열에 들어오는 방식이며, 놀이 공원 방식은 일정 시간 동안 n명을 들여보내고 m 시간이 지나면 자동으로 빠져나가는 방식이다.
+
+
+### 은행 창구 방식
+
+은행 창구 방식은 실제 은행 창구에서 사람들이 줄을 서서 기다리는 것과 유사하다. 이 방식에서는 한 명이 처리열에서 빠져나갈 때마다 대기열에서 한 명이 들어온다. 이를 통해 현재 처리 중인 인원 수를 정확히 카운팅하는 것이 중요하다. 예를 들어, 은행 창구 방식에서는 다음과 같은 로직이 필요하다:
+
+- **변수 정의**:
+  - n: 현재 처리 중인 사람 수
+  - m: 대기열에서 기다리는 사람 수
+
+- **처리 로직**:
+  1. 한 명이 처리열에서 빠져나가면(n--), 대기열에서 한 명이 처리열로 이동(m--, n++).
+  2. 이를 통해 전체 서버의 가용량 대비 현재 몇 명을 수용할 수 있는지 파악.
+
+- **예시**:
+  - 현재 처리 중인 인원이 5명(n=5)이고, 대기열에 10명(m=10)이 있다면:
+    1. 한 명이 처리 완료되면(n=4).
+    2. 대기열에서 한 명이 처리열로 이동(m=9, n=5).
+
+### 놀이 공원 방식
+
+놀이 공원 방식은 놀이 공원의 특정 놀이기구에 사람들이 일정 시간 동안 타고 있다가, 일정 시간이 지나면 자동으로 빠져나가는 것과 유사하다. 이 방식에서는 일정 시간 동안 n명을 들여보내고, m 시간이 지나면 자동으로 빠져나가게 된다.
+
+- **변수 정의**:
+  - n: 일정 시간에 입장한 사람 수
+  - m: 일정 시간 후 자동으로 빠져나가는 시간
+
+- **처리 로직**:
+  1. 일정 시간마다 n명을 들여보낸다.
+  2. m 시간이 지나면, 해당 유저들은 자동으로 빠져나가며 새로운 사이클이 시작된다.
+
+- **예시**:
+  - 30분마다 20명(n=20)이 입장하고, 60분(m=60)이 지나면 자동으로 퇴장.
+  - 예를 들어, 9:00에 20명이 입장하면 9:30에 다시 20명이 입장하지만, 9:00에 입장한 20명은 10:00에 퇴장.
+
+이와 같이, 은행 창구 방식과 놀이 공원 방식은 각각의 특징과 처리 방식을 가지고 있다.
+
+본 글의 목적은 **`은행 창구 방식`** 에서의 다양한 구현 방식을 탐구하고, 그 장단점들을 분석하여 최적의 방법을 모색하는 것이다.
+
+
+# 0. 공통: 대기 토큰을 Sorted Set으로 관리
+
+## 아키텍처
+
+![공통 부분_ 대기 토큰을 Sorted Set으로 관리.png](documents%2Farchitecture%2Fqueue%2F%EA%B3%B5%ED%86%B5%20%EB%B6%80%EB%B6%84_%20%EB%8C%80%EA%B8%B0%20%ED%86%A0%ED%81%B0%EC%9D%84%20Sorted%20Set%EC%9C%BC%EB%A1%9C%20%EA%B4%80%EB%A6%AC.png)
+
+
+
+## 프로세스
+1. 다수의 유저가 동시에 요청을 보낸다.
+2. 각 유저를 토큰화하여 Redis Sorted Set에 저장한다.
+
+
+
+# 1. 활성 토큰을 상태로 관리하는 방식
+
+## 아키텍처
+
+![활성 토큰을 상태로 관리하는 방식.png](documents%2Farchitecture%2Fqueue%2F%ED%99%9C%EC%84%B1%20%ED%86%A0%ED%81%B0%EC%9D%84%20%EC%83%81%ED%83%9C%EB%A1%9C%20%EA%B4%80%EB%A6%AC%ED%95%98%EB%8A%94%20%EB%B0%A9%EC%8B%9D.png)
+
+## 프로세스
+
+1. 다수의 유저가 동시에 요청을 보낸다.
+2. 개별 건에 대해서, Active 유저를 key-value 저장소에서 전체 조회하여 현재 활성화 할 수 있는 유저 수를 계수한다. O(N)
+3. 활성화가 가능한 경우
+  - a. 해당 유저를 Active 상태를 포함하여 토큰화한다. (e.g. active-xxxxx)
+  - b. 해당 토큰을 key-value 저장소에 저장한다. O(1)
+4. 활성화가 불가능한 경우
+  - a. 해당 유저를 Waiting 상태를 포함하여 토큰화한다. (e.g. waiting-xxxxx)
+  - b. 해당 토큰을 Sorted Set에 저장한다. O(logN)
+
+## 장점
+- 로직이 아주 심플하다.
+- 별도의 스케줄링 작업이 필요하지 않다.
+
+## 단점
+
+- 로직의 결합도가 너무 높다: 확장에 유연할까? 부하 분산이 쉬울까?
+- 대기열 인입 요청은 본 시스템 중 부하가 가장 큰 구간이다. 해당 구간에서 너무 많은 작업을 하므로 부하가 예상된다. (key-value 저장소에서 전체 조회시 O(N))
+
+
+# 2. 활성 토큰을 별도의 토큰으로 분리하는 방식 1: Hashset과 스케줄링을 이용한 카운트
+
+## 아키텍처
+
+![활성 토큰을 별도의 토큰으로 분리하는 방식 1_ Hashset과 스케줄링을 이용한 카운트.png](documents%2Farchitecture%2Fqueue%2F%ED%99%9C%EC%84%B1%20%ED%86%A0%ED%81%B0%EC%9D%84%20%EB%B3%84%EB%8F%84%EC%9D%98%20%ED%86%A0%ED%81%B0%EC%9C%BC%EB%A1%9C%20%EB%B6%84%EB%A6%AC%ED%95%98%EB%8A%94%20%EB%B0%A9%EC%8B%9D%201_%20Hashset%EA%B3%BC%20%EC%8A%A4%EC%BC%80%EC%A4%84%EB%A7%81%EC%9D%84%20%EC%9D%B4%EC%9A%A9%ED%95%9C%20%EC%B9%B4%EC%9A%B4%ED%8A%B8.png)
+
+
+## 프로세스
+
+### 로직 1
+
+1. 다수의 유저가 동시에 요청을 보낸다.
+2. 각 유저를 토큰화하여 Redis Sorted Set에 저장한다. O(logN)
+
+
+### 로직 2
+
+스케줄링으로 다음과 같은 스텝을 반복한다.
+
+1. 활성 토큰 개수를 Set size를 조회하여 확인한다. O(1)
+2. 활성 토큰 개수가 임계치 미만인 경우, 즉 수용 가능한 경우
+  - a. 해당 개수 만큼 대기 토큰에서 인입 순으로 가져온다. O(logN + M: N은 sorted set의 크기, M은 가져오는 요수의 수)
+  - b. 가져온 대기 토큰을 활성 토큰으로 변환한다.
+  - c. 변환한 활성 토큰을 Set에 저장한다. O(logN)
+  - d. 변환한 활성 토큰을 만료 시간 및 기타 메타 정보를 value로 설정하여 HashSet에 저장한다.
+  - e. 해당하는 대기 토큰을 Sorted Set에서 제거한다. O(logN)
+3. 활성 토큰 개수가 임계치 이상인 경우, 즉 수용 불가한 경우
+  - a. 아무런 작업을 수행하지 않는다.
+
+### 로직 3
+
+스케줄링으로 다음과 같은 스텝을 반복한다.
+
+1. HashSet을 전체 조회한다. O(N)
+2. 조회한 토큰 중 만료 시간이 지난 활성 토큰을 확인한다.
+3. 만료 시간이 지난 활성 토큰에 대해서, hashset에서 제거한다. O(1)
+4. 만료 시간이 지난 활성 토큰에 대해서, Set에서 제거한다. O(1)
+
+
+
+## 장점
+
+- 로직이 분산되어 확장에 용이하다.
+- 유저의 대기열 인입 요청에서 부하를 감당하기 수월하다.
+
+## 단점
+
+- Set, HashSet, 두 개의 스케줄링 -> 관리 포인트가 많다.
+- HashSet 전체 조회 -> O(N)의 복잡도를 가진다. (단, 비동기 작업이므로 부하 감당은 가능하다.)
+
+
+
+# 3. 활성 토큰을 별도의 토큰으로 분리하는 방식 2: Counter와 Redis keyspace notification을 이용한 카운트
+
+## 아키텍처
+![활성 토큰을 별도의 토큰으로 분리하는 방식 2_ Counter와 Redis keyspace notification을 이용한 카운트.png](documents%2Farchitecture%2Fqueue%2F%ED%99%9C%EC%84%B1%20%ED%86%A0%ED%81%B0%EC%9D%84%20%EB%B3%84%EB%8F%84%EC%9D%98%20%ED%86%A0%ED%81%B0%EC%9C%BC%EB%A1%9C%20%EB%B6%84%EB%A6%AC%ED%95%98%EB%8A%94%20%EB%B0%A9%EC%8B%9D%202_%20Counter%EC%99%80%20Redis%20keyspace%20notification%EC%9D%84%20%EC%9D%B4%EC%9A%A9%ED%95%9C%20%EC%B9%B4%EC%9A%B4%ED%8A%B8.png)
+
+
+## 프로세스
+
+### 로직 1
+
+1. 다수의 유저가 동시에 요청을 보낸다.
+2. 각 유저를 토큰화하여 Redis Sorted Set에 저장한다. O(logN)
+
+
+
+### 로직 2
+
+스케줄링으로 다음과 같은 스텝을 반복한다.
+
+1. 활성 토큰 개수를 Counter로 조회하여 확인한다. O(1)
+2. 활성 토큰 개수가 임계치 미만인 경우, 즉 수용 가능한 경우
+  - a. 해당 개수 만큼 대기 토큰에서 인입 순으로 가져온다. O(logN + M: N은 sorted set의 크기, M은 가져오는 요수의 수)
+  - b. 가져온 대기 토큰을 활성 토큰으로 변환한다.
+  - c. 변환한 활성 토큰을 key-value 저장소에 TTL과 함께 저장한다. O(1)
+  - d. 저장한 개수를 카운터에 기록한다. O(1)
+  - e. 해당하는 대기 토큰을 Sorted Set에서 제거한다.  O(logN)
+3. 활성 토큰 개수가 임계치 이상인 경우, 즉 수용 불가한 경우
+  - a. 아무런 작업을 수행하지 않는다.
+
+
+
+### 로직 3
+
+레디스의 keyspace notification을 이용하여 만료 시간이 지난 활성 토큰을 확인한다.
+
+1. 레디스는 key-value 저장소 요소 중 만료 이벤트를 keyspace notification으로 발행한다. O(1)
+2. 어플리케이션은 keyspace notification을 구독하여 만료 이벤트를 수신한다. O(1)
+3. 만료 이벤트를 수신하고 카운터 변수를 -1을 하여 계수 현황을 동기화한다. O(1)
+
+
+## 장점
+
+- 로직이 분산되어 확장에 용이하다.
+- 유저의 대기열 인입 요청에서 부하를 감당하기 수월하다.
+
+
+## 단점
+- 카운터라는 별도의 관리 포인트가 생긴다.
+- keyspace notification을 이용한 만료 이벤트 수신에서 유실 문제가 있다. 레디스의 keyspace notification은 `at least once`와 같은 유실 방지 정책을 지원하지 않아 메시지의 필연적 도달을 보장하지 않는다.
+
+
+
+# 4. 활성 토큰을 별도의 토큰으로 분리하는 방식 3: Counter와 kafka pub/sub 이용한 카운트
+
+## 아키텍처
+
+![활성 토큰을 별도의 토큰으로 분리하는 방식 3_ Counter와 kafka pub.png](documents%2Farchitecture%2Fqueue%2F%ED%99%9C%EC%84%B1%20%ED%86%A0%ED%81%B0%EC%9D%84%20%EB%B3%84%EB%8F%84%EC%9D%98%20%ED%86%A0%ED%81%B0%EC%9C%BC%EB%A1%9C%20%EB%B6%84%EB%A6%AC%ED%95%98%EB%8A%94%20%EB%B0%A9%EC%8B%9D%203_%20Counter%EC%99%80%20kafka%20pub.png)
+
+## 프로세스
+
+### 로직 1
+
+다음과 같은 로직을 WaitingQueueService가 수행한다.
+
+1. 다수의 유저가 동시에 요청을 보낸다.
+2. 각 유저를 토큰화하여 Redis Sorted Set에 저장한다. O(logN)
+3. 저장한 토큰을 Kafka로 발행한다. O(1)
+
+
+
+### 로직 2
+
+다음과 같은 로직을 ActiveQueueService가 수행한다.
+
+1. Kafka로부터 토큰을 수신한다. O(1)
+2. 활성 토큰 개수를 Counter로 조회하여 확인한다. O(1)
+3. 활성 토큰 개수가 임계치 미만인 경우, 즉 수용 가능한 경우
+  - a. 가장 최신의 토큰을 가져온다. O(1)
+  - b. 가져온 대기 토큰을 활성 토큰으로 변환한다.
+  - c. 변환한 활성 토큰을 key-value 저장소에 TTL과 함께 저장한다. O(1)
+  - d. 저장한 개수를 카운터에 기록한다. O(1)
+  - e. TTL 값을 카프카로 발행한다. O(1)
+
+
+
+### 로직 3
+
+다음과 같은 로직을 ExpirationService가 수행한다.
+
+1. Kafka로부터 TTL 값을 수신한다. O(1)
+2. TTL 값을 현재 시점 대비 계산하여 만료 여부를 확인한다.
+3. 만료 시간이 된 경우
+  - a. 카운터를 1 차감하여 동기화한다. O(1)
+  - b. 카프카에 ACK로 응답하여 다음 메시지를 수신할 수 있도록 한다.
+4. 만료 시간이 아닌 경우
+  - a. 카프카에 NACK로 응답하여 다음 메시지를 수신하지 않도록 한다.
+
+
+
+## 추가 개선
+
+이 방식에서 조금 꺼림칙한 부분은 로직 3에서 Kafka를 다루는 방식이다. ACK를 주기 전까지는 계속 retry가 반복되며, Kafka에는 계속 이벤트들이 쌓이게 된다. Kafka는 고가용성의 메시지 큐(MQ)인데, 이 용도에 맞게 Kafka가 사용되는 것인가에 대한 의문이 생긴다.
+
+기존의 문제를 해결하는 그 목적 자체를 달성하면서도 이 문제를 개선해볼 수 있을까?
+
+레디스를 사용해보면 어떨까? 다음과 같은 개선 방안을 탐구해보자.
+
+### 개선 방안: Redis 활용
+
+1. **TTL 정보 저장**:
+  - TTL 정보를 Redis의 SortedSet에 저장한다. SortedSet은 자동으로 rank로 정렬되기 때문에 가장 앞의 요소를 쉽게 가져올 수 있다.
+  - 이는 Kafka가 순서를 보장함으로써 기존 방식에서 맨 먼저 발행된 이벤트, 즉 TTL이 가장 빠른 이벤트를 컨슘하는 것과 동일한 효과를 낸다.
+
+2. **소비 메커니즘**:
+  - Kafka 대신 스케줄러를 사용하여 Redis SortedSet을 폴링한다. Kafka에서의 컨슘 메커니즘도 결국 폴링이기 때문에, 이를 어플리케이션에서 구현하는 방식으로 해석할 수 있다.
+
+
+가능할 것 같다!
+
+정리해보면 구체적인 구현 방안은 다음과 같다.
+
+
+- **ActiveQueueService**:
+  - 활성 토큰에 대한 정보를 Kafka에 발행하는 대신, Redis에 만료 SortedSet을 만들어 해당 SortedSet에 저장한다. 이때 TTL 기준으로 정렬되도록 한다.
+
+- **ExpirationService**:
+  - Redis SortedSet을 폴링하여 만료된 TTL을 확인한다.
+  - TTL이 만료된 토큰을 받아서 만료된 값에 따라 카운터 값을 동기화한다.
+  - SortedSet 조회는 맨 앞의 요소를 가져오므로 O(1)로 수행할 수 있다. 만약 조회할 요소의 개수가 늘어난다면 조회 개수를 동적으로 조정해도 될 것이다.
+
+
+결론적으로, Kafka를 사용할 때와 메커니즘 자체는 동일하지만, 보다 적절하게 문제를 해결할 수 있는 방식이다. 다만, 이 방식에서는 Sorted Set에서 만료된 값을 지워주어야 하므로, 멀티 인스턴스 환경에서 동시 스케줄링 작동 시 동시성 이슈가 발생할 수 있음을 고려하여 로직을 구현해야 한다.
+
+이렇게 Redis의 SortedSet을 활용하여 보다 TTL 처리와 카운터 동기화를 O(1)로 해결할 수 있다.
+
+
+### 최종 아키텍처
+![활성 토큰을 별도의 토큰으로 분리하는 방식 3 refactored_ Counter와 kafka pub.png](documents%2Farchitecture%2Fqueue%2F%ED%99%9C%EC%84%B1%20%ED%86%A0%ED%81%B0%EC%9D%84%20%EB%B3%84%EB%8F%84%EC%9D%98%20%ED%86%A0%ED%81%B0%EC%9C%BC%EB%A1%9C%20%EB%B6%84%EB%A6%AC%ED%95%98%EB%8A%94%20%EB%B0%A9%EC%8B%9D%203%20refactored_%20Counter%EC%99%80%20kafka%20pub.png)
 
 
 </details>
+
+
 
 
 
@@ -5220,7 +5494,2772 @@ GC 횟수에서도 Redis가 RDB보다 낮은 수치를 보이고 있어, 메모�
 <summary><b>API 쿼리 분석 및 개선</b></summary>
 
 
-# TBD
+# 예약 및 콘서트 API
+
+
+1. 예약 가능 날짜 조회: `GET ` - `/reservation/api/availability/dates/{concertId}`
+2. 예약 가능 좌석 조회: `GET` - `/reservation/api/availability/seats/{concertOptionId}/{requestAt}`
+3. 예약 요청: `POST` - `/api/reservations`
+4. 임시 예약 확정: `PUT` - `/api/reservations/confirm`
+4. 예약 상태 조회: `GET` - `/api/reservations/status/{reservationId}`
+5. 콘서트 생성: `POST` - `/api/concerts`
+6. 콘서트 옵션 생성: `POST` - `/api/concerts/{concertId}/options`
+
+
+
+## 사용되는 쿼리
+
+
+### 예약 가능 날짜 조회
+
+- 설명: 사용자가 특정 콘서트의 예약 가능 날짜를 확인하기 위해 사용된다. ConcertOption 테이블과 concert 테이블에서 concertId와 concertDate 조건에 맞는 데이터를 조회한다.
+- 빈도: ★★★★★
+  - 사용자가 예약 가능 날짜를 조회할 때마다 호출되므로 자주 사용될 수 있다.
+- 복잡도: ★★★☆☆
+  - 두 개의 테이블을 조회하며, 날짜와 ID 조건을 사용하여 필터링한다.
+  - 특히, concertId를 기준으로 ConcertOption 테이블과 Concert 테이블을 조인한다.
+
+
+
+
+<details>
+<summary><b>쿼리 1:</b> Seat 테이블에서 concertOptionId로 특정 콘서트 옵션에 해당하는 좌석을 조회하는 쿼리</summary>
+
+```sql
+SELECT
+         co1_0.concert_option_id,
+         co1_0.concert_id,
+         co1_0.concert_date,
+         co1_0.concert_duration,
+         co1_0.created_at,
+         co1_0.description,
+         co1_0.price,
+         co1_0.request_at,
+         co1_0.title
+      FROM
+         concert_option co1_0
+      WHERE
+         co1_0.concert_option_id IS NOT NULL
+        AND co1_0.concert_id = ?
+        AND co1_0.concert_date > ?
+```
+</details>
+
+
+<details>
+
+<summary><b>쿼리 2:</b> ConcertOption 테이블에서 concertOptionId로 특정 콘서트 옵션과 관련된 콘서트 정보를 조회하는 쿼리</summary>
+
+
+```sql
+select
+    c1_0.concert_id,
+    c1_0.created_at,
+    c1_0.request_at,
+    c1_0.title 
+from
+    concert c1_0 
+where
+    c1_0.concert_id=?
+```
+
+</details>
+
+
+### 예약 가능 좌석 조회
+- **설명:** 특정 콘서트 옵션에 대해 예약 가능한 좌석을 조회한다. `Seat` 테이블과 `ConcertOption` 테이블을 조인하여 `concertOptionId`와 `requestAt` 조건에 맞는 데이터를 가져온다.
+- **빈도:** ★★★★☆
+  - 예약 가능한 좌석 정보를 조회할 때마다 호출되며, 사용 빈도가 높다.
+- **복잡도:** ★★★☆☆
+  - 좌석의 예약 가능 여부를 필터링해야 하므로 단순한 조회보다 복잡하다. 좌석이 예약되었는지 여부를 확인하기 위해 `occupied` 필드를 검사하며, 또한 `concertOptionId`를 기준으로 `Seat` 테이블과 `ConcertOption` 테이블을 조인하여 관련 데이터를 가져온다. 이러한 과정에서 여러 조건을 사용하여 데이터를 필터링하고, 조인 연산을 통해 테이블 간의 관계를 처리해야 한다. 특히, 좌석의 예약 가능 상태를 정확히 판별하기 위해 `requestAt` 매개변수를 사용하여 요청 시점에서의 예약 가능 상태를 확인한다.
+  - 따라서 단순한 조회 쿼리보다 더 많은 조건과 연산을 포함하게 되어 복잡도가 증가한다.
+
+
+<details>
+<summary><b>쿼리 1:</b> Seat 테이블에서 concertOptionId로 좌석 정보를 조회하는 쿼리</summary>
+
+```sql
+select
+        seat 
+from
+     Seat seat 
+where
+     seat is not null 
+     and seat.concertOption.concertOptionId = ?
+```
+
+</details>
+
+<details>
+<summary><b>쿼리 2:</b> ConcertOption 테이블에서 concert_id로 옵션과 콘서트 정보를 조회하는 쿼리</summary>
+
+```sql
+select
+    co1_0.concert_option_id,
+    c1_0.concert_id,
+    c1_0.created_at,
+    c1_0.request_at,
+    c1_0.title,
+    co1_0.concert_date,
+    co1_0.concert_duration,
+    co1_0.created_at,
+    co1_0.description,
+    co1_0.price,
+    co1_0.request_at,
+    co1_0.title 
+from
+    concert_option co1_0 
+left join
+    concert c1_0 
+        on c1_0.concert_id=co1_0.concert_id 
+where
+    co1_0.concert_option_id=?
+```
+
+</details>
+
+
+### 예약 요청
+
+- **설명:** 특정 콘서트 옵션에 대한 좌석 정보를 조회하고, 좌석 예약을 처리한다. `ConcertOption` 테이블과 `Seat` 테이블을 조인하여 필요한 데이터를 가져오고, 필요한 경우 임시 예약 테이블에 데이터를 삽입하거나 기존 데이터를 업데이트한다.
+
+- **빈도:** ★★★★☆
+  - 예약 요청은 사용자가 특정 콘서트의 좌석을 예약할 때마다 발생하므로 자주 사용된다.
+  - 다만 1명당 거의 1:1로 대응되는 만큼 발생 빈도수는 한정적이다.
+
+- **복잡도:** ★★★★☆
+  - 여러 테이블을 조회하고, 데이터를 삽입하거나 업데이트한다. 좌석의 예약 가능 여부를 확인하고, 임시 예약을 처리하는 과정에서 동시성 제어와 데이터 무결성을 유지해야 한다. 또한, 여러 조건을 만족하는 데이터를 조회하고, 필요한 경우 행 잠금을 사용하여 동시성 문제를 해결한다.
+
+
+
+<details>
+<summary><b>쿼리 2:</b> ConcertOption 테이블에서 `concertOptionId`로 조회하는 쿼리</summary>
+
+```sql
+select concertOption
+from ConcertOption concertOption
+where concertOption.concertOptionId = ?1
+
+select co1_0.concert_option_id,
+     co1_0.concert_id,
+     co1_0.concert_date,
+     co1_0.concert_duration,
+     co1_0.created_at,
+     co1_0.description,
+     co1_0.price,
+     co1_0.request_at,
+     co1_0.title
+from concert_option co1_0
+where co1_0.concert_option_id=?
+for share
+```
+
+</details>
+
+
+
+<details>
+<summary><b>쿼리 2:</b> Seat 테이블에서 특정 조건을 만족하는 좌석 데이터를 조회하는 쿼리</summary>
+
+```sql
+select seat
+from Seat seat
+where seat is not null
+and seat.concertOption = ?1
+and seat.seatNumber = ?2
+
+select s1_0.seat_id,
+     s1_0.concert_option_id,
+     s1_0.created_at,
+     s1_0.occupied,
+     s1_0.seat_number
+from seat s1_0
+where s1_0.seat_id is not null
+and s1_0.concert_option_id=?
+and s1_0.seat_number=?
+for update
+```
+</details>
+
+<details>
+<summary><b>쿼리 3:</b> TemporalReservation 테이블에 새로운 임시 예약 데이터를 삽입하는 쿼리</summary>
+
+```sql
+insert into temporal_reservation (concert_option_id, created_at, expire_at, is_canceled, is_confirmed, request_at, reserve_at, seat_id, user_id)
+values (?, ?, ?, ?, ?, ?, ?, ?, ?)
+```
+</details>
+
+
+
+<details>
+<summary><b>쿼리 4:</b> `Seat` 테이블에서 특정 좌석의 상태를 업데이트하는 쿼리</summary>
+```sql
+update seat
+set concert_option_id=?,
+  occupied=?,
+  seat_number=?
+where seat_id=?
+```
+
+</details>
+
+
+
+### 임시 예약 확정
+
+- **설명:** 임시 예약 확정을 처리하는 쿼리들로, 사용자가 임시로 예약한 좌석을 확정된 예약으로 전환하는 작업을 수행한다. `temporal_reservation`, `concert_option`, `concert`, `seat` 테이블을 조회하여 필요한 정보를 가져오고, 임시 예약을 확정하거나 새로운 예약을 삽입한다.
+
+- **빈도:** ★★★☆☆
+  - 임시 예약 확정은 사용자가 예약을 최종적으로 확정할 때마다 발생하는 중요한 작업이므로 비즈니스가 수행된다는 가정하에 반드시 n개에 데이터만큼 발생한다.
+  - 다만 1명당 거의 1:1로 대응되는 만큼 발생 빈도수는 한정적이다.
+
+- **복잡도:** ★★★★★
+  - 이 쿼리들은 여러 테이블 간의 조인과 데이터 삽입 및 업데이트 작업을 포함하며, 특히 동시성 제어와 데이터 무결성을 유지해야 한다. 임시 예약을 확정하는 과정에서 여러 조건을 만족해야 하며, 데이터의 일관성을 유지하기 위해 행 잠금을 사용하여 동시성 문제를 해결한다. 이러한 작업은 높은 복잡도를 가진다.
+
+
+
+<details>
+<summary><b>쿼리 1:</b>임시 예약 ID와 연결된 콘서트 옵션, 콘서트, 좌석의 상세 정보를 가져오는 쿼리 </summary>
+
+```sql
+select
+  tr1_0.temporal_reservation_id,
+  co1_0.concert_option_id,
+  c1_0.concert_id,
+  c1_0.created_at,
+  c1_0.request_at,
+  c1_0.title,
+  co1_0.concert_date,
+  co1_0.concert_duration,
+  co1_0.created_at,
+  co1_0.description,
+  co1_0.price,
+  co1_0.request_at,
+  co1_0.title,
+  tr1_0.created_at,
+  tr1_0.expire_at,
+  tr1_0.is_canceled,
+  tr1_0.is_confirmed,
+  tr1_0.request_at,
+  tr1_0.reserve_at,
+  s1_0.seat_id,
+  co2_0.concert_option_id,
+  co2_0.concert_id,
+  co2_0.concert_date,
+  co2_0.concert_duration,
+  co2_0.created_at,
+  co2_0.description,
+  co2_0.price,
+  co2_0.request_at,
+  co2_0.title,
+  s1_0.created_at,
+  s1_0.occupied,
+  s1_0.seat_number,
+  tr1_0.user_id 
+from
+  temporal_reservation tr1_0 
+left join
+  concert_option co1_0 
+      on co1_0.concert_option_id=tr1_0.concert_option_id 
+left join
+  concert c1_0 
+      on c1_0.concert_id=co1_0.concert_id 
+left join
+  seat s1_0 
+      on s1_0.seat_id=tr1_0.seat_id 
+left join
+  concert_option co2_0 
+      on co2_0.concert_option_id=s1_0.concert_option_id 
+where
+  tr1_0.temporal_reservation_id=?
+```
+
+**쿼리 2:** 새로운 예약 데이터를 `reservation` 테이블에 삽입하는 쿼리로, 임시 예약 데이터를 기반으로 실제 예약을 생성한다.
+```sql
+insert into
+  reservation (concert_option_id, created_at, is_canceled, request_at, reserve_at, seat_id, temporal_reservation_reserve_at, user_id) 
+values
+  (?, ?, ?, ?, ?, ?, ?, ?)
+```
+</details>
+
+
+<details>
+<summary><b>쿼리 2:</b> 기존 임시 예약 데이터를 업데이트하는 쿼리로, 임시 예약의 상태를 확정된 상태로 변경하는 쿼리</summary>
+
+```sql
+update temporal_reservation 
+set
+  concert_option_id=?,
+  expire_at=?,
+  is_canceled=?,
+  is_confirmed=?,
+  request_at=?,
+  reserve_at=?,
+  seat_id=?,
+  user_id=? 
+where
+  temporal_reservation_id=?
+```
+</details>
+
+
+
+
+### 예약 상태 조회
+
+- **설명:** 특정 사용자와 콘서트 옵션에 대한 예약 정보를 조회하며, 예약된 좌석의 세부 정보를 가져온다. `Reservation`, `ConcertOption`, `Seat`, 그리고 `TemporalReservation` 테이블을 사용하여 예약 및 임시 예약 상태를 조회한다.
+
+- **빈도:** ★★★★☆
+  - 예약 상태 조회는 사용자가 자신의 예약 현황을 확인할 때마다 발생하며, 특정 이벤트 전후에 빈번하게 사용될 것이다.
+
+- **복잡도:** ★★★★☆
+  - 이 쿼리들은 여러 테이블을 조인하여 데이터를 조회하고, 사용자와 콘서트 옵션에 대한 다양한 조건을 만족해야 한다. 또한, 데이터 무결성을 유지하고 최신 상태를 반영해야 하므로 복잡도가 높다.
+
+
+<details>
+<summary><b>쿼리 1:</b>  Reservation 테이블에서 특정 사용자와 콘서트 옵션에 대한 예약 데이터를 조회하는 쿼리
+</summary>
+
+```sql
+select
+  reservation1 
+from
+  reservation reservation1 
+where
+  reservation1 is not null 
+  and reservation1.userId = ?1 
+  and reservation1.concertOption.concertOptionId = ?2
+
+select
+  r1_0.reservation_id,
+  r1_0.concert_option_id,
+  r1_0.created_at,
+  r1_0.is_canceled,
+  r1_0.request_at,
+  r1_0.reserve_at,
+  r1_0.seat_id,
+  r1_0.temporal_reservation_reserve_at,
+  r1_0.user_id 
+from
+  reservation1 r1_0 
+where
+  r1_0.reservation_id is not null 
+  and r1_0.user_id=? 
+  and r1_0.concert_option_id=?
+```
+
+</details>
+
+
+
+<details>
+<summary><b>쿼리 2:</b> ConcertOption 테이블에서 특정 콘서트 옵션에 대한 세부 정보를 조회하는 쿼리</summary>
+
+```sql
+select
+  co1_0.concert_option_id,
+  c1_0.concert_id,
+  c1_0.created_at,
+  c1_0.request_at,
+  c1_0.title,
+  co1_0.concert_date,
+  co1_0.concert_duration,
+  co1_0.created_at,
+  co1_0.description,
+  co1_0.price,
+  co1_0.request_at,
+  co1_0.title 
+from
+  concert_option co1_0 
+left join
+  concert c1_0 
+      on c1_0.concert_id=co1_0.concert_id 
+where
+  co1_0.concert_option_id=?
+```
+
+</details>
+
+
+<details>
+<summary><b>쿼리 3:</b> Seat 테이블에서 특정 좌석에 대한 정보를 조회하는 쿼리 </summary>
+
+
+```sql
+select
+  s1_0.seat_id,
+  co1_0.concert_option_id,
+  c1_0.concert_id,
+  c1_0.created_at,
+  c1_0.request_at,
+  c1_0.title,
+  co1_0.concert_date,
+  co1_0.concert_duration,
+  co1_0.created_at,
+  co1_0.description,
+  co1_0.price,
+  co1_0.request_at,
+  co1_0.title,
+  s1_0.created_at,
+  s1_0.occupied,
+  s1_0.seat_number 
+from
+  seat s1_0 
+left join
+  concert_option co1_0 
+      on co1_0.concert_option_id=s1_0.concert_option_id 
+left join
+  concert c1_0 
+      on c1_0.concert_id=co1_0.concert_id 
+where
+  s1_0.seat_id=?
+```
+
+</details>
+
+
+
+<details>
+<summary><b>쿼리 4:</b> TemporalReservation 테이블에서 특정 사용자와 콘서트 옵션에 대한 임시 예약 데이터를 조회하는 쿼리</summary>
+
+
+```sql
+select
+  temporalReservation 
+from
+  TemporalReservation temporalReservation 
+where
+  temporalReservation is not null 
+  and temporalReservation.userId = ?1 
+  and temporalReservation.concertOption.concertOptionId = ?2
+   select
+     tr1_0.temporal_reservation_id,
+     tr1_0.concert_option_id,
+     tr1_0.created_at,
+     tr1_0.expire_at,
+     tr1_0.is_canceled,
+     tr1_0.is_confirmed,
+     tr1_0.request_at,
+     tr1_0.reserve_at,
+     tr1_0.seat_id,
+     tr1_0.user_id 
+   from
+     temporal_reservation tr1_0 
+   where
+     tr1_0.temporal_reservation_id is not null 
+     and tr1_0.user_id=? 
+     and tr1_0.concert_option_id=?
+```
+
+</details>
+
+
+
+
+
+
+### 콘서트 생성
+
+- **설명:** `concert` 테이블에 새로운 콘서트를 삽입한다.
+
+- **빈도:** ★☆☆☆☆
+  - 콘서트 생성 쿼리는 관리자나 운영자가 새로운 콘서트를 등록할 때 사용되며, 일반 사용자가 자주 호출하지는 않는다. 따라서 빈도는 낮다.
+
+- **복잡도:** ★☆☆☆☆
+  - 단일 테이블에 데이터를 삽입하는 단순한 구조로, 입력 값의 유효성만 검증하면 되므로 복잡도는 낮다.
+
+
+<details>
+<summary><b>쿼리 1:</b> Concert를 생성하는 쿼리</summary>
+
+
+```sql
+insert for
+        io.reservationservice.api.business.domainentity.Concert 
+    into
+        concert (created_at, request_at, title) 
+    values
+        (?, ?, ?)
+```
+
+</details>
+
+
+
+### 콘서트 옵션 생성
+
+- **설명:** 특정 콘서트에 대한 다양한 옵션을 설정하고 저장하며, 각 콘서트 옵션에 대한 세부 정보를 데이터베이스에 추가한다. 또한, 콘서트 옵션과 관련된 좌석 정보를 함께 저장하여 사용자가 선택할 수 있도록 한다.
+
+- **빈도:** ★★★☆☆
+  - 콘서트 옵션 생성은 새로운 콘서트가 추가될 때마다 발생하며, 이벤트나 프로모션을 기획할 때 사용된다. 빈도는 상대적으로 낮지만, 이벤트 계획 시 집중적으로 발생할 수 있다.
+
+- **복잡도:** ★★★★☆
+  - 이 쿼리들은 여러 테이블에 데이터를 삽입해야 하며, 콘서트 옵션과 관련된 다양한 정보를 처리한다. 특히, 좌석 정보와 관련된 테이블을 함께 업데이트해야 하므로 복잡도가 높다.
+
+
+<details>
+<summary><b>쿼리 1:</b> concert 테이블에서 콘서트 ID로 콘서트를 조회하는 쿼리.</summary>
+
+
+```sql
+select
+    c1_0.concert_id,
+    c1_0.created_at,
+    c1_0.request_at,
+    c1_0.title 
+from
+    concert c1_0 
+where
+    c1_0.concert_id=?
+```
+</details>
+
+
+<details>
+<summary><b>쿼리 2:</b> concert_option 테이블에 새로운 콘서트 옵션을 삽입하는 쿼리</summary>
+
+```sql
+insert into
+    concert_option (concert_id, concert_date, concert_duration, created_at, description, price, request_at, title) 
+values
+    (?, ?, ?, ?, ?, ?, ?, ?)
+```
+</details>
+
+
+
+<details>
+<summary><b>쿼리 3:</b> seat 테이블에 새로운 좌석 정보를 삽입하는 쿼리</summary>
+
+```sql
+insert into
+    seat (concert_option_id, created_at, occupied, seat_number) 
+values
+    (?, ?, ?, ?)
+```
+
+</details>
+
+
+
+## 인덱스 적절성 판단 및 설정
+
+### Concert
+
+현재 API 분석 결과, Concert 엔티티에 대한 검색 조건이 존재하지 않기 때문에 인덱스는 불필요하다.
+
+다만, Concert 엔티티의 특성을 고려할 때, 향후 검색 요구가 발생할 가능성을 대비해볼 수 있다.
+Concert 엔티티는 생성 빈도가 낮아 인덱스 생성이 큰 부담이 되지 않기 때문에 이와 같은 접근이 가능하다.
+
+1. **title 컬럼 인덱스**:
+  - **필요성**: Concert의 제목으로 검색하는 경우가 발생할 수 있다. title은 중복 값이 적고, 검색 성능 향상에 기여할 수 있다.
+  - **카디널리티**: 중간 (제목은 비교적 중복이 적음)
+  - **변경 빈도**: 낮음 (한번 설정된 제목은 자주 변경되지 않음)
+
+2. **createdAt**
+  - **필요성**: 생성 날짜를 기준으로 하는 쿼리의 성능을 향상시키기 위해 필요하다.
+  - **카디널리티**: 중간에서 높음 (시간 단위에 따라 다르지만, 일반적으로 많은 고유 값을 가짐)
+  - **변경 빈도**: 낮음 (생성된 후 변경되지 않음)
+
+
+#### 종합 결론
+
+따라서, 현재 검색 조건이 없더라도 `title`과 `createdAt` 컬럼에 인덱스를 설정하여 향후 검색 요구에 대비할 수 있다.
+
+
+<details>
+<summary>JPA 엔티티 인덱스 설정 코드</summary>
+
+
+
+```java
+@Table(indexes = {
+    @Index(name = "idx_concert_title", columnList = "title"),
+    @Index(name = "idx_concert_createdAt", columnList = "createdAt")
+})
+public class Concert implements EntityRecordable{
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY) private Long concertId;
+    private String title;
+    private LocalDateTime createdAt;
+    private LocalDateTime requestAt;
+}
+```
+
+</details>
+
+
+
+
+
+
+### ConcertOption
+
+#### 단일 인덱스 검토
+
+1. **concertId**
+  - **필요성**: 대부분의 쿼리에서 concertId를 사용하여 ConcertOption 테이블을 조회한다. 특히 `예약 가능 날짜 조회`와 `예약 가능 좌석 조회`에서 자주 사용된다. ConcertOption이 특정 콘서트와 연관된 데이터를 필터링할 때 가장 중요한 컬럼이다.
+  - **카디널리티**: 중간 (여러 ConcertOption이 동일한 concertId를 가질 수 있음)
+  - **변경 빈도**: 낮음 (콘서트가 생성된 후 변경되지 않음)
+
+2. **concertDate**
+  - **필요성**: `예약 가능 날짜 조회`에서 자주 사용된다. 사용자가 특정 콘서트의 예약 가능 날짜를 확인할 때 매우 중요하다. 날짜 범위로 조회되는 경우가 많다.
+  - **카디널리티**: 중간에서 높음 (여러 ConcertOption이 동일한 concertDate를 가질 수 있으나, 특정 날짜에 여러 고유 값이 존재할 수 있음)
+  - **변경 빈도**: 낮음 (콘서트 일정이 정해진 후 변경되지 않음)
+
+3. **concertOptionId**
+  - **필요성**: 각 콘서트 옵션을 식별하기 위해 자주 사용된다. `예약 요청`, `임시 예약 확정`, `예약 상태 조회` 등에서 사용된다.
+  - **카디널리티**: 높음 (각 콘서트 옵션마다 고유 값)
+  - **변경 빈도**: 낮음 (생성 후 변경되지 않음)
+
+#### 복합 인덱스 검토
+
+1. **concertId, concertDate**
+  - **필요성**: `예약 가능 날짜 조회`에서 자주 사용된다. 두 컬럼을 함께 사용하여 특정 콘서트의 예약 가능한 날짜를 조회하는 쿼리에 최적화된다.
+  - **카디널리티**: 중간 (두 컬럼의 조합으로 유일한 식별자가 될 수 있음)
+  - **변경 빈도**: 낮음 (두 값 모두 생성 후 변경되지 않음)
+
+#### 종합 결론
+
+
+1. **단일 인덱스**
+  - `concertDate`
+  - `concertOptionId`
+
+2. **복합 인덱스**
+  - `concertId, concertDate`
+
+
+<details>
+<summary>JPA 엔티티 인덱스 설정 코드</summary>
+
+```java
+@Table(
+    indexes = {
+        @Index(name = "idx_concert_date", columnList = "concertDate"),
+        @Index(name = "idx_concert_option_id", columnList = "concertOptionId"),
+        @Index(name = "idx_concert_id_date", columnList = "concert_id, concertDate"),
+    }
+)
+public class ConcertOption implements EntityRecordable {
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY) private Long concertOptionId;
+    @ManyToOne @JoinColumn(name = "concert_id") private Concert concert;
+    private LocalDateTime concertDate;
+    private Duration concertDuration;
+    private String title;
+    private String description;
+    private BigDecimal price;
+    private LocalDateTime createdAt;
+    private LocalDateTime requestAt;
+}
+```
+
+
+</details>
+
+
+
+
+### Seat
+
+#### 단일 인덱스 검토
+
+1. **concertOptionId**
+  - **필요성**: 대부분의 쿼리에서 `concertOptionId`를 사용하여 `Seat` 테이블을 조회한다. 특히, 예약 가능 좌석 조회와 관련된 쿼리에서 자주 사용된다.
+  - **카디널리티**: 중간 (여러 좌석이 동일한 `concertOptionId`를 가질 수 있음)
+  - **변경 빈도**: 낮음 (좌석이 속한 콘서트 옵션은 자주 변경되지 않음)
+
+2. **seatNumber**
+  - **필요성**: 좌석 번호를 기준으로 조회할 때 사용된다. 특정 콘서트 옵션 내에서 좌석을 식별하는 데 필요하다.
+  - **카디널리티**: 중간 (각 콘서트 옵션 내에서 유일함)
+  - **변경 빈도**: 낮음 (좌석 번호는 생성 후 변경되지 않음)
+
+#### 복합 인덱스 검토
+
+1. **concertOptionId, seatNumber**
+  - **필요성**: 예약 가능 좌석 조회와 관련된 쿼리에서 `concertOptionId`와 `seatNumber`를 함께 사용하여 특정 콘서트 옵션 내의 좌석을 조회하는 데 최적화된다.
+  - **카디널리티**: 중간 (두 컬럼의 조합으로 유일한 식별자가 됨)
+  - **변경 빈도**: 낮음 (좌석 번호와 콘서트 옵션은 변경되지 않음)
+
+2. **concertOptionId, occupied**
+  - **필요성**: 좌석 예약 여부를 확인할 때 자주 사용된다. 특히, 특정 콘서트 옵션 내에서 예약 가능한 좌석을 조회하는 쿼리에 유용하다.
+  - **카디널리티**: 중간 (여러 좌석이 동일한 `concertOptionId`와 `occupied` 값을 가질 수 있음)
+  - **변경 빈도**: 중간 (좌석의 예약 상태는 자주 변경될 수 있음)
+
+#### 종합 결론
+
+
+1. **단일 인덱스**
+  - `concertOptionId`
+  - `seatNumber`
+
+2. **복합 인덱스**
+  - `concertOptionId, seatNumber`
+  - `concertOptionId, occupied`
+
+- **예약 가능 좌석 조회** 쿼리는 `concertOptionId`와 `seatNumber`를 조건으로 사용하여 특정 콘서트 옵션 내의 좌석을 조회하기 때문에 이 두 컬럼에 대한 복합 인덱스가 필요하다.
+- **좌석 예약 여부 확인** 쿼리는 `concertOptionId`와 `occupied` 컬럼을 자주 사용하므로 이들에 대한 복합 인덱스가 유용하다.
+- 단일 인덱스는 `concertOptionId`와 `seatNumber`에 설정하여 기본적인 조회 성능을 향상시킬 수 있다. 다만, `concertOption`에 대한 복합 인덱스가 이미 존재하므로 `concertOption`에 대한 단일 인덱스는 불필요하다.
+
+
+
+<details>
+<summary>JPA 엔티티 인덱스 설정 코드</summary>
+
+```java
+@Table(
+    indexes = {
+        @Index(name = "idx_seat_number", columnList = "seatNumber"),
+        @Index(name = "idx_concert_option_seat_number", columnList = "concertOptionId, seatNumber"),
+        @Index(name = "idx_concert_option_occupied", columnList = "concertOptionId, occupied"),
+    }
+)
+public class Seat extends AbstractAggregateRoot<Seat> {
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY) private Long seatId;
+    @ManyToOne @JoinColumn(name = "concert_option_id") private ConcertOption concertOption;
+    private Long seatNumber;
+    private Boolean occupied;
+    private LocalDateTime createdAt;
+}
+```
+
+</details>
+
+
+
+
+### TemporalReservation
+#### 단일 인덱스 검토
+
+1. **userId**
+  - **필요성**: 사용자와 관련된 예약을 조회할 때 자주 사용된다. 예를 들어, 사용자의 예약 현황을 확인하는 쿼리에서 많이 사용된다.
+  - **카디널리티**: 높음 (사용자 ID는 유니크함)
+  - **변경 빈도**: 낮음 (예약 생성 시 설정되며, 이후 거의 변경되지 않음)
+
+2. **concertOptionId**
+  - **필요성**: 특정 콘서트 옵션에 대한 예약을 조회할 때 자주 사용된다. 콘서트 옵션에 대한 예약 내역을 확인하는 데 중요한 컬럼이다.
+  - **카디널리티**: 중간 (여러 예약에서 중복될 수 있음)
+  - **변경 빈도**: 낮음 (예약 생성 시 설정되며, 이후 잘 변경되지 않음)
+
+3. **reserveAt**
+  - **필요성**: 예약 시간을 기준으로 정렬하거나 조회할 때 사용된다. 특히, 특정 시간대의 예약 내역을 확인하는 데 유용하다.
+  - **카디널리티**: 중간에서 높음 (시간 단위에 따라 다르지만, 일반적으로 많은 고유 값을 가짐)
+  - **변경 빈도**: 낮음 (예약 생성 시 설정되며, 이후 변경되지 않음)
+
+4. **isConfirmed**
+  - **필요성**: 예약 확정 여부를 조회할 때 사용된다. 예약 확정 상태를 필터링하는 데 자주 사용된다.
+  - **카디널리티**: 낮음 (이진 값)
+  - **변경 빈도**: 낮음 (예약 상태가 변경될 때만 업데이트됨)
+
+5. **isCanceled**
+  - **필요성**: 예약 취소 여부를 조회할 때 사용된다. 취소된 예약을 필터링하거나 확인하는 데 사용된다.
+  - **카디널리티**: 낮음 (이진 값)
+  - **변경 빈도**: 낮음 (예약 상태가 변경될 때만 업데이트됨)
+
+#### 복합 인덱스 검토
+
+1. **userId, concertOptionId**
+  - **필요성**: 사용자의 특정 콘서트 옵션에 대한 예약을 조회할 때 최적화된다. 사용자가 특정 콘서트에 대해 예약한 내역을 빠르게 찾을 수 있다.
+  - **카디널리티**: 높음 (두 컬럼의 조합으로 유니크한 식별자 가능)
+  - **변경 빈도**: 낮음 (예약 생성 시 설정되며, 이후 거의 변경되지 않음)
+
+2. **concertOptionId, reserveAt**
+  - **필요성**: 특정 콘서트 옵션의 예약 내역을 시간 순으로 정렬하여 조회할 때 유용하다. 예약 시각을 기준으로 예약 내역을 빠르게 찾을 수 있다.
+  - **카디널리티**: 중간 (시간의 정밀도에 따라 다름, range 검색 고려)
+  - **변경 빈도**: 낮음 (예약 생성 시 설정되며, 이후 잘 변경되지 않음)
+
+#### 종합 결론
+
+
+1. **단일 인덱스**
+  - `userId`
+  - `concertOptionId`
+
+2. **복합 인덱스**
+  - `userId, concertOptionId`
+  - `concertOptionId, reserveAt`
+
+
+- **사용자 예약 현황 조회** 쿼리는 `userId`와 `concertOptionId`를 조건으로 사용하여 특정 사용자와 콘서트 옵션에 대한 예약 내역을 조회하기 때문에 이 두 컬럼에 대한 복합 인덱스가 필요하다.
+- **예약 내역 시간 순 조회** 쿼리는 `concertOptionId`와 `reserveAt`를 조건으로 사용하여 특정 콘서트 옵션의 예약 내역을 시간 순으로 조회하기 때문에 이 두 컬럼에 대한 복합 인덱스가 유용하다.
+- 단일 인덱스는 `userId`와 `concertOptionId`에 설정하여 기본적인 조회 성능을 향상시킬 수 있다. 다만, 두 필드 모두 복합 인덱스로 사용되고 있으므로, 단일 인덱스는 제외한다.
+
+
+<details>
+<summary>JPA 엔티티 인덱스 설정 코드</summary>
+
+```java
+@Table(
+    indexes = {
+        @Index(name = "idx_user_concert_option", columnList = "userId, concertOptionId"),
+        @Index(name = "idx_concert_option_reserve_at", columnList = "concertOptionId, reserveAt")
+    }
+)
+public class TemporalReservation extends AbstractAggregateRoot<TemporalReservation> {
+
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY) private Long temporalReservationId;
+    private Long userId;
+    private ConcertOption concertOption;
+    private Seat seat;
+    private Boolean isConfirmed;
+    private LocalDateTime reserveAt;
+    private LocalDateTime expireAt;
+    private LocalDateTime createdAt;
+    private LocalDateTime requestAt;
+    private Boolean isCanceled;
+}
+```
+
+</details>
+
+
+
+
+
+### Reservation
+
+
+##### 단일 인덱스 검토
+
+
+1. **userId**
+  - **필요성**: 사용자와 관련된 모든 예약을 조회하는 데 사용된다. 사용자의 예약 내역을 확인할 때 자주 사용된다.
+  - **카디널리티**: 높음 (각 사용자마다 고유 값)
+  - **변경 빈도**: 낮음 (예약 생성 시 설정되며 이후 거의 변경되지 않음)
+
+2. **concertOptionId**
+  - **필요성**: 특정 콘서트 옵션에 대한 모든 예약을 조회하는 데 사용된다. 예약 가능 좌석 조회, 예약 요청 처리 등에서 빈번히 사용된다.
+  - **카디널리티**: 중간 (여러 예약이 동일한 `concertOptionId`를 가질 수 있음)
+  - **변경 빈도**: 낮음 (예약 생성 시 설정되며 이후 거의 변경되지 않음)
+
+##### 복합 인덱스 검토
+
+1. **userId, concertOptionId**
+  - **필요성**: 특정 사용자가 특정 콘서트 옵션에 대해 예약한 내역을 조회할 때 유용하다. 예약 내역 조회, 예약 상태 확인에서 빈번히 사용된다.
+  - **카디널리티**: 중간 (두 컬럼의 조합으로 유일한 식별자가 될 가능성이 높음)
+  - **변경 빈도**: 낮음 (예약 생성 시 설정되며 이후 거의 변경되지 않음)
+
+2. **concertOptionId, seatId**
+  - **필요성**: 특정 콘서트 옵션 내에서 특정 좌석에 대한 예약 내역을 조회할 때 유용하다. 예약 가능 좌석 조회, 좌석 예약 여부 확인에 유용하다.
+  - **카디널리티**: 중간 (두 컬럼의 조합으로 유일한 식별자가 됨)
+  - **변경 빈도**: 낮음 (예약 생성 시 설정되며 이후 거의 변경되지 않음)
+
+
+#### 종합 결론
+
+
+
+<details>
+<summary>JPA 엔티티 인덱스 설정 코드</summary>
+
+```java
+@Table(
+    indexes = {
+        @Index(name = "idx_user_concert_option", columnList = "userId, concertOptionId"),
+        @Index(name = "idx_concert_option_seat", columnList = "concertOptionId, seatId"),
+    }
+)
+public class Reservation extends AbstractAggregateRoot<Reservation> {
+
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY) private Long reservationId;
+    private Long userId;
+	@ManyToOne @JoinColumn(name = "concert_option_id") private ConcertOption concertOption;
+    @ManyToOne @JoinColumn(name = "seat_id") private Seat seat;
+    private Boolean isCanceled;
+    private LocalDateTime temporalReservationReserveAt;
+    private LocalDateTime reserveAt;
+    private LocalDateTime createdAt;
+    private LocalDateTime requestAt;
+}
+```
+
+</details>
+
+
+
+
+
+
+## BEFORE & AFTER
+
+인덱스 적용 전과 후를 비교한다.
+
+
+### 예약 가능 날짜 조회 API
+
+<details>
+<summary>EXPLAIN & EXPLAIN ANALYZE</summary>
+
+ConcertOption 테이블에서 concertId와 date로 조회하는 쿼리
+
+```sql
+EXPLAIN ANALYZE
+SELECT
+    co1_0.concert_option_id,
+    co1_0.concert_id,
+    co1_0.concert_date,
+    co1_0.concert_duration,
+    co1_0.created_at,
+    co1_0.description,
+    co1_0.price,
+    co1_0.request_at,
+    co1_0.title
+FROM
+    concert_option co1_0
+WHERE
+    co1_0.concert_option_id IS NOT NULL
+  AND co1_0.concert_id = 123
+  AND co1_0.concert_date > '2024-01-01'
+```
+</details>
+
+
+
+<details>
+<summary>Before</summary>
+
+
+```sql
+1,SIMPLE,co1_0,,ALL,,,,,992058,3.33,Using where
+```
+
+```sql
+-> Filter: ((co1_0.concert_id = 123) and (co1_0.concert_date > TIMESTAMP'2024-01-01 00:00:00'))  (cost=107117 rows=33065) (actual time=1.52..2063 rows=100 loops=1)
+    -> Table scan on co1_0  (cost=107117 rows=992058) (actual time=1.43..1998 rows=1e+6 loops=1)
+```
+
+</details>
+
+
+<details>
+<summary>After</summary>
+
+```sql
+1,SIMPLE,co1_0,,range,"idx_concert_date,idx_concert_id_date",idx_concert_id_date,18,,100,100,Using index condition
+```
+
+
+```sql
+-> Index range scan on co1_0 using idx_concert_id_date over (concert_id = 123 AND '2024-01-01 00:00:00.000000' < concert_date), with index condition: ((co1_0.concert_id = 123) and (co1_0.concert_date > TIMESTAMP'2024-01-01 00:00:00'))  (cost=119 rows=100) (actual time=0.916..28.9 rows=100 loops=1)
+```
+
+</details>
+
+
+
+#### 결과 분석
+
+| 항목              | Before                                                                                                      | After                                                                                                            |
+|-------------------|-------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------|
+| **인덱스 사용**   | 없음 (`FULL` 스캔)                                                                                         | `idx_concert_id_date` 인덱스를 사용하여 `concert_id`와 `concert_date`로 인덱스 룩업 수행                          |
+| **필터링 단계**   | 테이블 스캔 후 `concert_id`와 `concert_date`에 대한 필터링 수행                                              | 인덱스 룩업 단계에서 `concert_id`와 `concert_date` 조건을 만족하는 레코드를 효율적으로 검색                       |
+| **비용**          | 107117                                                                                                      | 119                                                                                                              |
+| **예상 행 수**    | 992058                                                                                                      | 100                                                                                                              |
+| **실제 실행 시간**| 1.52..2063 ms                                                                                               | 0.916..28.9 ms                                                                                                   |
+| **실제 처리된 행 수**| 1e+6                                                                                                       | 100                                                                                                              |
+
+Before의 쿼리는 인덱스를 사용하지 않고 전체 테이블을 스캔하여 데이터를 필터링하기 때문에 실행 시간이 길고 비용이 높다. After의 쿼리는 적절한 인덱스를 사용하여 `concert_id`와 `concert_date`에 대한 조건을 만족하는 데이터를 효율적으로 검색하여 실행 시간을 대폭 단축시킨다.
+
+
+
+
+
+<details>
+<summary>EXPLAIN & EXPLAIN ANALYZE</summary>
+
+`ConcertOption` 테이블에서 `concertOptionId`로 특정 콘서트 옵션과 관련된 콘서트 정보를 조회하는 쿼리
+
+
+```sql
+EXPLAIN ANALYZE
+SELECT
+    c1_0.concert_id,
+    c1_0.created_at,
+    c1_0.request_at,
+    c1_0.title 
+FROM
+    concert c1_0 
+WHERE
+    c1_0.concert_id = 123
+```
+
+</details>
+
+
+
+<details>
+<summary>Before</summary>
+
+```sql
+1,SIMPLE,c1_0,,const,PRIMARY,PRIMARY,8,const,1,100,
+```
+
+```sql
+-> Rows fetched before execution  (cost=0..0 rows=1) (actual time=250e-6..333e-6 rows=1 loops=1)
+```
+
+</details>
+
+
+<details>
+<summary>After</summary>
+
+```sql
+1,SIMPLE,c1_0,,const,PRIMARY,PRIMARY,8,const,1,100,
+```
+
+```sql
+-> Rows fetched before execution  (cost=0..0 rows=1) (actual time=167e-6..250e-6 rows=1 loops=1)
+```
+
+</details>
+
+
+#### 결과 분석
+
+큰 변화 없음
+
+
+### 예약 가능 좌석 조회
+
+
+<details>
+<summary>EXPLAIN & EXPLAIN ANALYZE</summary>
+
+Seat 테이블에서 concert_option_id로 특정 콘서트 옵션에 해당하는 좌석을 조회하는 쿼리
+
+
+```sql
+EXPLAIN ANALYZE
+SELECT
+   s.seat_id,
+   s.concert_option_id,
+   s.created_at,
+   s.occupied,
+   s.seat_number
+FROM
+   seat s
+WHERE
+   s.concert_option_id = 123;
+```
+
+</details>
+
+
+<details>
+<summary>Before</summary>
+
+```sql
+1,SIMPLE,s,,ALL,,,,,996761,10,Using where
+```
+
+
+```sql
+-> Filter: (s.concert_option_id = 123)  (cost=103169 rows=99676) (actual time=28.2..1983 rows=1 loops=1)
+    -> Table scan on s  (cost=103169 rows=996761) (actual time=4.96..1896 rows=1.01e+6 loops=1)
+```
+
+</details>
+
+
+<details>
+<summary>After</summary>
+
+
+```sql
+1,SIMPLE,s,,ref,"idx_concert_option_seat_number,idx_concert_option_occupied",idx_concert_option_seat_number,9,const,1,100,
+```
+
+```sql
+-> Index lookup on s using idx_concert_option_seat_number (concert_option_id=123)  (cost=1.1 rows=1) (actual time=0.534..0.539 rows=1 loops=1)
+```
+
+
+</details>
+
+
+
+#### 결과 분석
+
+| 항목              | Before                                                                                                 | After                                                                                                     |
+|-------------------|--------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------|
+| **인덱스 사용**   | 없음 (`FULL` 스캔)                                                                                     | `idx_concert_option_seat_number` 인덱스를 사용하여 `concert_option_id`로 인덱스 룩업 수행                  |
+| **필터링 단계**   | 테이블 스캔 후 `concert_option_id`에 대한 필터링 수행                                                  | 인덱스 룩업 단계에서 `concert_option_id` 조건을 만족하는 레코드를 효율적으로 검색                          |
+| **비용**          | 103169                                                                                                 | 1.1                                                                                                       |
+| **예상 행 수**    | 996761                                                                                                 | 1                                                                                                         |
+| **실제 실행 시간**| 4.96..1896 ms                                                                                          | 0.534..0.539 ms                                                                                           |
+| **실제 처리된 행 수**| 1.01e+6                                                                                                 | 1                                                                                                         |
+
+Before의 쿼리는 인덱스를 사용하지 않고 전체 테이블을 스캔하여 데이터를 필터링하기 때문에 실행 시간이 길고 비용이 높다.
+After의 쿼리는 적절한 인덱스를 사용하여 `concert_option_id`에 대한 조건을 만족하는 데이터를 효율적으로 검색하여 실행 시간을 대폭 단축시킨다.
+
+
+
+
+<details>
+<summary>EXPLAIN & EXPLAIN ANALYZE</summary>
+
+ConcertOption 테이블과 Concert 테이블을 조인하여 concert_option_id로 특정 콘서트 옵션과 관련된 콘서트 정보를 조회하는 쿼리
+
+```sql
+EXPLAIN ANALYZE
+select
+    co1_0.concert_option_id,
+    c1_0.concert_id,
+    c1_0.created_at,
+    c1_0.request_at,
+    c1_0.title,
+    co1_0.concert_date,
+    co1_0.concert_duration,
+    co1_0.created_at,
+    co1_0.description,
+    co1_0.price,
+    co1_0.request_at,
+    co1_0.title 
+from
+    concert_option co1_0 
+left join
+    concert c1_0 
+        on c1_0.concert_id=co1_0.concert_id 
+where
+    co1_0.concert_option_id= 123
+```
+
+
+</details>
+
+
+
+<details>
+<summary>Before</summary>
+
+
+```sql
+1,SIMPLE,co1_0,,const,PRIMARY,PRIMARY,8,const,1,100,
+1,SIMPLE,c1_0,,const,PRIMARY,PRIMARY,8,const,1,100,
+```
+
+
+```sql
+-> Rows fetched before execution  (cost=0..0 rows=1) (actual time=83e-6..125e-6 rows=1 loops=1)
+```
+</details>
+
+
+
+<details>
+<summary>After</summary>
+
+```sql
+1,SIMPLE,co1_0,,const,"PRIMARY,idx_concert_option_id",PRIMARY,8,const,1,100,
+1,SIMPLE,c1_0,,const,PRIMARY,PRIMARY,8,const,1,100,
+```
+
+
+```sql
+-> Rows fetched before execution  (cost=0..0 rows=1) (actual time=42e-6..125e-6 rows=1 loops=1)
+```
+
+</details>
+
+
+
+#### 결과 분석
+
+| 항목              | Before                                                                                                  | After                                                                                                   |
+|-------------------|---------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------|
+| **인덱스 사용**   | `PRIMARY` 인덱스를 사용하여 `concert_option_id`와 `concert_id`로 인덱스 룩업 수행                          | `PRIMARY`와 `idx_concert_option_id` 인덱스를 사용하여 `concert_option_id`로 인덱스 룩업 수행             |
+| **필터링 단계**   | 인덱스 룩업 후 `concert_option_id`에 대한 필터링을 수행                                                   | `idx_concert_option_id` 인덱스를 사용하여 `concert_option_id`에 대한 필터링을 수행                       |
+| **비용**          | 0.0                                                                                                     | 0.0                                                                                                    |
+| **예상 행 수**    | 1                                                                                                       | 1                                                                                                      |
+| **실제 실행 시간**| 83e-6..125e-6 sec                                                                                       | 42e-6..125e-6 sec                                                                                      |
+| **실제 처리된 행 수**| 1                                                                                                       | 1                                                                                                      |
+
+인덱스 `idx_concert_option_id`를 사용하여, 필터링 단계에서 효율적으로 `concert_option_id`에 대한 조건을 만족하는 레코드를 검색하였고, 이에 따라 쿼리 실행 시간이 감소하였다.
+
+
+
+### 예약 요청
+
+
+
+<details>
+<summary>EXPLAIN & EXPLAIN ANALYZE</summary>
+
+`ConcertOption` 테이블에서 `concertOptionId`로 조회하는 쿼리
+
+```sql
+EXPLAIN ANALYZE
+SELECT *
+FROM concert_option concert_option
+WHERE concert_option.concert_option_id = 123
+    FOR SHARE;
+```
+
+</details>
+
+
+
+
+<details>
+<summary>Before</summary>
+
+```sql
+1,SIMPLE,concert_option,,const,PRIMARY,PRIMARY,8,const,1,100,
+```
+
+```sql
+-> Rows fetched before execution  (cost=0..0 rows=1) (actual time=84e-6..125e-6 rows=1 loops=1)
+```
+
+</details>
+
+
+<details>
+<summary>After</summary>
+
+```sql
+1,SIMPLE,concert_option,,const,"PRIMARY,idx_concert_option_id",PRIMARY,8,const,1,100,
+```
+
+```sql
+-> Rows fetched before execution  (cost=0..0 rows=1) (actual time=83e-6..124e-6 rows=1 loops=1)
+```
+
+</details>
+
+
+
+#### 결과 분석
+
+큰 차이 없음
+
+
+
+<details>
+<summary>EXPLAIN & EXPLAIN ANALYZE</summary>
+
+`Seat` 테이블에서 특정 조건을 만족하는 좌석 데이터를 조회하는 쿼리
+
+```sql
+EXPLAIN ANALYZE
+SELECT
+   s.seat_id,
+   s.concert_option_id,
+   s.created_at,
+   s.occupied,
+   s.seat_number
+FROM
+   seat s
+WHERE
+   s.concert_option_id = 123 AND s.seat_number = 1 FOR UPDATE
+```
+
+</details>
+
+
+
+<details>
+<summary>Before</summary>
+
+```sql
+1,SIMPLE,s,,ALL,,,,,996761,1,Using where
+```
+
+```sql
+-> Filter: ((s.seat_number = 1) and (s.concert_option_id = 123))  (cost=101189 rows=9968) (actual time=3932..3932 rows=0 loops=1)
+    -> Table scan on s  (cost=101189 rows=996761) (actual time=14.6..3810 rows=1.01e+6 loops=1)
+```
+
+</details>
+
+
+<details>
+<summary>After</summary>
+
+```sql
+1,SIMPLE,s,,ref,"idx_seat_number,idx_concert_option_seat_number,idx_concert_option_occupied",idx_concert_option_seat_number,18,"const,const",1,100,
+```
+
+
+```sql
+-> Index lookup on s using idx_concert_option_seat_number (concert_option_id=123, seat_number=1)  (cost=1.1 rows=1) (actual time=0.0417..0.0417 rows=0 loops=1)
+```
+
+</details>
+
+
+
+#### 결과 분석
+
+| 항목              | Before                                                                                                  | After                                                                                                   |
+|-------------------|---------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------|
+| **인덱스 사용**   | 없음 (`FULL` 스캔)                                                                                     | `idx_concert_option_seat_number` 인덱스를 사용하여 `concert_option_id`와 `seat_number`로 인덱스 룩업 수행  |
+| **필터링 단계**   | 테이블 스캔 후 `concert_option_id`와 `seat_number`에 대한 필터링 수행                                    | 인덱스 룩업 단계에서 `concert_option_id`와 `seat_number` 조건을 만족하는 레코드를 효율적으로 검색          |
+| **비용**          | 101189                                                                                                  | 1.1                                                                                                      |
+| **예상 행 수**    | 996761                                                                                                  | 1                                                                                                        |
+| **실제 실행 시간**| 14.6..3810 ms                                                                                           | 0.0417..0.0417 ms                                                                                        |
+| **실제 처리된 행 수**| 1.01e+6                                                                                                | 0                                                                                                        |
+
+Before의 쿼리는 인덱스를 사용하지 않고 전체 테이블을 스캔하여 데이터를 필터링하기 때문에 실행 시간이 길고 비용이 높다.
+After의 쿼리는 적절한 인덱스를 사용하여 `concert_option_id`와 `seat_number`에 대한 조건을 만족하는 데이터를 효율적으로 검색하여 실행 시간을 대폭 단축시킨다.
+
+
+
+
+
+<details>
+<summary>EXPLAIN & EXPLAIN ANALYZE</summary>
+
+
+`Seat` 테이블에서 특정 좌석의 상태를 업데이트하는 쿼리
+```sql
+EXPLAIN 
+update seat
+set concert_option_id=123,
+  occupied=1,
+  seat_number=1
+where seat_id=123
+```
+
+
+</details>
+
+
+
+
+<details>
+<summary>Before</summary>
+
+```sql
+1,UPDATE,seat,,range,PRIMARY,PRIMARY,8,const,1,100,Using where
+```
+
+</details>
+
+
+
+<details>
+<summary>After</summary>
+
+```sql
+1,UPDATE,seat,,range,PRIMARY,PRIMARY,8,const,1,100,Using where
+```
+
+</details>
+
+
+
+#### 결과 분석
+
+큰 차이 없음
+
+
+
+
+### 임시 예약 확정
+
+
+<details>
+<summary>EXPLAIN & EXPLAIN ANALYZE</summary>
+
+임시 예약 ID와 연결된 콘서트 옵션, 콘서트, 좌석의 상세 정보를 가져오는 쿼리
+
+```sql
+EXPLAIN ANALYZE
+select
+  tr1_0.temporal_reservation_id,
+  co1_0.concert_option_id,
+  c1_0.concert_id,
+  c1_0.created_at,
+  c1_0.request_at,
+  c1_0.title,
+  co1_0.concert_date,
+  co1_0.concert_duration,
+  co1_0.created_at,
+  co1_0.description,
+  co1_0.price,
+  co1_0.request_at,
+  co1_0.title,
+  tr1_0.created_at,
+  tr1_0.expire_at,
+  tr1_0.is_canceled,
+  tr1_0.is_confirmed,
+  tr1_0.request_at,
+  tr1_0.reserve_at,
+  s1_0.seat_id,
+  co2_0.concert_option_id,
+  co2_0.concert_id,
+  co2_0.concert_date,
+  co2_0.concert_duration,
+  co2_0.created_at,
+  co2_0.description,
+  co2_0.price,
+  co2_0.request_at,
+  co2_0.title,
+  s1_0.created_at,
+  s1_0.occupied,
+  s1_0.seat_number,
+  tr1_0.user_id 
+from
+  temporal_reservation tr1_0 
+left join
+  concert_option co1_0 
+      on co1_0.concert_option_id=tr1_0.concert_option_id 
+left join
+  concert c1_0 
+      on c1_0.concert_id=co1_0.concert_id 
+left join
+  seat s1_0 
+      on s1_0.seat_id=tr1_0.seat_id 
+left join
+  concert_option co2_0 
+      on co2_0.concert_option_id=s1_0.concert_option_id 
+where
+  tr1_0.temporal_reservation_id=123
+```
+
+
+</details>
+
+
+
+<details>
+<summary>Before</summary>
+
+
+```sql
+1,SIMPLE,tr1_0,,const,PRIMARY,PRIMARY,8,const,1,100,
+1,SIMPLE,co1_0,,const,PRIMARY,PRIMARY,8,const,1,100,
+1,SIMPLE,c1_0,,const,PRIMARY,PRIMARY,8,const,1,100,
+1,SIMPLE,s1_0,,const,PRIMARY,PRIMARY,8,const,1,100,
+1,SIMPLE,co2_0,,const,PRIMARY,PRIMARY,8,const,1,100,
+```
+
+
+
+
+```sql
+-> Rows fetched before execution  (cost=0..0 rows=1) (actual time=125e-6..167e-6 rows=1 loops=1)
+```
+
+
+</details>
+
+
+
+<details>
+<summary>After</summary>
+
+
+```sql
+1,SIMPLE,tr1_0,,const,PRIMARY,PRIMARY,8,const,1,100,
+1,SIMPLE,co1_0,,const,"PRIMARY,idx_concert_option_id",PRIMARY,8,const,1,100,
+1,SIMPLE,c1_0,,const,PRIMARY,PRIMARY,8,const,1,100,
+1,SIMPLE,s1_0,,const,PRIMARY,PRIMARY,8,const,1,100,
+1,SIMPLE,co2_0,,const,"PRIMARY,idx_concert_option_id",PRIMARY,8,const,1,100,
+```
+
+```sql
+-> Rows fetched before execution  (cost=0..0 rows=1) (actual time=41e-6..82e-6 rows=1 loops=1)
+```
+
+</details>
+
+
+
+#### 결과 분석
+
+
+| 항목              | Before                                                                                                  | After                                                                                                   |
+|-------------------|--------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------|
+| **인덱스 사용**   | 모든 조인 테이블에서 기본 키 인덱스(`PRIMARY`) 사용                                   | `concert_option` 테이블에서 추가 인덱스(`PRIMARY, idx_concert_option_id`) 사용            |
+| **필터링 단계**   | 인덱스 룩업 후 필터링 추가로 수행                                                     | 복합 인덱스 사용으로 필터링 단계에서 조건을 모두 만족하는 레코드를 효율적으로 검색                |
+| **비용**          | 0..0                                                                                                         | 0..0                                                                                                           |
+| **예상 행 수**    | 1                                                                                                         | 1                                                                                                           |
+| **실제 실행 시간**| 125e-6..167e-6 ms                                                                                                | 41e-6..82e-6 ms                                                                                                |
+| **실제 처리된 행 수**| 1                                                                                                         | 1                                                                                                           |
+
+**분석 요약**
+- **인덱스 사용**: Before에서는 모든 조인 테이블에서 기본 키 인덱스(`PRIMARY`)만 사용되었지만, After에서는 `concert_option` 테이블에서 추가 인덱스(`PRIMARY, idx_concert_option_id`)가 사용되었다. 이는 특정 조건에 대해 더 효율적인 검색이 가능하게 한다.
+- **예상 행 수 및 실제 실행 시간**: 예상 행 수는 동일하게 1이었으나, 실제 실행 시간은 After에서 더 짧아졌다.
+
+
+
+
+<details>
+<summary>EXPLAIN & EXPLAIN ANALYZE</summary>
+
+임시 예약의 상태를 확정된 상태로 변경하는 쿼리
+
+```sql
+EXPLAIN
+UPDATE temporal_reservation
+SET
+   concert_option_id = 456,
+   expire_at = '2024-08-06 12:00:00',
+   is_canceled = false,
+   is_confirmed = true,
+   request_at = '2024-08-06 10:00:00',
+   reserve_at = '2024-08-06 11:00:00',
+   seat_id = 789,
+   user_id = 123
+WHERE
+   temporal_reservation_id = 123
+```
+
+</details>
+
+
+<details>
+<summary>Before</summary>
+
+
+```sql
+1,UPDATE,temporal_reservation,,range,PRIMARY,PRIMARY,8,const,1,100,Using where
+```
+
+</details>
+
+
+
+<details>
+<summary>After</summary>
+
+
+```sql
+1,UPDATE,temporal_reservation,,range,PRIMARY,PRIMARY,8,const,1,100,Using where
+```
+
+</details>
+
+
+
+
+#### 결과 분석
+
+큰 차이 없음
+
+
+
+### 예약 상태 조회
+
+
+
+
+<details>
+<summary>EXPLAIN & EXPLAIN ANALYZE</summary>
+
+`Reservation` 테이블에서 특정 사용자와 콘서트 옵션에 대한 예약 데이터를 조회하는 쿼리
+
+```sql
+EXPLAIN
+SELECT
+   *
+FROM
+   reservation r
+WHERE r.user_id = 123
+  AND r.concert_option_id = 123
+```
+
+</details>
+
+
+
+<details>
+<summary>Before</summary>
+
+
+```sql
+1,SIMPLE,r,,ALL,,,,,994703,1,Using where
+```
+
+
+```sql
+-> Filter: ((r.concert_option_id = 123) and (r.user_id = 123))  (cost=105075 rows=9947) (actual time=1.62..2717 rows=1 loops=1)
+    -> Table scan on r  (cost=105075 rows=994703) (actual time=1.49..2615 rows=1e+6 loops=1)
+```
+
+
+</details>
+
+
+
+<details>
+<summary>After</summary>
+
+
+```sql
+1,SIMPLE,r,,ref,"idx_user_concert_option,idx_concert_option_seat",idx_user_concert_option,18,"const,const",1,100,
+```
+
+```sql
+-> Index lookup on r using idx_user_concert_option (user_id=123, concert_option_id=123)  (cost=1.1 rows=1) (actual time=6.85..6.85 rows=1 loops=1)
+```
+
+</details>
+
+
+
+
+#### 결과 분석
+
+| 항목                 | Before                                                                                             | After                                                                                              |
+|----------------------|----------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------|
+| **인덱스 사용**      | 없음 (`FULL` 스캔)                                                                                | `idx_user_concert_option` 인덱스를 사용하여 `user_id`와 `concert_option_id`로 인덱스 룩업 수행    |
+| **필터링 단계**      | 테이블 스캔 후 `user_id`와 `concert_option_id`에 대한 필터링 수행                                 | 인덱스 룩업 단계에서 `user_id`와 `concert_option_id` 조건을 만족하는 레코드를 효율적으로 검색      |
+| **비용**             | 105075                                                                                            | 1.1                                                                                                |
+| **예상 행 수**       | 9947                                                                                              | 1                                                                                                  |
+| **실제 실행 시간**   | 1.62..2717 ms                                                                                     | 6.85..6.85 ms                                                                                      |
+| **실제 처리된 행 수**| 1e+6                                                                                              | 1                                                                                                  |
+
+Before의 쿼리는 인덱스를 사용하지 않고 전체 테이블을 스캔하여 데이터를 필터링하기 때문에 실행 시간이 길고 비용이 높다.
+After의 쿼리는 적절한 인덱스를 사용하여 `user_id`와 `concert_option_id`에 대한 조건을 만족하는 데이터를 효율적으로 검색하여 실행 시간을 대폭 단축시킨다.
+
+
+<details>
+<summary>EXPLAIN & EXPLAIN ANALYZE</summary>
+
+
+`ConcertOption` 테이블에서 특정 콘서트 옵션에 대한 세부 정보를 조회하는 쿼리
+
+```sql
+EXPLAIN ANALYZE
+select
+  co1_0.concert_option_id,
+  c1_0.concert_id,
+  c1_0.created_at,
+  c1_0.request_at,
+  c1_0.title,
+  co1_0.concert_date,
+  co1_0.concert_duration,
+  co1_0.created_at,
+  co1_0.description,
+  co1_0.price,
+  co1_0.request_at,
+  co1_0.title 
+from
+  concert_option co1_0 
+left join
+  concert c1_0 
+      on c1_0.concert_id=co1_0.concert_id 
+where
+  co1_0.concert_option_id= 123
+```
+
+
+
+</details>
+
+
+
+<details>
+<summary>Before</summary>
+
+```sql
+1,SIMPLE,co1_0,,const,PRIMARY,PRIMARY,8,const,1,100,
+1,SIMPLE,c1_0,,const,PRIMARY,PRIMARY,8,const,1,100,
+```
+
+```sql
+-> Rows fetched before execution  (cost=0..0 rows=1) (actual time=84e-6..126e-6 rows=1 loops=1)
+```
+
+</details>
+
+
+
+<details>
+<summary>After</summary>
+
+
+```sql
+1,SIMPLE,co1_0,,const,"PRIMARY,idx_concert_option_id",PRIMARY,8,const,1,100,
+1,SIMPLE,c1_0,,const,PRIMARY,PRIMARY,8,const,1,100,
+```
+
+```sql
+-> Rows fetched before execution  (cost=0..0 rows=1) (actual time=125e-6..167e-6 rows=1 loops=1)
+```
+
+</details>
+
+
+
+#### 결과 분석
+
+
+| 항목                | Before                                                                                     | After                                                                                      |
+|---------------------|--------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------|
+| **인덱스 사용**     | `PRIMARY` 인덱스만 사용하여 `concert_option_id`로 인덱스 룩업 수행                         | `PRIMARY` 및 `idx_concert_option_id` 인덱스를 사용하여 `concert_option_id`로 인덱스 룩업 수행 |
+| **필터링 단계**     | 인덱스 룩업 후 추가적인 필터링 없음                                                        | 인덱스 룩업 후 추가적인 필터링 없음                                                        |
+| **비용**            | 0..0                                                                                       | 0..0                                                                                       |
+| **예상 행 수**      | 1                                                                                          | 1                                                                                          |
+| **실제 실행 시간**  | 84e-6..126e-6 ms                                                                           | 125e-6..167e-6 ms                                                                          |
+| **실제 처리된 행 수**| 1                                                                                          | 1                                                                                          |
+
+두 쿼리 모두 `concert_option_id`에 대해 `PRIMARY` 인덱스를 사용하여 효율적으로 레코드를 조회하고 있다.
+쿼리 실행 전 후의 인덱스 사용 방식은 동일하나, `after` 쿼리에서는 추가로 `idx_concert_option_id` 인덱스를 사용하였다.
+실제 실행 시간에 소폭의 차이가 발생했다.
+전체적으로 인덱스 사용과 필터링 단계에서 큰 변화가 없고, 비용 및 예상 행 수 또한 동일하다.
+
+
+
+<details>
+<summary>EXPLAIN & EXPLAIN ANALYZE</summary>
+
+`Seat` 테이블에서 특정 좌석에 대한 정보를 조회하는 쿼리
+
+```sql
+EXPLAIN ANALYZE
+select
+  s1_0.seat_id,
+  co1_0.concert_option_id,
+  c1_0.concert_id,
+  c1_0.created_at,
+  c1_0.request_at,
+  c1_0.title,
+  co1_0.concert_date,
+  co1_0.concert_duration,
+  co1_0.created_at,
+  co1_0.description,
+  co1_0.price,
+  co1_0.request_at,
+  co1_0.title,
+  s1_0.created_at,
+  s1_0.occupied,
+  s1_0.seat_number 
+from
+  seat s1_0 
+left join
+  concert_option co1_0 
+      on co1_0.concert_option_id=s1_0.concert_option_id 
+left join
+  concert c1_0 
+      on c1_0.concert_id=co1_0.concert_id 
+where
+  s1_0.seat_id=123
+```
+
+
+</details>
+
+
+
+<details>
+<summary>Before</summary>
+
+```sql
+1,SIMPLE,s1_0,,const,PRIMARY,PRIMARY,8,const,1,100,
+1,SIMPLE,co1_0,,const,PRIMARY,PRIMARY,8,const,1,100,
+1,SIMPLE,c1_0,,const,PRIMARY,PRIMARY,8,const,1,100,
+```
+
+```sql
+-> Rows fetched before execution  (cost=0..0 rows=1) (actual time=84e-6..126e-6 rows=1 loops=1)
+```
+
+</details>
+
+
+
+<details>
+<summary>After</summary>
+
+```sql
+1,SIMPLE,s1_0,,const,PRIMARY,PRIMARY,8,const,1,100,
+1,SIMPLE,co1_0,,const,"PRIMARY,idx_concert_option_id",PRIMARY,8,const,1,100,
+1,SIMPLE,c1_0,,const,PRIMARY,PRIMARY,8,const,1,100,
+```
+
+```sql
+-> Rows fetched before execution  (cost=0..0 rows=1) (actual time=42e-6..83e-6 rows=1 loops=1)
+```
+
+
+</details>
+
+
+#### 결과 분석
+
+
+| 항목              | Before                                                                                                  | After                                                                                                   |
+|-------------------|--------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------|
+| **인덱스 사용**   | `PRIMARY` 인덱스를 사용하여 `concert_option_id`와 `concert_id`로 인덱스 룩업 수행                                   | `PRIMARY` 및 `idx_concert_option_id` 복합 인덱스를 사용하여 `concert_option_id`와 `concert_id`에 대한 인덱스 범위 스캔 수행            |
+| **비용**          | 0..0                                                                                                         | 0..0                                                                                                           |
+| **예상 행 수**    | 1                                                                                                         | 1                                                                                                           |
+| **실제 실행 시간**| 84e-6..126e-6 초                                                                                                | 42e-6..83e-6 초                                                                                                |
+| **실제 처리된 행 수**| 1                                                                                                         | 1                                                                                                           |
+
+인덱스 사용 방식에 일부 변화가 있다. `Before`에서는 `concert_option_id`와 `concert_id`에 대해 단일 인덱스 `PRIMARY`를 사용하여 조회했고, `After`에서는 `concert_option_id`와 `concert_id`에 대해 복합 인덱스 `idx_concert_option_id`를 추가적으로 사용했다. 비용과 예상 행 수는 동일하게 유지되었으나, 실제 실행 시간은 소폭 감소했다.
+
+
+
+
+<details>
+<summary>EXPLAIN & EXPLAIN ANALYZE</summary>
+
+`TemporalReservation` 테이블에서 특정 사용자와 콘서트 옵션에 대한 임시 예약 데이터를 조회하는 쿼리
+
+```sql
+EXPLAIN
+select
+   *
+from
+   temporal_reservation t
+where t.user_id = 123
+  and t.concert_option_id = 123
+```
+
+
+</details>
+
+
+
+<details>
+<summary>Before</summary>
+
+
+
+```sql
+1,SIMPLE,t,,ALL,,,,,994525,1,Using where
+```
+
+
+```sql
+-> Filter: ((t.concert_option_id = 123) and (t.user_id = 123))  (cost=105186 rows=9945) (actual time=1.28..1616 rows=1 loops=1)
+    -> Table scan on t  (cost=105186 rows=994525) (actual time=1.19..1530 rows=1e+6 loops=1)
+```
+
+</details>
+
+
+
+<details>
+<summary>After</summary>
+
+
+```sql
+1,SIMPLE,t,,ref,"idx_user_concert_option,idx_concert_option_reserve_at",idx_user_concert_option,18,"const,const",1,100,
+```
+
+```sql
+-> Index lookup on t using idx_user_concert_option (user_id=123, concert_option_id=123)  (cost=1.1 rows=1) (actual time=0.337..0.345 rows=1 loops=1)
+```
+
+</details>
+
+
+
+
+#### 결과 분석
+
+
+| 항목              | Before                                                                                                  | After                                                                                                   |
+|-------------------|---------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------|
+| **인덱스 사용**   | 없음 (`FULL` 스캔)                                                                                     | `idx_user_concert_option` 인덱스를 사용하여 `user_id`와 `concert_option_id`로 인덱스 룩업 수행             |
+| **필터링 단계**   | 테이블 스캔 후 `user_id`와 `concert_option_id`에 대한 필터링 수행                                        | 인덱스 룩업 단계에서 `user_id`와 `concert_option_id` 조건을 만족하는 레코드를 효율적으로 검색                 |
+| **비용**          | 105186                                                                                                  | 1.1                                                                                                      |
+| **예상 행 수**    | 994525                                                                                                  | 1                                                                                                        |
+| **실제 실행 시간**| 1.28..1616 ms                                                                                           | 0.337..0.345 ms                                                                                          |
+| **실제 처리된 행 수**| 1e+6                                                                                                     | 1                                                                                                        |
+
+Before의 쿼리는 인덱스를 사용하지 않고 전체 테이블을 스캔하여 데이터를 필터링하기 때문에 실행 시간이 길고 비용이 높다.
+After의 쿼리는 적절한 인덱스를 사용하여 `user_id`와 `concert_option_id`에 대한 조건을 만족하는 데이터를 효율적으로 검색하여 실행 시간을 대폭 단축시킨다.
+
+
+
+
+# 잔액 및 결제 API
+
+1. 잔액 조회: `GET` - `/api/user-balance/{userId}`
+2. 잔액 충전/사용 내역 조회: `GET` - `/api/user-balance/histories/{userId}`
+3. 잔액 충전: `PUT` - `/api/user-balance/charge/{userId}`
+4. 잔액 사용: `PUT` - `/api/user-balance/use/{userId}`
+5. 결제 처리: `POST` - `/api/user-balance/payment`
+6. 결제 취소: `POST` - `/api/user-balance/payment/cancel/{transactionId}`
+7. 결제 내역 조회: `GET` - `/api/user-balance/payment/history/{userId}`
+
+
+
+
+
+
+## 사용되는 쿼리
+
+### 잔액 조회
+
+
+- **설명:** 잔액 조회는 특정 사용자의 현재 잔액 정보를 조회하는 쿼리이다. 이 쿼리는 `balance` 테이블에서 사용자의 잔액 관련 데이터를 가져온다. 사용자 ID를 조건으로 하여 해당 사용자의 잔액 정보를 반환한다. 반환되는 정보는 잔액 ID, 금액, 생성일자, 수정일자, 사용자 ID 등이다.
+
+- **빈도:** ★★★☆☆
+  - 잔액 조회는 사용자가 자신의 잔액을 확인할 때마다 발생하지만, 잔액 사용이나 충전과 같은 다른 주요 활동에 비해 상대적으로 빈도가 낮을 수 있다.
+
+- **복잡도:** ★☆☆☆☆
+  - 이 쿼리는 단일 테이블에서 데이터를 조회하며, 간단한 조건(`user_id`)만을 사용하기 때문에 복잡도가 낮다.
+
+
+
+
+<details>
+<summary><b>쿼리 1:</b> Balance 테이블에서 userId로 특정 사용자의 잔액 정보를 조회하는 쿼리</summary>
+
+
+```sql
+select
+    b1_0.balance_id,
+    b1_0.amount,
+    b1_0.created_at,
+    b1_0.updated_at,
+    b1_0.user_id 
+from
+    balance b1_0 
+where
+    b1_0.user_id=?
+```
+
+</details>
+
+
+
+### 잔액 충전/사용 내역 조회
+
+- **설명:** 특정 사용자의 잔액 충전 및 사용 내역을 조회하는 쿼리이다. 이 쿼리는 `balance_transaction` 테이블을 사용하여 사용자의 거래 ID, 금액, 생성 시간, 거래 사유, 거래 유형, 사용자 ID 및 버전 정보를 가져온다. 주로 사용자의 잔액 내역을 확인하거나 재무 분석에 사용된다.
+
+- **빈도:** ★★★☆☆
+  - 잔액 충전/사용 내역 조회는 사용자가 자신의 거래 내역을 확인하거나 관리자가 특정 사용자의 잔액 변동 상황을 파악할 때 주로 사용된다. 빈도는 상대적으로 평균적이며, 이벤트나 프로모션 기간 동안 증가할 수 있다.
+
+- **복잡도:** ★★☆☆☆
+  - 이 쿼리는 단일 테이블을 대상으로 하며, 사용자 ID에 기반한 단순한 조건을 사용한다. 조인이 없고 데이터 무결성을 유지하는 복잡한 로직이 포함되지 않아 비교적 단순하다.
+
+
+
+<details>
+<summary><b>쿼리 1:</b> BalanceTransaction 테이블에서 userId로 특정 사용자의 잔액 거래 내역을 조회하는 쿼리</summary>
+
+
+```sql
+select
+        bt1_0.transaction_id,
+        bt1_0.amount,
+        bt1_0.created_at,
+        bt1_0.transaction_reason,
+        bt1_0.transaction_type,
+        bt1_0.user_id,
+        bt1_0.version 
+    from
+        balance_transaction bt1_0 
+    where
+        bt1_0.user_id=?
+```
+
+</details>
+
+
+
+### 잔액 충전
+
+- **설명:** 이 섹션의 쿼리는 사용자의 잔액을 조회, 충전, 그리고 업데이트하는 데 사용된다. `Balance` 및 `BalanceTransaction` 테이블을 사용하여 사용자의 잔액 상태를 관리하며, 트랜잭션의 무결성을 유지하기 위해 동시성 제어를 포함한다. `select` 쿼리는 사용자의 잔액을 조회하고, `insert` 쿼리는 잔액 충전 트랜잭션을 기록하며, `update` 쿼리는 사용자의 잔액을 업데이트한다.
+
+- **빈도:** ★★★★☆
+  - 잔액 조회, 충전, 업데이트는 사용자 활동에 따라 빈번하게 발생한다. 특히 잔액 조회는 사용자가 자신의 잔액을 확인할 때 자주 발생하며, 충전과 업데이트는 결제나 서비스 이용 시 주로 사용된다.
+
+- **복잡도:** ★★★☆☆
+  - 쿼리들은 단일 테이블을 대상으로 하며, 비교적 단순한 조건을 사용하여 데이터를 조회, 삽입, 업데이트한다. 그러나 동시성 제어를 위한 `for update` 및 `optimistic locking`의 사용으로 인해 복잡도가 증가할 수 있다.
+
+
+
+<details>
+<summary><b>쿼리 1:</b> Balance 테이블에서 특정 사용자의 잔액을 조회하는 쿼리</summary>
+
+
+```sql
+select
+    balance 
+from
+    Balance balance 
+where
+    balance is not null 
+    and balance.userId = ?1
+
+select
+    b1_0.balance_id,
+    b1_0.amount,
+    b1_0.created_at,
+    b1_0.updated_at,
+    b1_0.user_id 
+from
+    balance b1_0 
+where
+    b1_0.balance_id is not null 
+    and b1_0.user_id=? for update
+```
+
+</details>
+
+
+
+<details>
+<summary><b>쿼리 2:</b> BalanceTransaction 테이블에 새로운 잔액 충전 트랜잭션을 기록하는 쿼리</summary>
+
+```sql
+insert into
+    balance_transaction (amount, created_at, transaction_reason, transaction_type, user_id, version) 
+values
+    (?, ?, ?, ?, ?, ?)
+```
+
+</details>
+
+
+<details>
+<summary><b>쿼리 3:</b>Balance 테이블에서 사용자의 잔액을 업데이트하는 쿼리.</summary>
+
+```sql
+update balance 
+set
+    amount=?,
+    updated_at=?,
+    user_id=? 
+where
+    balance_id=?
+```
+
+</details>
+
+
+
+
+### 잔액 사용
+
+- **설명:** 잔액 사용과 관련된 쿼리이다. 이 쿼리들은 사용자의 잔액 조회, 잔액 사용 내역 삽입, 그리고 잔액 업데이트 작업을 수행한다. `Balance` 테이블에서 사용자의 현재 잔액을 조회하고, `BalanceTransaction` 테이블에 잔액 사용 내역을 기록하며, `Balance` 테이블의 잔액을 업데이트한다. 이러한 쿼리들은 트랜잭션의 일관성을 보장하기 위해 `for update` 구문을 사용하여 동시성 문제를 방지한다.
+
+- **빈도:** ★★★☆☆
+  - 잔액 사용 쿼리는 사용자가 결제를 하거나 잔액을 사용할 때마다 발생한다. 결제 시스템이 자주 사용되는 서비스라면 빈도가 높아질 수 있다. 그러나 일반적인 사용 패턴에서는 조회 쿼리에 비해 빈도가 다소 낮다.
+
+- **복잡도:** ★★★☆☆
+  - 잔액 사용 쿼리는 비교적 간단한 구조로, 단일 테이블에 대한 조회 및 업데이트 작업을 포함한다. 그러나 트랜잭션 처리와 동시성 제어를 위한 `for update` 구문이 사용되어 약간의 복잡도가 추가된다.
+
+
+<details>
+<summary><b>쿼리 1:</b>Balance 테이블에서 특정 사용자의 잔액을 조회하는 쿼리.</summary>
+
+```sql
+select
+        balance 
+    from
+        Balance balance 
+    where
+        balance is not null 
+        and balance.userId = ?1
+select
+            b1_0.balance_id,
+            b1_0.amount,
+            b1_0.created_at,
+            b1_0.updated_at,
+            b1_0.user_id 
+        from
+            balance b1_0 
+        where
+            b1_0.balance_id is not null 
+            and b1_0.user_id=?
+        for update
+```
+
+
+</details>
+
+
+<details>
+<summary><b>쿼리 2:</b> BalanceTransaction 테이블에 잔액 사용 내역을 삽입하는 쿼리</summary>
+
+```sql
+insert into
+        balance_transaction (amount, created_at, transaction_reason, transaction_type, user_id, version) 
+    values
+        (?, ?, ?, ?, ?, ?)
+```
+
+</details>
+
+
+<details>
+<summary><b>쿼리 3:</b>Balance 테이블의 특정 사용자의 잔액을 업데이트하는 쿼리</summary>
+
+```sql
+update balance 
+    set
+        amount=?,
+        updated_at=?,
+        user_id=? 
+    where
+        balance_id=?
+```
+
+</details>
+
+
+
+
+
+#### 결제 처리
+
+- **설명:** 결제 처리와 관련된 다양한 데이터베이스 쿼리를 실행한다. 주요 쿼리로는 잔액 조회, 잔액 충전 내역 삽입, 잔액 업데이트, 그리고 결제 내역 삽입이 있다. 이 쿼리들은 `Balance`, `BalanceTransaction`, `PaymentTransaction` 테이블을 사용하여 데이터의 일관성과 무결성을 유지한다.
+
+- **빈도:** ★★★★★
+  - 결제와 잔액 관리는 대부분의 사용자 활동에 필수적인 부분으로, 일상적으로 자주 발생한다. 특히 잔액 조회와 잔액 업데이트는 거의 모든 결제 과정에서 필수적으로 수행된다.
+
+- **복잡도:** ★★★☆☆
+  - 결제 처리 쿼리들은 주로 단일 테이블에서 실행되지만, 데이터의 일관성을 유지하고 트랜잭션을 처리해야 하므로 중간 수준의 복잡도를 가진다. 특히 `for update` 절을 포함한 쿼리는 동시성 문제를 해결하는 데 중요하다.
+
+
+
+<details>
+<summary><b>쿼리 1:</b>Balance 테이블에서 특정 사용자의 잔액을 조회하는 쿼리</summary>
+
+
+```sql
+select
+        balance 
+    from
+        Balance balance 
+    where
+        balance is not null 
+        and balance.userId = ?1 
+
+select
+            b1_0.balance_id,
+            b1_0.amount,
+            b1_0.created_at,
+            b1_0.updated_at,
+            b1_0.user_id 
+        from
+            balance b1_0 
+        where
+            b1_0.balance_id is not null 
+            and b1_0.user_id=? for update
+```
+
+</details>
+
+
+<details>
+<summary><b>쿼리 2:</b> BalanceTransaction 테이블에 잔액 충전 내역을 삽입하는 쿼리</summary>
+```sql
+insert into
+        balance_transaction (amount, created_at, transaction_reason, transaction_type, user_id, version) 
+    values
+        (?, ?, ?, ?, ?, ?)
+```
+
+</details>
+
+
+
+<details>
+<summary><b>쿼리 3:</b>Balance 테이블에서 잔액을 업데이트하는 쿼리</summary>
+
+```sql
+update balance 
+    set
+        amount=?,
+        updated_at=?,
+        user_id=? 
+    where
+        balance_id=?
+```
+
+</details>
+
+
+
+<details>
+<summary><b>쿼리 4:</b>PaymentTransaction 테이블에 결제 내역을 삽입하는 쿼리</summary>
+
+
+```sql
+insert into
+        payment_transaction (amount, created_at, payment_method, payment_status, target_id, user_id) 
+    values
+        (?, ?, ?, ?, ?, ?)
+```
+
+
+</details>
+
+
+
+
+### 결제 취소
+
+- **설명:** 결제 취소를 처리하는 API에서 사용되는 쿼리들을 설명한다. 이 API는 특정 결제 트랜잭션을 취소하는 기능을 제공하며, 관련된 여러 데이터베이스 작업을 수행하여 트랜잭션의 상태를 업데이트하고 잔액을 조정한다.
+
+- **빈도:** ★★★★☆
+  - 결제 취소는 다양한 이유로 빈번하게 발생할 수 있다. 예를 들어, 결제 오류, 사용자 요청, 서비스 중단 등의 이유로 결제가 취소될 수 있다. 특히, 특정 기간 동안의 프로모션이나 이벤트 등에서 취소 빈도가 증가할 수 있다.
+
+- **복잡도:** ★★★★☆
+  - 결제 취소는 여러 테이블 간의 상호작용을 필요로 하며, 데이터 무결성을 유지하기 위해 트랜잭션 관리가 중요하다. 결제 상태 업데이트, 잔액 조정, 트랜잭션 기록 등 다양한 작업이 포함되어 있어 복잡도가 높다.
+
+
+
+
+<details>
+<summary><b>쿼리 1:</b>PaymentTransaction 테이블에서 특정 결제 트랜잭션의 정보를 조회하는 쿼리</summary>
+
+
+```sql
+select
+        pt1_0.transaction_id,
+        pt1_0.amount,
+        pt1_0.created_at,
+        pt1_0.payment_method,
+        pt1_0.payment_status,
+        pt1_0.target_id,
+        pt1_0.user_id 
+    from
+        payment_transaction pt1_0 
+    where
+        pt1_0.transaction_id=?
+```
+
+</details>
+
+
+
+<details>
+<summary><b>쿼리 2:</b> 잔액이 존재하는지 확인하고, 결제 취소 시 잔액을 업데이트하는 데 사용되는 쿼리</summary>
+
+```sql
+select
+        balance 
+    from
+        Balance balance 
+    where
+        balance is not null 
+        and balance.userId = ?1 
+
+select
+            b1_0.balance_id,
+            b1_0.amount,
+            b1_0.created_at,
+            b1_0.updated_at,
+            b1_0.user_id 
+        from
+            balance b1_0 
+        where
+            b1_0.balance_id is not null 
+            and b1_0.user_id=? for update
+```
+
+</details>
+
+
+
+<details>
+<summary><b>쿼리 3:</b>BalanceTransaction 테이블에 새로운 트랜잭션 기록을 삽입하여 결제 취소 시 잔액 변경을 기록하기 위해 사용되는 쿼리</summary>
+
+```sql
+insert into
+        balance_transaction (amount, created_at, transaction_reason, transaction_type, user_id, version) 
+    values
+        (?, ?, ?, ?, ?, ?)
+```
+
+</details>
+
+
+
+<details>
+<summary><b>쿼리 4:</b> PaymentTransaction 테이블에서 결제 취소 시 트랜잭션의 상태를 '취소됨'으로 변경하는 쿼리</summary>
+
+```sql
+update
+        payment_transaction 
+    set
+        amount=?,
+        payment_method=?,
+        payment_status=?,
+        target_id=?,
+        user_id=? 
+    where
+        transaction_id=?
+```
+
+</details>
+
+<details>
+<summary><b>쿼리 5:</b>Balance 테이블에서 특정 사용자의 잔액을 업데이트하여 결제 취소 시 잔액을 조정하는 쿼리. </summary>
+
+```sql
+update
+        balance 
+    set
+        amount=?,
+        updated_at=?,
+        user_id=? 
+    where
+        balance_id=?
+```
+
+</details>
+
+
+
+
+
+### 결제 내역 조회
+
+
+- **설명:** 결제 내역을 조회하는 쿼리이다. 이 쿼리는 특정 사용자의 결제 기록을 가져오며, 트랜잭션 ID, 결제 금액, 생성 일자, 결제 방법, 결제 상태, 타겟 ID, 사용자 ID를 포함한 다양한 정보를 조회한다. `PaymentTransaction` 테이블을 사용하여 특정 사용자 ID에 대한 결제 내역을 가져온다.
+
+- **빈도:** ★★★★☆
+  - 결제 내역 조회는 사용자가 자신의 결제 이력을 확인하거나 관리자가 결제 상태를 검토할 때 자주 사용된다. 일반적으로 사용 빈도가 높으며, 특정 프로모션이나 결제 문제가 발생한 경우 빈도가 더욱 증가할 수 있다.
+
+- **복잡도:** ★★☆☆☆
+  - 이 쿼리는 단일 테이블에서 데이터를 조회하는 단순한 구조를 가지므로 복잡도가 낮다. 다만, 결제 기록의 양이 많을 수 있으므로 효율적인 인덱스 사용이 필요하다.
+
+
+
+
+
+<details>
+<summary><b>쿼리 1:</b>payment_transaction 테이블에서 user_id로 특정 사용자의 결제 트랜잭션을 조회하는 쿼리</summary>
+
+
+```sql
+select
+        pt1_0.transaction_id,
+        pt1_0.amount,
+        pt1_0.created_at,
+        pt1_0.payment_method,
+        pt1_0.payment_status,
+        pt1_0.target_id,
+        pt1_0.user_id 
+    from
+        payment_transaction pt1_0 
+    where
+        pt1_0.user_id=?
+```
+
+
+</details>
+
+
+
+
+
+## 인덱스 적절성 판단 및 설정
+
+### Balance
+#### 단일 인덱스 검토
+
+1. **userId**
+  - **필요성**: 사용자 잔액 조회 및 충전/사용 내역 조회에서 빈번히 사용된다. 사용자의 잔액 정보를 확인하거나 잔액 변동 내역을 조회하는 주요 조건으로 사용된다.
+  - **카디널리티**: 높음 (사용자 ID는 유니크하여 카디널리티가 높다)
+  - **변경 빈도**: 낮음 (사용자 ID는 잔액 생성 시 설정되며 이후 변경되지 않으므로 인덱스 재정렬 부담이 적다)
+
+2. **createdAt**
+  - **필요성**: 잔액 생성일자를 기준으로 조회하는 데 사용된다. 주로 특정 기간 동안의 잔액 변동을 확인할 때 유용하다.
+  - **카디널리티**: 중간 (동일한 날짜에 여러 잔액이 생성될 수 있으므로 중복도가 존재할 수 있음)
+  - **변경 빈도**: 낮음 (생성된 후 변경되지 않음)
+
+#### 복합 인덱스 검토
+
+1. **userId, createdAt**
+  - **필요성**: 특정 사용자의 잔액 변동 내역을 시간순으로 조회할 때 유용하다. 사용자별 잔액 이력 조회에서 빈번히 사용된다.
+  - **카디널리티**: 중간 (두 컬럼의 조합은 상당히 유니크할 가능성이 높아 효율적인 인덱스가 될 수 있다)
+  - **변경 빈도**: 낮음 (사용자 ID와 생성일자는 변경되지 않으므로 인덱스 재정렬 부담이 적다)
+
+2. **userId, amount**
+  - **필요성**: 특정 사용자의 잔액 금액을 조건으로 조회할 때 유용하다. 예를 들어, 잔액이 특정 범위에 속하는 사용자를 조회하는 경우.
+  - **카디널리티**: 중간 (두 컬럼의 조합은 특정 금액 범위 내에서 유니크할 가능성이 있다)
+  - **변경 빈도**: 중간 (잔액 금액은 변경될 수 있으나 사용자 ID는 변경되지 않으므로 인덱스 재정렬 부담이 적다)
+
+
+
+
+#### 종합 결론
+
+
+<details>
+<summary>JPA 엔티티 인덱스 설정 코드</summary>
+
+`userId, createdAt`에 대한 복합 인덱스로 자주 사용되는 쿼리의 성능을 최적화한다.
+
+```java
+@Table(
+    indexes = {
+        @Index(name = "idx_user_created_at", columnList = "userId, createdAt")
+    }
+)
+public class Balance extends AbstractAggregateRoot<Balance> {
+
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY) private Long balanceId;
+    private Long userId;
+    private BigDecimal amount;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+}
+```
+</details>
+
+
+### BalanceTransaction
+
+#### 단일 인덱스 검토
+
+
+1. **userId**
+  - **필요성**: 사용자의 거래 내역을 조회하는 데 사용된다. 사용자의 거래 내역을 확인하거나 재무 분석 시 자주 사용된다.
+  - **카디널리티**: 높음 (각 사용자마다 고유 값)
+  - **변경 빈도**: 낮음 (거래 생성 시 설정되며 이후 변경되지 않음)
+
+2. **transactionType**
+  - **필요성**: 특정 유형의 거래를 조회할 때 사용된다. 단, 특정 유형의 거래를 빈번히 조회하지 않는다면, 단일 인덱스는 필요하지 않다.
+  - **카디널리티**: 낮음 (거래 유형은 제한된 값의 집합)
+  - **변경 빈도**: 낮음 (거래 생성 시 설정되며 이후 변경되지 않음)
+
+
+#### 복합 인덱스 검토
+
+1. **userId, createdAt**
+  - **필요성**: 특정 사용자의 거래 내역을 생성일자 순으로 조회할 때 유용하다. 사용자의 거래 내역 확인, 재무 분석 시 빈번히 사용된다.
+  - **카디널리티**: 중간 (두 컬럼의 조합은 상당히 유니크할 가능성이 높음)
+  - **변경 빈도**: 낮음 (거래 생성 시 설정되며 이후 변경되지 않음)
+
+2. **userId, transactionType**
+  - **필요성**: 특정 사용자의 특정 유형 거래 내역을 조회할 때 유용하다. 재무 분석이나 특정 유형 거래 확인 시 빈번히 사용될 수 있다.
+  - **카디널리티**: 중간 (두 컬럼의 조합으로 유일한 식별자가 될 가능성이 높음)
+  - **변경 빈도**: 낮음 (거래 생성 시 설정되며 이후 변경되지 않음)
+
+#### 종합 결론
+
+
+
+<details>
+<summary>JPA 엔티티 인덱스 설정 코드</summary>
+
+`userId, createdAt`, `userId, transactionType`에 대한 복합 인덱스는 자주 사용되는 쿼리의 성능을 최적화한다.
+
+```java
+@Table(
+    indexes = {
+        @Index(name = "idx_user_created_at", columnList = "userId, createdAt"),
+        @Index(name = "idx_user_transaction_type", columnList = "userId, transactionType")
+    }
+)
+public class BalanceTransaction {
+
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY) private Long transactionId;
+    @Version private Long version;
+    private Long userId;
+    private BigDecimal amount;
+    @Enumerated(EnumType.STRING) private TransactionType transactionType;
+    @Enumerated(EnumType.STRING) private TransactionReason transactionReason;
+    private LocalDateTime createdAt;
+}
+```
+</details>
+
+
+### PaymentTransaction
+
+
+#### 단일 인덱스 검토
+
+
+1. **userId**
+  - **필요성**: 특정 사용자의 모든 결제 내역을 조회할 때 사용된다. 사용자의 결제 내역을 확인할 때 자주 사용된다.
+  - **카디널리티**: 높음 (각 사용자마다 고유 값)
+  - **변경 빈도**: 낮음 (결제 생성 시 설정되며 이후 변경되지 않음)
+
+2. **targetId**
+  - **필요성**: 특정 예약, 상품, 서비스 등 다양한 분야의 결제 내역을 조회할 때 사용된다.
+  - **카디널리티**: 높음 (다양한 타겟 ID 사용)
+  - **변경 빈도**: 낮음 (결제 생성 시 설정되며 이후 변경되지 않음)
+
+#### 복합 인덱스 검토
+
+1. **userId, targetId**
+  - **필요성**: 특정 사용자가 특정 타겟에 대해 결제한 내역을 조회할 때 유용하다. 결제 내역 조회, 결제 상태 확인 등에서 자주 사용된다.
+  - **카디널리티**: 중간 (두 컬럼의 조합으로 유일한 식별자가 됨)
+  - **변경 빈도**: 낮음 (결제 생성 시 설정되며 이후 변경되지 않음)
+
+2. **userId, paymentStatus**
+  - **필요성**: 특정 사용자의 특정 결제 상태를 조회할 때 유용하다. 결제 상태 별로 사용자의 결제 내역을 확인할 때 자주 사용된다.
+  - **카디널리티**: 중간 (결제 상태 값은 제한적이므로 유니크하지 않음)
+  - **변경 빈도**: 중간 (결제 상태는 자주 변경될 수 있음)
+
+
+#### 종합 결론
+
+`userId, targetId`에 대한 복합 인덱스는 자주 사용되는 쿼리의 성능을 최적화한다.
+
+
+
+
+<details>
+<summary>JPA 엔티티 인덱스 설정 코드</summary>
+
+```java
+@Table(
+    indexes = {
+        @Index(name = "idx_user_target", columnList = "userId, targetId"),
+    }
+)
+public class PaymentTransaction extends AbstractAggregateRoot<PaymentTransaction> {
+
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY) private Long transactionId;
+    private Long userId;
+    private String targetId; 
+    private BigDecimal amount;
+    @Enumerated(EnumType.STRING) private PaymentMethod paymentMethod;
+    @Enumerated(EnumType.STRING) private PaymentStatus paymentStatus;
+    private LocalDateTime createdAt;
+}
+```
+
+
+</details>
+
+
+
+
+
+## BEFORE & AFTER
+
+인덱스 적용 전과 후를 비교한다.
+
+
+### 잔액 조회 API
+
+
+<details>
+<summary>EXPLAIN & EXPLAIN ANALYZE</summary>
+
+`Balance` 테이블에서 `userId`로 특정 사용자의 잔액 정보를 조회하는 쿼리
+
+```sql
+Explain 
+select
+    b1_0.balance_id,
+    b1_0.amount,
+    b1_0.created_at,
+    b1_0.updated_at,
+    b1_0.user_id 
+from
+    balance b1_0 
+where
+    b1_0.user_id=123
+```
+
+</details>
+
+
+
+<details>
+<summary>Before</summary>
+
+
+```sql
+1,SIMPLE,b1_0,,ALL,,,,,2378402,10,Using where
+```
+
+```sql
+-> Filter: (b1_0.user_id = 123)  (cost=248638 rows=237840) (actual time=18.4..2647 rows=1 loops=1)
+    -> Table scan on b1_0  (cost=248638 rows=2.38e+6) (actual time=16.4..2466 rows=2.65e+6 loops=1)
+```
+
+</details>
+
+
+
+<details>
+<summary>After</summary>
+
+
+```sql
+1,SIMPLE,b1_0,,ref,idx_user_created_at,idx_user_created_at,9,const,1,100,
+```
+
+```sql
+-> Index lookup on b1_0 using idx_user_created_at (user_id=123)  (cost=1.1 rows=1) (actual time=18.4..18.4 rows=1 loops=1)
+```
+
+</details>
+
+
+#### 결과 분석
+
+| 항목              | Before                             | After                                                                                                   |
+|-------------------|------------------------------------|---------------------------------------------------------------------------------------------------------------|
+| **인덱스 사용**   | 없음 (`FULL` 스캔)                     | `idx_user_created_at` 인덱스를 사용하여 `user_id`로 인덱스 룩업 수행                                             |
+| **필터링 단계**   | 테이블 스캔 후 `user_id`에 대한 필터링을 추가로 수행 | 인덱스 룩업 단계에서 `user_id` 조건을 만족하는 레코드를 효율적으로 검색                                             |
+| **비용**          | 248638                             | 1.1                                                                                                             |
+| **예상 행 수**    | 2378402                            | 1                                                                                                               |
+| **실제 실행 시간**| 16.4..2647 ms                      | 18.4..18.4 ms                                                                                                    |
+| **실제 처리된 행 수**| 2.65e+6                            | 1                                                                                                               |
+
+인덱스 룩업을 사용함으로써 쿼리의 효율성이 크게 향상되었다.
+전체 테이블을 스캔하지 않고 인덱스를 사용하여 필요한 레코드를 빠르게 찾을 수 있어 실행 시간이 대폭 단축되었고, 쿼리 비용도 크게 감소하였다.
+
+
+### 잔액 충전/사용 내역 조회 API
+
+
+<details>
+<summary>EXPLAIN & EXPLAIN ANALYZE</summary>
+
+`BalanceTransaction` 테이블에서 `userId`로 특정 사용자의 잔액 거래 내역을 조회하는 쿼리
+
+```sql
+Explain 
+select
+        bt1_0.transaction_id,
+        bt1_0.amount,
+        bt1_0.created_at,
+        bt1_0.transaction_reason,
+        bt1_0.transaction_type,
+        bt1_0.user_id,
+        bt1_0.version 
+    from
+        balance_transaction bt1_0 
+    where
+        bt1_0.user_id=123
+```
+
+
+</details>
+
+
+
+<details>
+<summary>Before</summary>
+
+```sql
+1,SIMPLE,bt1_0,,ALL,,,,,1991966,10,Using where
+```
+
+```sql
+-> Filter: (bt1_0.user_id = 123)  (cost=207496 rows=199197) (actual time=8.98..2675 rows=2 loops=1)
+    -> Table scan on bt1_0  (cost=207496 rows=1.99e+6) (actual time=8.37..2492 rows=2e+6 loops=1)
+```
+
+</details>
+
+
+
+<details>
+<summary>After</summary>
+
+```sql
+1,SIMPLE,bt1_0,,ref,"idx_user_created_at,idx_user_transaction_type",idx_user_created_at,9,const,2,100,
+```
+
+```sql
+-> Index lookup on bt1_0 using idx_user_created_at (user_id=123)  (cost=2.2 rows=2) (actual time=27..27.1 rows=2 loops=1)
+```
+
+</details>
+
+
+
+
+#### 결과 분석
+
+| 항목              | Before                                                                                                  | After                                                                                                   |
+|-------------------|---------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------|
+| **인덱스 사용**   | 없음 (`FULL` 스캔)                                                                                                       | `idx_user_created_at`, `idx_user_transaction_type` 인덱스를 사용하여 `user_id`로 인덱스 룩업 수행           |
+| **필터링 단계**   | 테이블 스캔 후 `user_id`에 대한 필터링을 수행                                                                          | 인덱스 룩업 단계에서 `user_id` 조건을 만족하는 레코드를 효율적으로 검색                                    |
+| **비용**          | 207496                                                                                                  | 2.2                                                                                                     |
+| **예상 행 수**    | 199197                                                                                                  | 2                                                                                                       |
+| **실제 실행 시간**| 8.98..2675 ms                                                                                           | 27..27.1 ms                                                                                             |
+| **실제 처리된 행 수**| 2                                                                                                       | 2                                                                                                       |
+
+인덱스를 사용하여 `user_id`로 인덱스 룩업을 수행함으로써, 쿼리의 실행 시간이 크게 단축되었다.
+테이블 스캔 대신 인덱스 스캔을 사용하여 효율적으로 데이터를 검색할 수 있었다.
+비용과 예상 행 수가 크게 줄어들어 쿼리의 성능이 향상되었다.
+
+
+
+### 결제 내역 조회 API
+
+
+
+<details>
+<summary>EXPLAIN & EXPLAIN ANALYZE</summary>
+
+`payment_transaction` 테이블에서 `user_id`로 특정 사용자의 결제 트랜잭션을 조회하는 쿼리
+
+```sql
+Explain select
+        pt1_0.transaction_id,
+        pt1_0.amount,
+        pt1_0.created_at,
+        pt1_0.payment_method,
+        pt1_0.payment_status,
+        pt1_0.target_id,
+        pt1_0.user_id 
+    from
+        payment_transaction pt1_0 
+    where
+        pt1_0.user_id=123
+```
+</details>
+
+
+
+<details>
+<summary>Before</summary>
+
+```sql
+1,SIMPLE,pt1_0,,ALL,,,,,915320,10,Using where
+```
+
+```sql
+-> Filter: (pt1_0.user_id = 123)  (cost=95987 rows=91532) (actual time=23.2..797 rows=1 loops=1)
+    -> Table scan on pt1_0  (cost=95987 rows=915320) (actual time=21.9..750 rows=1e+6 loops=1)
+```
+
+</details>
+
+
+
+<details>
+<summary>After</summary>
+
+```sql
+1,SIMPLE,pt1_0,,ref,idx_user_target,idx_user_target,9,const,1,100,
+```
+
+```sql
+-> Index lookup on pt1_0 using idx_user_target (user_id=123)  (cost=0.817 rows=1) (actual time=8.63..8.64 rows=1 loops=1)
+```
+
+</details>
+
+
+
+
+
+
+#### 결과 분석
+
+| 항목              | Before                                                                                           | After                                                                                          |
+|-------------------|--------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------|
+| **인덱스 사용**   | 없음 (`FULL` 스캔)                                                       | `idx_user_target` 인덱스를 사용하여 `user_id`로 인덱스 룩업 수행                               |
+| **필터링 단계**   | 전체 테이블 스캔 후 `user_id`에 대한 필터링을 수행                                                | 인덱스 룩업 단계에서 `user_id` 조건을 만족하는 레코드를 효율적으로 검색                        |
+| **비용**          | 95987                                                                                             | 0.817                                                                                          |
+| **예상 행 수**    | 91532                                                                                            | 1                                                                                              |
+| **실제 실행 시간**| 23.2..797 ms                                                                                      | 8.63..8.64 ms                                                                                   |
+| **실제 처리된 행 수**| 1                                                                                               | 1                                                                                              |
+
+전체 테이블 스캔에서 인덱스 룩업으로 변경됨에 따라 비용이 크게 감소하였고, 실행 시간 또한 상당히 단축되었다.
+
+
+
+
 
 
 </details>
@@ -5232,7 +8271,1505 @@ GC 횟수에서도 Redis가 RDB보다 낮은 수치를 보이고 있어, 메모�
 <summary><b> MSA 아키텍처에서 느슨한 결합 추구하기</b></summary>
 
 
-# TBD
+# MSA 아키텍처에서 느슨한 결합 추구하기
+
+이 글에서는 MSA 기반의 아키텍처에서 느슨한 결합을 추구하는 방법을 살펴본다.
+그 방법론 중 하나인 이벤트 드리븐 아키텍처(EDA)를 중심으로 현 프로젝트에서 어떻게 적용하였는지를 주로 다룬다.
+또한 트랜잭션이 분리된 서비스 간의 논리적인 일관성을 보장하기 위한 방법론도 함께 다룬다.
+
+먼저 EDA가 무엇인지 설명하고, 현재의 대기열 기반 예약 시스템에 EDA를 적용하여 느슨한 결합을 구현하는 방법을 살펴보자.
+
+## 이벤트 드리븐 아키텍처(EDA)란?
+
+이벤트 드리븐 아키텍처(Event-Driven Architecture)는 시스템에서 발생하는 이벤트를 기반으로 동작하는 소프트웨어 설계 패턴이다.
+그렇다면 이벤트란 무엇일까? 이벤트는 특정 동작이나 상태 변화를 나타낸다. 이벤트를 쉽게 이해하는 방법은 반대되는 개념을 살펴보는 것이다.
+EDA와 반대되는 동기 통신에서는 한 구성 요소가 다른 구성 요소에 요청을 보내고 응답을 기다린다. 이 방식은 강한 결합이다. 한 모듈의 변경이 다른 모듈에 영향을 미치고, 응답을 기다리는 동안 다른 작업을 수행하지 못한다. 장애가 전파될 가능성도 있다. 동기 통신의 예로는 REST API 호출과 RPC가 있다.
+
+EDA는 이벤트를 발행하고 소비하는 방식으로 작동하며, 비동기 통신을 통해 이러한 문제를 해결한다.
+예를 들어, 사용자가 예약을 완료하면 예약 완료 이벤트가 발행되고, 이를 구독한 모듈들이 후속 작업을 수행한다.
+
+## 느슨한 결합이란 게 왜 필요할까?
+
+
+느슨한 결합(Loose Coupling)은 시스템의 구성 요소 간 의존성을 최소화하여 독립적으로 변경하고 확장할 수 있도록 하는 설계 원칙이다.
+예를 들어, 예약 시스템에서 대기열과 예약 API가 밀접하게 결합되어 있다면, 한 부분의 변경이 다른 부분에 큰 영향을 미칠 수 있다.
+
+앞서 EDA와 반대되는 동기 통신을 살펴보았다.
+동기 통신에서는 한 구성 요소가 다른 구성 요소에 직접 의존하여 변경 시 상호 영향이 크다. 왜 그럴까? 동기 통신에서는 한 구성 요소가 요청을 보내고 다른 구성 요소가 응답을 반환할 때까지 기다리기 때문이다. 이 과정에서 요청과 응답이 밀접하게 연관되어 있어, 한 쪽의 변경이 다른 쪽의 동작에 즉각적인 영향을 미치게 된다. 예를 들어, API 계약이 변경되면 이를 호출하는 모든 클라이언트도 함께 변경되어야 한다. 이는 시스템의 유연성을 떨어뜨리고, 장애가 전파될 가능성을 높인다.
+
+반면 EDA를 통해 느슨한 결합을 구현하면, 구성 요소 간 의존성을 줄여 변경 시 영향을 최소화할 수 있다. EDA에서는 이벤트를 통해 간접적으로 통신하므로, 한 구성 요소의 변경이 다른 구성 요소에 직접적인 영향을 미치지 않는다. 이벤트 발행자는 이벤트를 발행하기만 하면 되고, 이벤트 수신자는 이를 구독하여 처리한다. 이러한 방식으로 각 구성 요소가 독립적으로 동작한다. 따라서 시스템의 유연성과 확장성이 향상된다.
+
+
+## 현재 시스템 아키텍처
+
+현재 대기열 기반 예약 시스템의 아키텍처를 살펴보자. 두 파트로 나뉜다.
+
+1. 대기열 부분
+2. 예약 API 부분
+
+![대기열 기반의 예약 시스템 전체 아키텍처 AS-IS - note.png](..%2Farchitecture%2F%EB%8C%80%EA%B8%B0%EC%97%B4%20%EA%B8%B0%EB%B0%98%EC%9D%98%20%EC%98%88%EC%95%BD%20%EC%8B%9C%EC%8A%A4%ED%85%9C%20%EC%A0%84%EC%B2%B4%20%EC%95%84%ED%82%A4%ED%85%8D%EC%B2%98%20AS-IS%20-%20note.png)
+
+
+이 두 부분은 서로 독립적으로 동작하지만, 통신이 필요한 경우도 존재한다. 예를 들어 사용자가 예약을 완료하면, 대기열에서 해당 사용자를 제거해야 한다. 위의 그림에서는 이러한 요구 사항을 카프카를 이용한 이벤트 드리븐 프로세스를 이용해 풀어내고 있는 부분을 볼 수 있다.
+
+
+
+
+다음 파트에서는 먼저 마이크로 서비스 간의 EDA를 탐구해보고, 하나의 서비스 내에서의 EDA를 살펴본다.
+
+
+
+
+# 마이크로 서비스 간 EDA 적용 사례
+
+## 어디서 어떻게? ▸ 결제 완료와 활성 토큰 제거 프로세스
+
+
+앞서 설명한 것처럼, 시스템은 두 파트로 나뉘어 운영된다. 마이크로서비스 아키텍처에서도 동일하게 큐 관련 부분과 API 부분으로 구성된다. API 요청은 오케스트레이션 계층에서 클라이언트 요청을 받아, 이를 적절한 도메인 API 서버에 전달하는 방식으로 처리된다.
+
+활성 토큰을 보유한 유저들은 예약 시스템의 API를 통해 요청을 할 수 있다. 예약 시스템 API는 활성 토큰을 검증하여 유효한 경우에만 API 사용을 허용한다. 유저의 요청이 승인되면, 임시 예약이 생성되어 좌석을 선점하게 된다. 이때 유저는 일정 시간 내에 결제를 완료해야 하며, 결제가 완료되면 예약이 확정된다. 예약이 확정되면 해당 유저의 활성 토큰을 제거해야 한다. 이는 대기열의 다음 순번 유저가 활성 토큰을 부여받아 서버에 접근할 권한을 얻도록 하기 위함이다.
+
+이 과정에서 중요한 점은 결제 완료 상태를 큐 시스템에 알려주는 것이다.
+
+이때, 결제 완료를 큐 시스템 부분에 알려주어야 한다. 어떻게 알려주어야 할까?
+
+
+## 트랜잭션 처리의 한계
+
+첫 번째 방법은 동기적으로 결제 완료를 큐 시스템에 알려주는 것이다. 이렇게 하면 결제 서비스가 결제 완료 후 즉시 큐 시스템에 활성 토큰 제거를 요청하게 된다. 그러나 이 접근 방식에는 몇 가지 문제가 있다.
+
+먼저, 결제 요청과 활성 토큰 제거 액션이 강하게 결합된다. 이는 한쪽의 실패가 전체 트랜잭션에 영향을 미칠 수 있음을 의미한다. 예를 들어, 유저의 결제가 정상적으로 진행되고 예약이 확정되었지만, 큐 시스템에서 활성 토큰 제거 과정에서 오류가 발생한다면 어떻게 될까? 이 경우, 이미 완료된 결제와 예약이 모두 롤백될 수 있다. 이렇게 되면 유저는 결제가 완료되었음에도 불구하고 예약이 취소되는 불편한 상황에 직면하게 된다. 이는 결제 시스템의 신뢰성을 떨어뜨리고 사용자 경험을 저해할 수 있다.
+
+![synchronous-process-problem1.png](..%2Fdiagram%2Fsynchronous-process-problem1.png)
+
+
+
+또한, 동기적 처리 방식은 성능 문제를 초래할 수 있다. 결제 서비스가 큐 시스템의 응답을 기다리는 동안, 다른 작업을 처리하지 못해 전체 시스템의 응답 시간이 길어질 수 있다. 이는 특히 많은 사용자가 동시에 예약을 시도하는 상황에서 심각한 성능 저하로 이어질 수 있다.
+
+이 문제를 해결하는 방법으로 이벤트 드리븐 아키텍처를 활용할 수 있다.
+
+
+
+## 이벤트 드리븐 아키텍처의 적용
+
+결제가 완료되면 API 오케스트레이션 서비스는 "결제 완료" 이벤트를 발행한다. 큐 시스템은 이 이벤트를 구독하여 해당 유저의 활성 토큰을 제거하고, 대기열의 다음 유저에게 새로운 활성 토큰을 발급한다. 이렇게 하면 결제와 예약이 독립적으로 처리되어 한쪽의 실패가 다른 쪽에 영향을 미치지 않게 된다.
+
+이벤트 드리븐 아키텍처를 적용함으로써 우리는 트랜잭션 처리의 한계를 극복할 수 있다. EDA는 비동기적으로 이벤트를 처리하여 시스템 구성 요소 간 결합도를 낮추고, 유연성과 확장성을 높이는 데 중점을 둔다. 결제 완료와 활성 토큰 제거 과정에 EDA를 적용하면 다음과 같은 이점을 얻을 수 있다.
+
+- 비동기 이벤트 처리는 결제와 활성 토큰 제거를 분리하여 한쪽의 장애가 다른 쪽에 영향을 미치지 않게 한다.
+- 결제 완료 후 큐 시스템 응답을 기다리지 않고 즉시 다음 작업을 수행하여 성능을 향상시킨다.
+- 이벤트 기반 시스템은 결제 완료 이벤트를 구독하여 새로운 기능 추가와 확장을 유연하게 할 수 있다.
+
+
+### 플로우
+
+```mermaid
+graph TD
+  subgraph API Orchestration Service
+    A[User Initiates Payment] --> B[Process Payment]
+    B -->|async| C[Publish Payment Completed Event]
+  end
+  
+  subgraph Queue Management Service
+    C -->|async| D[Receive Payment Event]
+    D --> E[Remove Active Token]
+    E --> F[Issue New Token to Next User]
+  end
+
+```
+
+```mermaid
+sequenceDiagram
+    participant User as 유저
+    participant API as API 오케스트레이션
+    participant PaymentService as 결제 서비스
+    participant Kafka as 카프카
+    participant QueueService as 큐 시스템
+
+    User->>API: 결제 요청
+    API->>PaymentService: 결제 처리
+    PaymentService->>API: 결제 완료 (성공)
+
+    API-->>Kafka: "결제 완료" 이벤트 발행
+    QueueService-->>Kafka: 결제 완료 이벤트 수신
+    QueueService->>QueueService: 활성 토큰 제거 및 다음 유저 활성 토큰 발급
+```
+
+
+
+### 코드 구현
+
+1. **결제 처리 및 이벤트 발행**:
+  - 결제가 완료되면, 결제 서비스는 결제 상태를 업데이트하고 "결제 완료" 이벤트를 발행한다.
+  - `applicationEventPublisher.publishEvent(paymentResponse.toPaymentInternalEventAsComplete());`
+
+2. **이벤트 핸들러**:
+  - 이벤트 핸들러는 발행된 이벤트를 수신하고 이를 처리한다.
+  - 결제 완료 이벤트를 수신하면, 큐 시스템에 메시지를 전송하여 활성 토큰을 제거하고 새로운 토큰을 발급한다.
+  - `streamBridge.send("concert-reservation-payment", messageBuilder.build());`
+
+3. **큐 시스템에서의 처리**:
+  - 큐 시스템은 수신된 메시지를 처리하여 활성 토큰을 제거하고, 다음 사용자에게 새로운 토큰을 발급한다.
+  - `@EventListener QueuePaymentEventHandler.handlePaymentCompleteEvent(PaymentMessagePayload event);`
+  - `processingQueueFacade.completeToken(event.toCompletedTokenHandlingRequest());`
+
+
+
+```java
+// API Orchestration Service의 발행 부분
+
+public class KafkaMessageProducingInternalEventHandler {
+	public void handlePaymentInternalEvent(PaymentInternalEvent event) {
+			PaymentMessagePayload payload = PaymentMessagePayload.of(event.getPaymentTransactionId(), event.getUserId(), event.getPaymentType());
+
+			MessageBuilder<String> messageBuilder = MessageBuilder.withPayload(objectMapper.writeValueAsString(payload))
+					.setHeader(MessageHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON)
+						.setHeader("payment-type", payload.getPaymentType());
+			streamBridge.send("concert-reservation-payment", messageBuilder.build());
+	}
+}
+```
+
+
+```java
+// Queue Management Service의 컨슘 부분 
+
+public class QueuePaymentEventHandler {
+
+	@EventListener
+	public void handlePaymentCompleteEvent(PaymentMessagePayload event) {
+		processingQueueFacade.completeToken(event.toCompletedTokenHandlingRequest());
+	}
+}
+```
+
+
+
+# 서비스 내에서의 EDA 탐구
+
+본 섹션에서는 각 서비스 내에서 내부 이벤트가 사용되는 부분을 살펴보자.
+
+## 1. 결제 완료 후 카프카 메시지를 발행하는 로직
+
+첫 번째는 결제 완료 이벤트를 발행하는 부분이다. 오케스트레이션 계층에서 결제 프로세스를 주관한다. 결제 서비스로부터 완료 응답을 받으면 이를 카프카 메시지로 발행한다. 이때 책임 분리를 위해 내부 이벤트를 발행한다.
+
+코드를 살펴보면 다음과 같다.
+
+```java
+public class PaymentFacade {
+
+	public PaymentResponse processPayment(PaymentProcessRequest request) {
+        // ...
+			reservationService.confirmReservation(createConfirmCommand(request));
+		// ... 
+		// 내부 이벤트 발행		
+        applicationEventPublisher.publishEvent(paymentResponse.toPaymentInternalEventAsComplete());
+		return paymentResponse;
+	}
+}
+```
+
+왜 굳이 내부 이벤트를 발행하는 것일까? Facade에서 바로 카프카 메시지를 발행해도 될 텐데 말이다. 여기에는 두 가지 이유가 있다.
+
+1. **클린 아키텍처 관점에서 파사드의 책임이 아님**:
+  - 파사드는 비즈니스 로직을 호출하고 결과를 반환하는 역할을 담당한다. 외부 시스템과의 통신은 인프라스트럭처 레이어의 책임이므로, 파사드에서 직접 카프카 메시지를 발행하는 것은 클린 아키텍처 원칙에 어긋난다. 내부 이벤트를 발행하여 이 작업을 인프라스트럭처 레이어로 위임하면 책임이 명확히 분리된다.
+
+2. **비동기 프로세스로 분리하여 결합도와 효율성 향상**:
+  - 결제 완료 시점에서 바로 카프카 메시지를 발행한다면, 발행 자체가 비즈니스 로직과 결합된다. 비동기 이벤트를 통해 처리하면 결제 서비스와 카프카 발행 로직 간의 결합도를 낮출 수 있다. 물론, 어플리케이션 이벤트를 발행한다는 측면에서 결합은 불가피하긴 하다. 하지만 카프카 메시지 발행 로직은 외부 시스템과의 연동이므로 외부와의 의존성이 있는 반면, 어플리케이션 이벤트는 자체 시스템에서 동작하므로 의존성이 적다. 따라서 이를 비동기적으로 처리하면, 결제 로직에 대한 응집성을 높일 수 있다.
+
+결제 완료 후 발행한 내부 이벤트는 다음과 같이 `KafkaMessageProducingInternalEventHandler`에서 처리된다.
+
+```java
+public class KafkaMessageProducingInternalEventHandler {
+
+	@EventListener
+	public void handlePaymentInternalEvent(PaymentInternalEvent event) {
+
+// ... 
+			MessageBuilder<String> messageBuilder = MessageBuilder.withPayload(objectMapper.writeValueAsString(payload))
+					.setHeader(MessageHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON)
+					.setHeader("payment-type", payload.getPaymentType());
+			streamBridge.send("concert-reservation-payment", messageBuilder.build());
+// ... 	
+}
+```
+
+`PaymentInternalEvent`를 수신하여 카프카 메시지를 발행한다.
+
+## 2. 예외 처리 로직에서 알림 프로세스
+
+예외를 핸들링 하는 부분에서도 내부 이벤트를 사용할 수 있다.
+본 프로젝트에서는 스프링 AOP(Aspect-Oriented Programming)를 활용하여, 특정 포인트컷에서 발생하는 예외를 포착하고 이를 처리하고 있다. 이때, 내부 이벤트를 통해 예외 정보를 전달하고, 알림을 발행하는 과정을 살펴보자.
+
+예외가 발생하면 `GlobalExceptionAlertAspect` 클래스가 이를 포착하여 내부 이벤트를 발행한다. 이 이벤트는 `GlobalExceptionAlertInternalListener`에서 처리되어 슬랙 메시지 등의 알림을 발송한다.
+
+```java
+@Aspect
+public class GlobalExceptionAlertAspect {
+
+	private final GlobalExceptionAlertInternalPublisher globalExceptionAlertInternalPublisher;
+
+	// ... 
+
+	@AfterThrowing(pointcut = "apiMethods() && notAsync()", throwing = "throwable")
+	public void alertApplicationWideMethods(JoinPoint jp, Throwable throwable) {
+		if (!isMarkedException(throwable)) {
+			globalExceptionAlertInternalPublisher.publish(new GlobalExceptionAlertEvent(jp.getSignature().getName(), throwable));
+			markException(throwable);
+		}
+	}
+    // ...
+}
+```
+
+이 코드에서 `GlobalExceptionAlertAspect`는 특정 포인트컷에서 발생한 예외를 포착하여 `GlobalExceptionAlertEvent`를 발행한다.
+
+```java
+public class GlobalExceptionAlertInternalPublisher {
+	private final ApplicationEventPublisher applicationEventPublisher;
+
+	public void publish(GlobalExceptionAlertEvent alertEvent) {
+		applicationEventPublisher.publishEvent(alertEvent);
+	}
+}
+```
+
+`GlobalExceptionAlertInternalPublisher`는 포착된 예외 정보를 내부 이벤트로 발행한다. 이 내부 이벤트는 `GlobalExceptionAlertInternalListener`에서 처리된다.
+
+```java
+public class GlobalExceptionAlertInternalListener {
+	private final MessageServiceClientAdapter messageServiceClientAdapter;
+
+	@Async
+	@EventListener
+	public void handleGlobalExceptionAlert(GlobalExceptionAlertEvent event) {
+			messageServiceClientAdapter.reserveSlackMessage(requestByGlobalExceptionAlertEvent(event));
+	}
+}
+```
+
+이 클래스는 `GlobalExceptionAlertEvent`를 수신하여 슬랙 메시지를 발송한다. 비동기 프로세스를 통해 별도의 스레드에서 백그라운드로 알림을 보내도록 한다.
+
+여기서도 마찬가지로 내부 이벤트를 사용하여 예외를 처리하는 이점은 다음과 같다.
+
+1. **책임 분리**: 예외 처리 로직과 알림 발송 로직을 분리하여, 각 책임을 명확히 한다.
+2. **비동기 처리**: 예외 발생 시 비동기적으로 알림을 발송하여, 주 비즈니스 로직의 성능과 응답 시간을 저하시키지 않고, 비동기 스레드를 통해 어플리케이션의 유휴 자원을 최대한 효율적으로 활용한다.
+3. **유연한 확장성**: 새로운 알림 채널이나 처리 로직을 추가할 때, 기존 코드를 수정할 필요 없이 이벤트 리스너를 추가하는 방식으로 쉽게 확장할 수 있다.
+
+
+
+
+## 3. Cache Eviction 전략에서의 내부 이벤트 활용
+
+이와 비슷한 구현으로 로컬 캐시 Eviction을 위해 인스턴스별 동기화 프로세스를 진행할 때도 내부 이벤트를 활용한다.
+
+캐시 Eviction 전략에서, Eviction이 발동되는 조건은 특정 API를 통한 변경도 있지만, 포괄적으로 도메인 엔티티 자체가 변경되는 것을 전부 포함할 수도 있다. 이럴 때 엔티티 변경 자체를 전부 추적하는 방법으로 도메인 이벤트 발행 패턴을 사용할 수 있다.
+
+도메인 이벤트 발행 패턴은 스프링의 `AbstractAggregateRoot`를 이용하여 구현할 수 있다. `AbstractAggregateRoot`는 도메인 엔티티에서 발생하는 이벤트를 쉽게 관리할 수 있도록 도와준다. 이를 통해 엔티티 변경을 감지하고 필요한 이벤트를 발행할 수 있다.
+
+다음과 같은 구현을 살펴보자.
+
+```java
+public class PaymentTransaction extends AbstractAggregateRoot<PaymentTransaction> {
+    // ... 생략 
+
+	@PostPersist
+	@PostUpdate
+	@PostRemove
+	private void publishSeatChangedEvent() {
+		registerEvent(new LocalCacheEvictEvent("paymentTransaction", String.valueOf(userId)));
+	}
+}
+```
+
+`PaymentTransaction` 클래스는 `AbstractAggregateRoot`를 상속받아 도메인 이벤트를 관리한다. `@PostPersist`, `@PostUpdate`, `@PostRemove`와 같은 JPA 엔티티 라이프사이클 이벤트를 통해, 엔티티가 생성되거나 업데이트되거나 삭제될 때 `publishSeatChangedEvent` 메서드가 호출된다. 이 메서드가 `LocalCacheEvictEvent`를 등록하면 어떤 일이 벌어질까?
+
+`AbstractAggregateRoot`는 내부적으로 이벤트를 수집하고 관리하는 기능을 제공한다. `registerEvent` 메서드를 호출하면, `AbstractAggregateRoot`는 이를 내부 리스트에 저장한다. 이후 트랜잭션이 성공적으로 완료되면, 스프링의 이벤트 퍼블리셔(ApplicationEventPublisher)를 통해 이 이벤트가 발행된다.
+
+이 과정을 통해, `PaymentTransaction` 엔티티의 상태가 변경될 때마다 `LocalCacheEvictEvent`가 자동으로 발행된다. 이후 부터는 다음과 같은 리스너가 해당 이벤트를 받게 되므로 비동기 처리 프로세스로서 캐시 만료 전략을 수행하게 된다.
+
+```java
+public class CacheEvictEventListener {
+
+	private final CacheEvictionPropagationService cacheEvictionPropagationService;
+
+	@TransactionalEventListener
+	@Async
+	public void handleLocalCacheEvictEvent(LocalCacheEvictEvent event) {
+		try {
+			cacheEvictionPropagationService.propagateCacheEviction(PropagateCacheEvictionCommand.of(event.getCacheName(), event.getKey()));
+		} catch (Exception e) {
+			log.error("Failed to evict cache for LocalCacheEvictEvent: {} - {} - {}", event.getCacheName(),event.getKey(), e.getMessage());
+		}
+	}
+}
+```  
+
+여기서의 캐시 Eviction 전략은 인스턴스별로 유레카 서비스를 통해 셀프 호출을 하는 프로세스이다. 한 인스턴스에서 캐시 Eviction이 발생할 때 다른 인스턴스들까지 동기화하기 위해 cacheEvictionPropagationService를 통해 재귀 호출을 한다.
+
+내부 이벤트 발행을 통해 이러한 동기화 작업을 느슨한 결합을 달성한 것을 볼 수 있다.
+
+한편, 해당 프로세스는 redis pub/sub을 이용하는 것으로 구현할 수도 있다. redis pub/sub은 각 인스턴스가 메시지를 구독하고 처리하여 캐시 동기화를 효율적으로 수행할 수 있는 방법을 제공한다. 이를 이용하는 것도 EDA 기반 느슨한 결합의 좋은 예라고 할 수 있을 것이다.
+
+
+## 4. balance transaction 처리에서의 내부 이벤트 활용
+
+마지막으로, 잔액 처리 프로세스에서 내부 이벤트를 사용할 수 있다.
+
+balance 충전과 사용 로직을 생각해보자. 유저의 액션 히스토리가 필요한 상황, 즉 트랜잭션 히스토리가 기록되어야 한다. 이 요구 사항은 원자적인 니즈가 있는 요구사항일까?
+
+![payment-and-record-transaction.png](..%2Farchitecture%2Ftransaction%2Fpayment-and-record-transaction.png)
+
+
+
+
+
+경우에 따라 다를 수도 있겠지만 대부분의 금융 애플리케이션에서 원자적인 요구 사항일 것이다. 왜냐하면, 정확한 거래 내역을 유지하는 것은 회계적 정확성, 사용자 신뢰성, 그리고 법적 규제를 준수하기 위해 필수적이기 때문이다.
+
+가장 쉬운 방법은 동기적으로 이 문제를 해결하는 것이다. 다음은 동기적으로 처리하는 로직의 예시다.
+
+
+```java
+public class BalanceCharger {
+
+	@Transactional
+	public BalanceChargeInfo charge(BalanceChargeCommand command) {
+		return balanceRepository.findSingleByConditionOptionalWithLock(onUser(command))
+			//... 메인 로직 
+			.map(savedBalance -> {
+				transactionRepository.save(BalanceTransaction.createChargedEvent(new BalanceChargeEvent(savedBalance.getUserId(), command.getAmount(), command.getTransactionReason())));
+				return BalanceChargeInfo.from(savedBalance);
+			})
+			//... 
+	}
+}
+```
+
+```java
+public class BalanceUseManager {
+
+	@Transactional
+	public BalanceUseInfo use(BalanceUseCommand command) {
+		// ... 메인 로직 
+		transactionRepository.save(BalanceTransaction.createUsedEvent(new BalanceUseEvent(savedBalance.getUserId(), command.getAmount(), command.getTransactionReason())));
+		// ...
+	}
+}
+
+```
+위의 예시에서 보듯이, 동기적으로 처리하는 방식은 단순하고 직관적이다. 하지만 앞서 계속 살펴보았듯, 높은 결합도는 여러 문제로 이어질 수 있다.
+
+바로 이 지점에서 도메인 이벤트 발행을 사용할 수 있다. 도메인 엔티티에서 `AbstractAggregateRoot`를 이용해 잔액 충전과 사용 이벤트를 각각 등록해주는 것이다.
+
+
+`AbstractAggregateRoot`를 사용하면 도메인 엔티티에서 발생하는 이벤트를 쉽게 관리할 수 있다. `Balance` 클래스는 `AbstractAggregateRoot`를 상속받아 잔액 충전과 사용 시 각각의 이벤트를 등록한다.
+
+```java
+@Entity
+public class Balance extends AbstractAggregateRoot<Balance> {
+
+	// ... 
+
+	public Balance charge(BigDecimal amount, TransactionReason transactionReason) {
+		// ... 
+		this.registerEvent(new BalanceChargeEvent(this.userId, amount, transactionReason));
+		return this;
+	}
+
+	public Balance use(BigDecimal amount, TransactionReason transactionReason) {
+		// ...
+		this.registerEvent(new BalanceUseEvent(this.userId, amount, transactionReason));
+		return this;
+	}
+}
+```
+
+위의 코드에서 `Balance` 클래스는 잔액 충전 시 `BalanceChargeEvent`, 잔액 사용 시 `BalanceUseEvent`를 각각 등록한다. `registerEvent` 메서드를 통해 이벤트가 등록되면, `AbstractAggregateRoot`가 이를 관리한다.
+
+발생하는 이벤트는 `BalanceTransactionEventListener`에서 받아서 처리한다.
+
+```java
+public class BalanceTransactionEventListener {
+
+	@TransactionalEventListener(phase = BEFORE_COMMIT)
+	public void handleBalanceChargedEvent(BalanceChargeEvent event) {
+		transactionRepository.save(BalanceTransaction.createChargedEvent(event));
+	}
+
+	@TransactionalEventListener(phase = BEFORE_COMMIT)
+	public void handleBalanceUsedEvent(BalanceUseEvent event) {
+		transactionRepository.save(BalanceTransaction.createUsedEvent(event));
+	}
+}
+```
+
+`BalanceTransactionEventListener`는 `BalanceChargeEvent`와 `BalanceUseEvent`를 처리하여 트랜잭션을 저장한다.
+
+여기서 `@TransactionalEventListener(phase = BEFORE_COMMIT)`을 사용한 이유는, 이벤트가 트랜잭션이 커밋되기 전에 처리되어야 하기 때문이다. 이는 트랜잭션이 성공적으로 완료되기 전에 이벤트를 처리하여 데이터 일관성을 보장한다.
+
+
+![충전과 충전 기록이 같은 트랜잭션으로 묶되, 도메인 이벤트를 사용하는 경우.png](..%2Farchitecture%2Ftransaction%2F%EC%B6%A9%EC%A0%84%EA%B3%BC%20%EC%B6%A9%EC%A0%84%20%EA%B8%B0%EB%A1%9D%EC%9D%B4%20%EA%B0%99%EC%9D%80%20%ED%8A%B8%EB%9E%9C%EC%9E%AD%EC%85%98%EC%9C%BC%EB%A1%9C%20%EB%AC%B6%EB%90%98%2C%20%EB%8F%84%EB%A9%94%EC%9D%B8%20%EC%9D%B4%EB%B2%A4%ED%8A%B8%EB%A5%BC%20%EC%82%AC%EC%9A%A9%ED%95%98%EB%8A%94%20%EA%B2%BD%EC%9A%B0.png)
+
+이러한 방식으로 도메인 이벤트 발행을 통해 잔액 처리 로직을 간단하고 명확하게 유지하면서도, 트랜잭션 히스토리를 비동기적으로 처리하여 유연한 아키텍처를 구성할 수 있다.
+
+
+
+
+
+# 추가 개선 포인트 탐구
+
+
+## 1. 대기열 관리를 한 서비스에서 담당하지 말고 쪼갠다
+
+현재는 `queue-management-service`에서 대기열 인입, 카운터를 이용한 처리열 계수, 처리열 인입 등 대기 토큰과 처리 토큰을 분리하지 않고 전부 다루고 있다.
+
+![대기열 asis 부분 확대.png](..%2Farchitecture%2Fqueue%2F%EB%8C%80%EA%B8%B0%EC%97%B4%20asis%20%EB%B6%80%EB%B6%84%20%ED%99%95%EB%8C%80.png)
+
+이 부분을 분리할 수 있다. 어떻게 할 수 있을까?
+
+대기열 관리를 다음과 같이 세 개의 서비스로 분리할 수 있다.`waiting-queue-service`, `active-queue-service`, `expiration-service`.
+
+### 서비스 분리
+
+- **Waiting-Queue-Service**:
+  - 대기 토큰만 다룬다.
+  - 대기 토큰을 인입시키고, 해당 토큰에 대한 인입 이벤트를 발행하는 것으로 책임을 다한다.
+
+- **Active-Queue-Service**:
+  - 활성 토큰만 다룬다.
+  - 대기 토큰 이벤트를 수신하면, 활성 토큰을 넣을 수 있을지를 카운터를 통해 판단한다.
+  - 가능하다면 활성 토큰을 넣고, 활성 토큰에 대한 이벤트를 발행한다.
+
+- **Expiration-Service**:
+  - 활성 토큰에 대한 이벤트를 받는다.
+  - 해당 이벤트에 따라 TTL 여부를 체크하고, 카운터 값을 동기화해준다.
+
+### 결론
+
+대기열 관리를 각기 다른 서비스로 분리함으로써 책임을 명확히 할 수 있다. Redis와 Kafka를 이용해 이벤트 드리븐을 활용하면 이 방식에서의 최선 전략을 구현할 수 있다.
+
+![대기열 tobe 부분 확대 .png](..%2Farchitecture%2Fqueue%2F%EB%8C%80%EA%B8%B0%EC%97%B4%20tobe%20%EB%B6%80%EB%B6%84%20%ED%99%95%EB%8C%80%20.png)
+
+
+보다 자세한 내용은 여기서 볼 수 있다.
+
+
+
+## 2. 유저의 대기열 정보 요청을 기존 polling에서 websocket으로의 변경 탐구
+
+
+현재 유저가 대기열 요청을 할 때는 polling 방식으로 본인의 위치 정보 등을 요청하고 있다. 해당 요청을 처리하는 서비스는 `client-channel-service`이다. 현재는 polling 요청에 1:1로 대응하는 response를 제공하며, 이때 토큰 정보를 `queue-service`에 물어봐서 제공하고 있다.
+
+이벤트를 이용해서 개선해 볼 수 있을까?
+
+### 이벤트를 이용한 개선 가능성 탐구
+
+개선된 아키텍처에서는 `waiting-queue-service`와 `active-queue-service`로 구분되어 각각 대기 토큰과 활성 토큰을 담당한다. 각 서비스가 대기 토큰 및 활성 토큰을 발행하면, 이를 `client-channel-service`에서 소비하고 해당 토큰들에 대해 WebSocket을 통해 클라이언트에게 실시간으로 알린다.
+
+이런 방식이 가능할까? 여기에 몇 가지 문제점이 있다:
+
+1. **토큰 정보의 실시간 변경**:
+  - 토큰 정보는 실시간으로 변경된다. 동적으로 변경될 때마다 그 정보를 최신화하려면, 지속적인 이벤트 발행이 필요하다.
+  - 중복 데이터를 잘 필터링하고, 최신 토큰 정보를 정확하게 전달하는 구현이 복잡하다. 또한, 이벤트 발행 비용이 증가할 수 있어 효율성에 대한 의문이 생긴다.
+
+2. **개인화된 정보 제공의 어려움**:
+  - WebSocket을 통해 정보를 브로드캐스트하면 부하는 줄일 수 있지만, 개인별로 토큰 정보를 알고자 하는 니즈를 어떻게 만족시킬 것인가에 대한 문제가 있다.
+  - 클라이언트가 모든 정보를 받아 필터링하는 방식이 가능할까? 개인화된 정보를 실시간으로 제공하는 방법을 찾는 것이 과제이다.
+
+
+### 해결 방안 탐구
+
+이러한 문제점을 해결하기 위해 다음과 같은 방안을 고려해본다.
+
+1. **최신화된 정보 제공**:
+  - WebSocket을 사용하여 각 클라이언트에게 최신 정보를 푸시한다.
+  - `waiting-queue-service`와 `active-queue-service`에서 토큰 정보가 변경될 때마다 해당 정보를 `client-channel-service`에 전달하고, 이 서비스가 각 클라이언트에게 실시간으로 업데이트된 정보를 보낸다.
+
+2. **개인화된 정보 제공**:
+  - 각 클라이언트는 자신의 고유 토큰 ID를 구독하고, `client-channel-service`는 해당 클라이언트에게만 관련 정보를 전송한다.
+  - 이를 통해 불필요한 데이터 전송을 줄이고, 개인화된 정보를 제공할 수 있다.
+
+
+
+### 결론
+
+WebSocket을 이용하여 유저의 대기열 정보 요청을 처리하는 것은, 여러 클라이언트의 지속적인 polling 요청 부하를 줄이는 데 효과적일 수 있다. 다만, 실시간으로 변경되는 토큰 정보를 효율적으로 관리하고, 개인화된 정보를 제공하는 방식의 구현이 필요하다. 또한 웹소켓 특성상 연결이 지속되는 것에 대한 자원 소모가 오히려 polling 방식보다 더 비효율적일 수 있다.
+
+
+
+# 개선 사항을 반영한 아키텍처
+
+![대기열 기반의 예약 시스템 전체 아키텍처 TO-BE.png](..%2Farchitecture%2F%EB%8C%80%EA%B8%B0%EC%97%B4%20%EA%B8%B0%EB%B0%98%EC%9D%98%20%EC%98%88%EC%95%BD%20%EC%8B%9C%EC%8A%A4%ED%85%9C%20%EC%A0%84%EC%B2%B4%20%EC%95%84%ED%82%A4%ED%85%8D%EC%B2%98%20TO-BE.png)
+
+
+# 부록: 이벤트 방식의 문제와 해결 방안
+
+마이크로 서비스 아키텍처에서는 서비스에 대한 분리가 핵심이다. 이것의 장점으로는 각 서비스가 독립적으로 동작할 수 있어 책임을 나누게 되고, 각 서비스는 자기 할 일에 대해서만 잘하면 된다. 또한, 장애 격리가 가능하여 한 서비스의 문제가 다른 서비스에 영향을 미치지 않는다. 이로 인해 시스템의 안정성과 유지보수성이 크게 향상된다.
+
+그런데 장점만 있을까? 단점도 있다.
+
+
+## 1. 트랜잭션 분리에 따른 데이터 정합성
+
+
+마이크로서비스 아키텍처에서는 서비스가 분리되어 있기 때문에 각 도메인 서비스가 자신의 트랜잭션을 책임진다. 이를 중재하기 위한 오케스트레이션이 도입된다. 예를 들어, 결제를 처리하고 예약을 완료하는 기능을 수행하는 API를 살펴보자.
+
+
+
+### 예제: 예약 완료 기능
+
+오케스트레이션 서비스가 클라이언트의 요청을 받아 결제 처리, 예약 완료, 토큰 만료 처리를 순차적으로 수행해야 한다. 여기서 결제 처리와 예약 완료는 비즈니스 관점에서 '논리적인 원자성'이 보장되어야 한다.
+
+
+```mermaid
+sequenceDiagram
+    participant 클라이언트
+    participant 오케스트레이션 서비스
+    participant 결제 서비스
+    participant 예약 서비스
+    participant 토큰 서비스
+
+    클라이언트->>오케스트레이션 서비스: 예약 요청
+    오케스트레이션 서비스->>결제 서비스: 결제 요청
+    결제 서비스-->>오케스트레이션 서비스: 결제 완료
+
+    alt 결제 성공
+        오케스트레이션 서비스->>예약 서비스: 예약 완료 요청
+        예약 서비스-->>오케스트레이션 서비스: 예약 완료
+
+        alt 예약 성공
+            오케스트레이션 서비스->>토큰 서비스: 토큰 만료 처리 요청
+            토큰 서비스-->>오케스트레이션 서비스: 토큰 만료 처리 완료
+            오케스트레이션 서비스-->>클라이언트: 예약 완료 응답
+        else 예약 실패
+            오케스트레이션 서비스->>결제 서비스: 결제 취소 요청
+            결제 서비스-->>오케스트레이션 서비스: 결제 취소 완료
+            오케스트레이션 서비스-->>클라이언트: 예약 실패 응답
+        end
+    else 결제 실패
+        오케스트레이션 서비스-->>클라이언트: 결제 실패 응답
+    end
+```
+
+오케스트레이션 서비스가 결제 처리, 예약 완료, 토큰 만료 처리의 순서로 요청을 처리하는 과정을 보여준다. 결제가 성공하면 예약을 시도하고, 예약이 성공하면 토큰을 만료 처리한 후 클라이언트에게 예약 완료 응답을 보낸다. 만약 결제나 예약이 실패하면, 적절한 롤백 작업(결제 취소 등)을 수행하고 실패 응답을 클라이언트에게 보낸다.
+
+
+#### 모놀리틱 구조 vs. 마이크로서비스 구조
+
+모놀리틱 구조에서는 스프링이나 자바의 트랜잭션 어노테이션을 이용해 쉽게 트랜잭션을 관리할 수 있다. 그러나 마이크로서비스 구조에서는 DB의 원자성을 보장하는 트랜잭션 어노테이션을 사용할 수 없다. 예를 들어, 결제가 완료되었지만 예약이 실패한다면 데이터 정합성이 틀어지는 문제가 발생할 수 있다.
+
+
+### 해결 방법: 보상 트랜잭션과 사가 패턴
+
+이러한 문제를 해결하기 위해 보상 트랜잭션 또는 사가 패턴을 사용할 수 있다. 사가 패턴은 두 가지 방식으로 접근할 수 있다:
+
+1. **간단한 롤백 로직**:
+  - `try-catch` 블록을 사용하여 결제 실패 시 롤백하는 간단한 방식이다. 결제 취소만 처리하면 되므로 구현이 비교적 단순하다.
+
+2. **복잡한 롤백 로직**:
+  - 서비스 간의 복잡한 롤백 로직이 필요할 때는 각 서비스가 실패 이벤트를 발행하고, 해당 이벤트를 소비하여 롤백을 처리하거나, 중앙화된 오케스트레이션이 롤백 명령을 내려주는 방식이 있다.
+
+### 현재의 구현: 간단한 `try-catch` 롤백 로직
+
+다음은 `try-catch` 블록을 사용하여 간단한 롤백 로직을 구현한 예제이다.
+
+현재의 구현에서는 다음과 같이 간단한 `try-catch`  블록을 사용한 롤백 로직을 구현했다.
+
+
+```java
+public PaymentResponse processPayment(PaymentProcessRequest request) {
+    PaymentResponse paymentResponse = PaymentResponse.from(paymentService.processPayment(request.toCommand()));
+    try {
+        reservationService.confirmReservation(createConfirmCommand(request));
+    } catch (Exception e) {
+        paymentService.cancelPayment(paymentResponse.transactionId());
+        return createRolledBackResponse(paymentResponse);
+    }
+
+    applicationEventPublisher.publishEvent(paymentResponse.toPaymentInternalEventAsComplete());
+    return paymentResponse;
+}
+```
+
+### 결론
+
+위와 같이 MSA에서는 트랜잭션 분리 문제를 신경 써주어야 한다.
+
+트랜잭션 분리에 따른 데이터 정합성 문제를 해결하기 위해 사가 패턴과 보상 트랜잭션을 도입할 수 있다. 간단한 롤백 로직은 try-catch로 구현할 수 있으며, 복잡한 경우에는 중앙 오케스트레이션을 사용하여 실패 이벤트를 관리할 수 있다.
+
+
+
+
+
+## 2. 이벤트 유실 문제
+
+
+
+이벤트를 주고 받을 때 이벤트 유실 문제가 발생할 수 있다. Kafka는 기본적으로 이벤트 유실에 대한 대책을 지원한다. commit 타입 등을 통해 ACK 응답에 대한 옵션을 제공한다. 그러나 어플리케이션까지 이벤트가 도달하는 과정에서는 Kafka의 지원에도 불구하고 어플리케이션에서 이벤트 유실이 발생할 수 있다. 예를 들어, 어플리케이션이 로직을 처리하는 도중 서비스가 셧다운 되거나, ACK를 전송했지만 비즈니스 로직이 실패하는 경우가 있을 수 있다.
+
+여기서는 이 문제를 이전에 다뤄본 경험을 소개한다. 다음과 같은 해결방법이 있다.
+
+1. **Auto-Commit 설정**: `auto-commit`을 `false`로 설정한다.
+2. **이벤트 저장**: 이벤트를 수신하면, 이벤트 자체를 먼저 저장한다.
+3. **ACK 전송**: 이벤트 저장이 완료되면 그때 ACK를 전송한다.
+4. **비즈니스 로직 수행**: 저장된 이벤트에 대한 비즈니스 로직을 수행한다.
+5. **이벤트 정리**: 비즈니스 로직이 정상적으로 완료되면, 이벤트를 스케줄링으로 삭제한다.
+6. **재실행 처리**: 비즈니스 로직이 중간에 실패하면 해당 이벤트를 다시 꺼내와서 재실행한다.
+
+
+### 비즈니스 로직이 완료된 후 ACK를 전송하면 안 될까?
+
+비즈니스 로직이 길어지는 경우를 생각해보자. 예를 들어, 다른 서비스를 호출하는 등의 이유로 비즈니스 로직의 레이턴시가 길어지면 ACK 응답이 늦어지게 된다. Kafka의 특성상 메시지를 순차적으로 처리해야 하기 때문에, ACK가 지연되면 다음 메시지가 소비되지 않는다. 이로 인해 메시지가 Kafka 큐에 계속 쌓여 `lag` 현상이 발생할 수 있다.
+
+따라서 유실 방지 메커니즘을 수동으로 구현할 때, 비즈니스 로직을 수행하기 전에 이벤트를 안전하게 저장하고 ACK를 전송하는 방식이 유리하다. 이렇게 하면 Kafka의 이벤트 유실 문제를 해결하면서도, 어플리케이션 레벨에서 발생할 수 있는 유실 문제를 최소화할 수 있다.
+
+
+
+## 3. 이벤트 순서 보장 문제
+
+
+이벤트 기반 아키텍처를 사용할 때 또 한가지 주의점은 이벤트 순서 보장 문제이다.
+
+Kafka는 메시지의 순서를 보장한다. 하지만 이 사실이 어플리케이션 설계상에서 모든 순서 정합성 문제를 자동으로 해결해준다는 것은 아니다. 예를 들어, 특정 메시지가 반드시 다른 메시지보다 먼저 처리되어야 하는 상황에서, 이 메시지들이 서로 다른 토픽에 발행된다면 각 토픽 내에서는 순서가 보장되지만, 전체 비즈니스 로직에서는 순서 정합성 문제가 발생할 수 있다.
+
+이 문제도 실제 경험했던 사례를 소개하며 문제와 해결 과정을 제시하고자 한다.
+
+### 실제 경험 사례
+
+A 서비스가 있고, 이 서비스에서 속성(attribute)을 별도의 서비스에 나누어 저장한다고 가정하자. attribute 서비스가 a-g까지 있다고 치면, A 서비스는 원천 데이터를 저장하고, 그에 딸린 속성들을 저장하라는 이벤트를 발행한다. attribute 서비스는 이 이벤트를 소비하여 속성을 저장하고, A 서비스는 발행과 동시에 메인 데이터에서 속성을 지운다.
+
+그 후, A 서비스는 해당 액션에 대한 완료 이벤트를 발행하고, 여러 마이크로서비스가 이 완료 이벤트를 소비한다. 여기서 문제가 발생할 수 있다.
+
+
+### 문제 발생 시나리오
+
+논리적으로 A 서비스는 속성 저장 이벤트를 먼저 발행하고, 그 다음에 완료 이벤트를 발행했으므로 발행 순서는 지켜졌다. 그러나 여러 마이크로서비스가 A 서비스의 완료 이벤트를 수신하는 시점에서는 아직 모든 attribute 저장이 완료되지 않았을 수 있다. 이때, 어떤 마이크로서비스가 완료 이벤트를 받자마자 A 서비스에 정보를 조회하면, 기대하는 속성 정보가 아직 저장되지 않아 조회 결과에 포함되지 않을 수 있다. 결과적으로, "이벤트를 받았는데 왜 속성 정보가 없는가?"라는 문제가 발생할 수 있다.
+
+
+
+### 해결 방안
+
+이 문제를 해결하기 위해 선택한 방식은 글로벌 캐싱을 이용하는 것이었다. 매우 짧은 TTL(Time To Live)로 레디스에 캐싱하는 플로우를 추가했다. A 서비스는 이벤트를 발행하기 전에 메인 데이터를 캐싱하고, 그 후에 이벤트를 발행하고 데이터를 지운다. 이렇게 하면 다른 서비스들이 단기간 내에 조회를 요청할 때 캐싱된 원천 데이터를 제공하여 일시적인 정합성 불일치 문제를 해결할 수 있다.
+
+
+1. **데이터 캐싱**: A 서비스는 속성 저장 이벤트를 발행하기 전에 메인 데이터를 글로벌 캐시(예: Redis)에 저장한다.
+2. **이벤트 발행**: 메인 데이터를 캐싱한 후 속성 저장 이벤트와 완료 이벤트를 순차적으로 발행한다.
+3. **데이터 삭제**: 이벤트 발행 후 메인 데이터에서 속성을 삭제한다.
+4. **캐시 응답**: 다른 서비스들이 A 서비스에 조회 요청을 하면, A 서비스는 글로벌 캐시에서 데이터를 조회하여 응답한다.
+5. **TTL 설정**: 글로벌 캐시의 데이터는 짧은 TTL을 설정하여 일시적인 정합성 문제를 해결하면서, 캐시의 불필요한 데이터가 오래 남지 않도록 한다.
+
+
+### 이벤트 드리븐 프로세스에서 순서 문제 해결의 중요성
+
+이 사례를 통해 이야기하고 싶은 것은 이벤트 드리븐 프로세스를 사용할 때 순서 문제는 중요한 고려 사항이라는 점이다. 이벤트 기반 아키텍처에서는 메시지가 정확한 순서로 처리되지 않으면 데이터 정합성이 깨지고, 비즈니스 로직이 올바르게 수행되지 않을 수 있다. 특히, 서로 다른 토픽에 발행된 이벤트들 간의 순서 보장이 필요한지를 잘 고려해야 한다.
+
+
+## 4. 결론
+
+이와 같은 문제점을 인식하고 적절한 해결 방안을 적용하면, 이벤트 드리븐 아키텍처의 이점을 극대화하면서 안정적이고 확장 가능한 시스템을 구축할 수 있다.
+
+
+
+
+
+
+</details>
+
+
+
+
+
+
+
+
+<details>
+<summary><b>장애 대응을 위한 API 부하 테스트</b></summary>
+
+
+# 요구 사항
+
+> ### **`STEP 19`**
+> - 부하 테스트 대상 선정 및 목적, 시나리오 등의 계획을 세우고 이를 문서로 작성
+> - 적합한 테스트 스크립트를 작성하고 수행
+> - `NiceToHave` → Docker 의 실행 옵션 (cpu, memory) 등을 조정하면서 애플리케이션을 실행하여 성능 테스트를 진행해보면서 적절한 배포 스펙 고려도 한번 진행해보세요!
+> ### **`STEP 20`**
+> - 위 테스트를 진행하며 획득한 다양한 성능 지표를 분석 및 시스템 내의 병목을 탐색 및 개선해보고 **(가상)** 장애 대응 문서를 작성하고 제출
+> - 최종 발표 자료 작성 및 제출
+
+
+
+
+
+# 부하 테스트 대상 API 선정
+
+
+## 1. **전체 API 리스트업**
+
+#### **예약 API (`ReservationController`)**
+1. **`POST /api/reservations`**: 임시 예약 생성
+2. **`POST /api/reservations/confirm`**: 임시 예약 확정
+3. **`GET /api/reservations/status/{userId}/{concertOptionId}`**: 예약 상태 조회
+
+#### **콘서트 및 콘서트 옵션 API (`ConcertController`)**
+4. **`POST /api/concerts`**: 콘서트 생성
+5. **`POST /api/concerts/{concertId}/options`**: 콘서트 옵션 생성
+
+#### **예약 가능 날짜 / 좌석 API (`AvailabilityController`)**
+6. **`GET /api/availability/dates/{concertId}`**: 예약 가능 날짜 조회
+7. **`GET /api/availability/seats/{concertOptionId}/{requestAt}`**: 예약 가능 좌석 조회
+
+#### **결제 API (`PaymentController`)**
+8. **`POST /api/user-balance/payment`**: 결제 처리
+9. **`POST /api/user-balance/payment/cancel/{transactionId}`**: 결제 취소
+10. **`GET /api/user-balance/payment/history/{userId}`**: 결제 내역 조회
+
+#### **잔액 관리 API (`BalanceController`)**
+11. **`GET /api/user-balance/{userId}`**: 잔액 조회
+12. **`GET /api/user-balance/histories/{userId}`**: 잔액 충전/사용 내역 조회
+13. **`PUT /api/user-balance/charge/{userId}`**: 잔액 충전
+14. **`PUT /api/user-balance/use/{userId}`**: 잔액 사용
+
+#### **처리열 토큰 API (`ProcessingQueueTokenController`)**
+15. **`GET /api/processing-queue-token/check-availability/{userId}`**: 처리열 토큰 유효성 조회 (유저 ID 포함)
+16. **`GET /api/processing-queue-token/check-availability`**: 처리열 토큰 유효성 조회 (유저 ID 없이)
+
+#### **대기열 토큰 API (`WaitingQueueTokenController`)**
+17. **`POST /api/waiting-queue-token`**: 대기열 토큰 생성 및 인입
+18. **`GET /api/waiting-queue-token/{userId}`**: 대기열 토큰 정보 조회
+
+
+** 현 시스템에서 오케스트레이션은 주로 다른 서비스 간의 조율을 담당하며, 직접적인 로직을 수행하지 않기 때문에 이번 부하 테스트에서는 제외되었습니다. 따라서, 이번 테스트는 도메인 서비스 중심으로 진행되며, 실제 사용자 요청이 집중될 수 있는 API들을 대상으로 시스템의 성능을 평가합니다.
+
+
+
+## 2. **부하 테스트 대상 API 선정**
+
+부하 테스트를 위해 다음 5개의 API를 선정했습니다. 선정된 API들은 실제 서비스 운영 시 트래픽이 집중될 가능성이 높은 작업을 기준으로 선정되었습니다.
+
+
+1. **`POST /api/waiting-queue-token`**: 대기열 토큰 생성 및 인입
+  - **이유**: 대기열 시스템 기반의 예약 시스템에서 부하가 가장 많이 예상되는 구간입니다. 유저들이 특정 시점에 몰리면서 대기열에 인입할 때, 시스템은 이 모든 부하를 처리해야 하므로, 이 API에 대한 부하 테스트는 매우 중요합니다. 대기열 인입 시 시스템의 최대 처리 능력을 평가하는 데 적합합니다.
+
+2. **`GET /api/waiting-queue-token/{userId}`**: 대기열 토큰 정보 조회
+  - **이유**: 대기열에 인입된 후, 유저들은 자신의 대기 상태를 확인하기 위해 지속적으로 이 API를 polling합니다. 다수의 사용자가 동시에 반복적으로 조회 요청을 보낼 경우, 시스템에 상당한 부하가 발생할 수 있습니다. 따라서, 이 API의 부하 테스트는 대기열 관리 시스템의 안정성을 평가하는 데 필수적입니다.
+
+3. **`GET /api/availability/seats/{concertOptionId}/{requestAt}`**: 예약 가능 좌석 조회
+  - **이유**: 대기열에서 해제된 유저들이 예약을 진행하기 전, 좌석 정보를 조회하게 됩니다. 특히, 특정 시점에 많은 사용자가 동시에 좌석 조회를 시도할 경우, 이 API는 실시간 데이터 조회와 관련된 부하를 처리해야 합니다.
+
+4. **`GET /api/availability/dates/{concertId}`**: 예약 가능 날짜 조회
+  - **이유**: 예약 가능한 날짜를 조회하는 과정에서 많은 데이터가 관련될 수 있습니다. 이 API는 좌석 조회와 마찬가지로, 많은 사용자가 동시에 요청을 보낼 경우, 시스템의 성능을 저하시키는 요인이 될 수 있습니다.
+
+
+
+# 테스트 환경 설정
+
+### 장비 및 시스템 환경
+
+- **운영 체제**: macOS (Apple M1 Pro)
+- **프로세서**: Apple M1 Pro
+- **메모리 (RAM)**: 16GB
+- **스토리지**: 512GB SSD
+- **Docker**: Docker Desktop for Mac
+  - **Docker Engine**: 27.1.1
+  - **Docker Compose**: v2.28.1-desktop.1
+- **가상화**: Apple Hypervisor Framework (ARM 기반)
+
+### Docker 기반 서비스 설정
+
+- **MySQL**:
+  - **버전**: 8.0.33
+
+- **Redis**:
+  - **버전**: 7.2.5
+
+- **Kafka**:
+  - **버전**: 7.7.0-ccs
+
+### 테스트 및 모니터링 툴
+
+- **Gatling**: 3.10.3
+- **Prometheus**: 2.53.1
+- **Grafana**: 11.1.1
+
+
+### 기본 더미 데이터 설정
+
+| 테이블 이름              | 데이터 건수   |
+|--------------------------|---------------|
+| Balance                  | 약 200만 건   |
+| Balance Transaction      | 약 200만 건   |
+| Concert                  | 약 1만 건     |
+| Concert Option           | 약 100만 건   |
+| Payment Transaction      | 약 100만 건   |
+| Reservation              | 약 100만 건   |
+| Temporal Reservation     | 약 100만 건   |
+
+
+
+
+
+
+# 테스트 시나리오 및 수행 결과 분석
+
+## 1. **`POST /api/waiting-queue-token`: 대기열 토큰 생성 및 인입**
+
+### 테스트 시나리오
+
+**목적**: 이 테스트는 대규모 유저가 동시에 대기열에 인입할 때 시스템의 처리 능력을 평가합니다. 목표는 대기열 생성 과정에서의 최대 처리량을 확인하고, 시스템이 고부하 상태에서도 안정적으로 동작하는지 평가하는 것입니다.
+
+- **시나리오 이름**: 대기열 토큰 생성 시나리오
+- **테스트 흐름**:
+  1. 다수의 유저가 동시에 대기열에 인입하려고 시도합니다.
+  2. 각 유저는 고유한 요청을 보내며, 서버는 이를 처리하여 대기열 토큰을 발급합니다.
+  3. 발급된 토큰이 정상적으로 응답되었는지 확인합니다.
+- **부하 조건**:
+  - 유저 수: 초당 20명에서 50명까지 유저 증가
+  - 지속 시간: 1분, 최대 peak 20초간 일정한 부하를 유지
+  - **선정 이유**: 대기열 토큰 생성은 트래픽이 몰릴 때 시스템에 가장 큰 부하를 발생시킬 수 있는 작업입니다. 트래픽이 증가하는 상황에서 서버의 처리 능력을 평가하기 위해 초당 유저 수를 점진적으로 증가시켜 부하를 가합니다. 이 설정은 서버가 트래픽 급증 시 안정적으로 작동하는지 확인하는 데 적합합니다.
+  - **예상 트래픽**: 목표 TPS는 500 이상으로 설정하며, 초당 최대 500개의 대기열 토큰 생성 요청이 발생할 수 있는 상황을 시뮬레이션하여 서버의 응답 성능을 평가합니다.
+
+
+<details>
+<summary><b>코드 부분</b></summary>
+
+```java
+    {
+		setUp(createScenario()
+			.injectOpen(getOpenInjectionSteps())
+			.protocols(httpProtocolBuilder))
+			.maxDuration(Duration.ofMinutes(1))
+			.assertions(global().requestsPerSec().gte(500.0));
+	}
+
+	private OpenInjectionStep[] getOpenInjectionSteps() {
+		return new OpenInjectionStep[]{
+			rampUsersPerSec(20).to(50).during(Duration.ofSeconds(20)),
+			constantUsersPerSec(50).during(Duration.ofSeconds(20)),
+			rampUsersPerSec(50).to(1).during(Duration.ofSeconds(20))
+		};
+	}
+
+	private ScenarioBuilder createScenario() {
+		return scenario("Waiting Queue Token Generation Scenario")
+			.asLongAs(session -> userIdCounter.get() <= MAX_USER_ID)
+			.on(exec(session -> {
+					int userId = userIdCounter.getAndIncrement();
+					return session.set("userId", "user" + userId);
+				})
+					.exec(http("대기열 토큰 생성")
+						.post("/api/waiting-queue-token")
+						.body(StringBody(session -> {
+							LocalDateTime now = LocalDateTime.now();
+							return String.format("{ \"userId\": \"%s\", \"requestAt\": \"%s\" }", session.getString("userId"), now.toString());
+						}))
+						.check(status().is(201))
+					)
+					.pause(2)
+			);
+	}
+```
+</details>
+
+
+
+
+### 수행 결과 분석
+
+#### Gatling 리포트
+
+<details>
+<summary><b>1회차 </b></summary>
+
+```
+---- Global Information --------------------------------------------------------
+> request count                                      35172 (OK=35172  KO=0     )
+> min response time                                      2 (OK=2      KO=-     )
+> max response time                                    712 (OK=712    KO=-     )
+> mean response time                                    66 (OK=66     KO=-     )
+> std deviation                                         89 (OK=89     KO=-     )
+> response time 50th percentile                         31 (OK=31     KO=-     )
+> response time 75th percentile                         87 (OK=87     KO=-     )
+> response time 95th percentile                        234 (OK=234    KO=-     )
+> response time 99th percentile                        450 (OK=450    KO=-     )
+> mean requests/sec                                  586.2 (OK=586.2  KO=-     )
+---- Response Time Distribution ------------------------------------------------
+> t < 800 ms                                         35172 (100%)
+> 800 ms <= t < 1200 ms                                  0 (  0%)
+> t >= 1200 ms                                           0 (  0%)
+> failed                                                 0 (  0%)
+```
+
+![token-generation-1.png](..%2Fperformance-test%2Fapi%2Ftoken-generation-1.png)
+
+
+</details>
+
+
+<details>
+<summary><b>2회차 </b></summary>
+
+```
+---- Global Information --------------------------------------------------------
+> request count                                      34607 (OK=34607  KO=0     )
+> min response time                                      2 (OK=2      KO=-     )
+> max response time                                    877 (OK=877    KO=-     )
+> mean response time                                    92 (OK=92     KO=-     )
+> std deviation                                        117 (OK=117    KO=-     )
+> response time 50th percentile                         42 (OK=41     KO=-     )
+> response time 75th percentile                        115 (OK=115    KO=-     )
+> response time 95th percentile                        366 (OK=366    KO=-     )
+> response time 99th percentile                        486 (OK=486    KO=-     )
+> mean requests/sec                                576.783 (OK=576.783 KO=-     )
+---- Response Time Distribution ------------------------------------------------
+> t < 800 ms                                         34602 (100%)
+> 800 ms <= t < 1200 ms                                  5 (  0%)
+> t >= 1200 ms                                           0 (  0%)
+> failed                                                 0 (  0%)
+```
+
+![token-generation-2.png](..%2Fperformance-test%2Fapi%2Ftoken-generation-2.png)
+
+
+</details>
+
+
+<details>
+<summary><b>3회차 </b></summary>
+
+```
+---- Global Information --------------------------------------------------------
+> request count                                      33834 (OK=33757  KO=77    )
+> min response time                                      2 (OK=2      KO=185   )
+> max response time                                   1611 (OK=1611   KO=860   )
+> mean response time                                   143 (OK=143    KO=526   )
+> std deviation                                        191 (OK=190    KO=138   )
+> response time 50th percentile                         62 (OK=62     KO=547   )
+> response time 75th percentile                        169 (OK=168    KO=601   )
+> response time 95th percentile                        588 (OK=584    KO=702   )
+> response time 99th percentile                        822 (OK=821    KO=838   )
+> mean requests/sec                                  563.9 (OK=562.617 KO=1.283 )
+---- Response Time Distribution ------------------------------------------------
+> t < 800 ms                                         33355 ( 99%)
+> 800 ms <= t < 1200 ms                                374 (  1%)
+> t >= 1200 ms                                          28 (  0%)
+> failed                                                77 (  0%)
+---- Errors --------------------------------------------------------------------
+> status.find.is(201), but actually found 500                        77 (100.0%)
+```
+
+
+![token-generation-3.png](..%2Fperformance-test%2Fapi%2Ftoken-generation-3.png)
+
+</details>
+
+
+
+
+#### 성능 지표 분석
+
+
+- **평균 요청 처리 속도**: 약 575.6 requests/sec
+- **평균 응답 시간**: 약 100.33ms
+- **50번째 백분위수 응답 시간**: 약 44ms
+- **95번째 백분위수 응답 시간**: 약 396.6ms
+- **최대 응답 시간**: 1611ms (3회차 테스트 중 발생)
+
+이 성능 지표들은 시스템이 대부분의 요청을 비교적 빠르게 처리하지만, 트래픽이 증가함에 따라 응답 시간이 늘어나는 경향이 있음을 보여줍니다. 특히, 3회차 테스트에서는 최대 응답 시간이 1611ms에 달하며, 500 오류가 발생한 요청도 일부 확인되었습니다. 초당 약 500의 요청을 받아낼 수는 있지만, 이 정도의 고부하 상황에서 시스템이 불안정해질 수 있음을 시사합니다.
+
+
+
+
+
+
+
+
+
+
+
+
+## 2. **`GET /api/waiting-queue-token/{userId}`: 대기열 토큰 정보 조회**
+
+**목적**: 유저들이 지속적으로 대기열 상태를 확인하는 상황을 시뮬레이션하여, 시스템의 응답 성능과 안정성을 평가하는 것입니다. 특히, 대량의 polling 요청이 있을 때 서버의 성능을 분석합니다.
+
+**테스트 시나리오**:
+
+- **시나리오 이름**: 대기열 토큰 조회 시나리오
+- **테스트 흐름**:
+  1. 여러 유저가 대기열 상태를 지속적으로 확인하기 위해 polling 요청을 보냅니다.
+  2. 서버는 각 유저의 대기열 상태를 반환합니다.
+  3. 응답이 200 OK 상태인지 확인하고, 응답 지연 시간 측정.
+- **부하 조건**:
+  - 유저 수: 초당 200명씩 polling 요청
+  - 지속 시간: 1분, 최대 peak 20초간 일정한 부하를 유지
+  - **선정 이유**: 대기열 토큰 조회 API는 유저들이 대기 상태를 확인하기 위해 빈번하게 요청을 보내는 작업입니다. 지속적이고 반복적인 부하를 통해 시스템의 안정성과 응답 시간을 평가하기 위해 초당 200명의 유저가 지속적으로 요청을 보내도록 설정되었습니다.
+  - **예상 트래픽**: 목표 TPS는 100 이상으로 설정되며, 초당 최대 100개의 polling 요청이 발생할 수 있는 상황을 시뮬레이션하여 서버의 지속적 부하 처리 능력을 평가합니다.
+
+
+
+<details>
+<summary><b>코드 부분</b></summary>
+
+```java
+	{
+		setUp(createScenario()
+			.injectOpen(getOpenInjectionSteps()))
+			.protocols(httpProtocolBuilder)
+			.maxDuration(Duration.ofMinutes(1))
+		.assertions(global().requestsPerSec().gte(150.0)); 
+	}
+
+	private OpenInjectionStep[] getOpenInjectionSteps() {
+		return new OpenInjectionStep[] {
+			rampUsersPerSec(100).to(200).during(Duration.ofSeconds(20)), 
+			constantUsersPerSec(200).during(Duration.ofSeconds(20)), 
+			rampUsersPerSec(200).to(100).during(Duration.ofSeconds(20)) 
+		};
+	}
+```
+
+</details>
+
+
+### 수행 결과 분석
+
+#### Gatling 리포트
+
+
+<details>
+<summary><b>1회차 </b></summary>
+
+```
+---- Global Information --------------------------------------------------------
+> request count                                       9999 (OK=9999   KO=0     )
+> min response time                                      3 (OK=3      KO=-     )
+> max response time                                    225 (OK=225    KO=-     )
+> mean response time                                    26 (OK=26     KO=-     )
+> std deviation                                         30 (OK=30     KO=-     )
+> response time 50th percentile                         15 (OK=15     KO=-     )
+> response time 75th percentile                         33 (OK=33     KO=-     )
+> response time 95th percentile                         89 (OK=89     KO=-     )
+> response time 99th percentile                        143 (OK=143    KO=-     )
+> mean requests/sec                                 166.65 (OK=166.65 KO=-     )
+---- Response Time Distribution ------------------------------------------------
+> t < 800 ms                                          9999 (100%)
+> 800 ms <= t < 1200 ms                                  0 (  0%)
+> t >= 1200 ms                                           0 (  0%)
+> failed                                                 0 (  0%)
+```
+
+
+</details>
+
+
+
+<details>
+<summary><b>2회차 </b></summary>
+
+```
+---- Global Information --------------------------------------------------------
+> request count                                       9985 (OK=9985   KO=0     )
+> min response time                                      3 (OK=3      KO=-     )
+> max response time                                    540 (OK=540    KO=-     )
+> mean response time                                    18 (OK=18     KO=-     )
+> std deviation                                         33 (OK=33     KO=-     )
+> response time 50th percentile                          7 (OK=7      KO=-     )
+> response time 75th percentile                         18 (OK=18     KO=-     )
+> response time 95th percentile                         66 (OK=67     KO=-     )
+> response time 99th percentile                        148 (OK=148    KO=-     )
+> mean requests/sec                                166.417 (OK=166.417 KO=-     )
+---- Response Time Distribution ------------------------------------------------
+> t < 800 ms                                          9985 (100%)
+> 800 ms <= t < 1200 ms                                  0 (  0%)
+> t >= 1200 ms                                           0 (  0%)
+> failed                                                 0 (  0%)
+```
+
+
+</details>
+
+
+<details>
+<summary><b>3회차 </b></summary>
+
+```
+---- Global Information --------------------------------------------------------
+> request count                                       9997 (OK=9997   KO=0     )
+> min response time                                      3 (OK=3      KO=-     )
+> max response time                                    992 (OK=992    KO=-     )
+> mean response time                                    42 (OK=42     KO=-     )
+> std deviation                                         75 (OK=75     KO=-     )
+> response time 50th percentile                         18 (OK=18     KO=-     )
+> response time 75th percentile                         45 (OK=45     KO=-     )
+> response time 95th percentile                        150 (OK=150    KO=-     )
+> response time 99th percentile                        374 (OK=374    KO=-     )
+> mean requests/sec                                166.617 (OK=166.617 KO=-     )
+---- Response Time Distribution ------------------------------------------------
+> t < 800 ms                                          9980 (100%)
+> 800 ms <= t < 1200 ms                                 17 (  0%)
+> t >= 1200 ms                                           0 (  0%)
+> failed                                                 0 (  0%)
+================================================================================
+```
+
+
+</details>
+
+
+
+#### 성능 지표 분석
+
+
+- **평균 요청 처리 속도**: 약 166.56 requests/sec
+- **평균 응답 시간**: 약 28.67ms
+- **50번째 백분위수 응답 시간**: 약 13.33ms
+- **95번째 백분위수 응답 시간**: 약 101.67ms
+- **최대 응답 시간**: 992ms (3회차 테스트 중 발생)
+
+이 성능 지표들은 전반적으로 요청을 매우 빠르게 처리하고 있음을 나타냅니다. 특히, 95%의 요청이 102ms 이내에 처리되고 있으며, 최대 응답 시간이 992ms로, 전체적으로 안정적인 성능을 보여줍니다. 다만, 3회차 테스트에서 응답 시간이 비교적 높은 요청이 일부 확인되었으며, 이는 트래픽 증가 시 발생할 수 있는 응답 지연을 의미할 수 있습니다. 전체적인 결과는 목표 TPS와 일치하기 때문에, 시스템이 설정된 부하 조건 하에서 안정적으로 동작하고 있음을 시사합니다.
+
+
+
+
+
+
+
+## 3. **`GET /api/availability/seats/{concertOptionId}/{requestAt}`: 예약 가능 좌석 조회**
+
+**목적**: 대규모 유저가 동시에 좌석 정보를 조회할 때, 시스템의 응답 성능과 처리 능력을 평가하기 위한 것입니다. 실시간 데이터 조회에 대한 서버의 처리 능력을 테스트합니다.
+
+**테스트 시나리오**:
+
+- **시나리오 이름**: 예약 가능 좌석 조회 시나리오
+- **테스트 흐름**:
+  1. 많은 유저가 동시에 특정 콘서트의 좌석 정보를 조회합니다.
+  2. 서버는 좌석 정보 데이터를 반환하며, 각 요청에 대해 200 OK 응답을 보냅니다.
+  3. 응답 시간 및 정확성을 평가합니다.
+- **부하 조건**:
+  - 유저 수: 초당 20명에서 80명까지 증가
+  - 지속 시간: 1분, 최대 peak 20초간 일정한 부하를 유지
+  - **선정 이유**: 예약 가능 좌석 조회 API는 실시간 데이터를 다루며, 많은 유저가 동시에 좌석 정보를 조회할 때 시스템의 성능이 크게 영향을 받을 수 있습니다. 이러한 상황을 시뮬레이션하기 위해 초당 20명에서 80명까지 유저 수를 증가시키는 부하 조건을 설정하여, 시스템이 급격한 트래픽 증가에 어떻게 반응하는지 평가합니다.
+  - **예상 트래픽**: 목표 TPS는 약 20~50 TPS로 설정하며, 초당 최대 80개의 좌석 조회 요청이 발생할 수 있는 상황을 평가하여 시스템의 처리 성능을 분석합니다.
+
+
+<details>
+<summary><b>코드 부분</b></summary>
+
+
+```java
+	{
+		setUp(createScenario()
+			.injectOpen(getOpenInjectionSteps()))
+			.protocols(httpProtocolBuilder)
+			.maxDuration(Duration.ofMinutes(1))
+			.assertions(global().requestsPerSec().gte(50.0));
+	}
+
+	private OpenInjectionStep[] getOpenInjectionSteps() {
+		return new OpenInjectionStep[] {
+			rampUsersPerSec(20).to(80).during(Duration.ofSeconds(30)),
+			constantUsersPerSec(80).during(Duration.ofSeconds(30)),
+			rampUsersPerSec(80).to(20).during(Duration.ofSeconds(30))
+		};
+	}
+```
+
+</details>
+
+
+
+
+### 수행 결과 분석
+
+#### Gatling 리포트
+
+
+<details>
+<summary><b>1회차 </b></summary>
+
+```
+---- Global Information --------------------------------------------------------
+> request count                                       3898 (OK=3898   KO=0     )
+> min response time                                      3 (OK=3      KO=-     )
+> max response time                                    515 (OK=515    KO=-     )
+> mean response time                                    22 (OK=22     KO=-     )
+> std deviation                                         37 (OK=37     KO=-     )
+> response time 50th percentile                         11 (OK=11     KO=-     )
+> response time 75th percentile                         22 (OK=22     KO=-     )
+> response time 95th percentile                         77 (OK=77     KO=-     )
+> response time 99th percentile                        164 (OK=164    KO=-     )
+> mean requests/sec                                 64.967 (OK=64.967 KO=-     )
+---- Response Time Distribution ------------------------------------------------
+> t < 800 ms                                          3898 (100%)
+> 800 ms <= t < 1200 ms                                  0 (  0%)
+> t >= 1200 ms                                           0 (  0%)
+> failed                                                 0 (  0%)
+```
+
+
+</details>
+
+
+
+<details>
+<summary><b>2회차 </b></summary>
+
+```
+---- Global Information --------------------------------------------------------
+> request count                                       3896 (OK=3896   KO=0     )
+> min response time                                      4 (OK=4      KO=-     )
+> max response time                                    344 (OK=344    KO=-     )
+> mean response time                                    15 (OK=15     KO=-     )
+> std deviation                                         25 (OK=25     KO=-     )
+> response time 50th percentile                          8 (OK=8      KO=-     )
+> response time 75th percentile                         16 (OK=16     KO=-     )
+> response time 95th percentile                         40 (OK=40     KO=-     )
+> response time 99th percentile                        139 (OK=139    KO=-     )
+> mean requests/sec                                 64.933 (OK=64.933 KO=-     )
+---- Response Time Distribution ------------------------------------------------
+> t < 800 ms                                          3896 (100%)
+> 800 ms <= t < 1200 ms                                  0 (  0%)
+> t >= 1200 ms                                           0 (  0%)
+> failed                                                 0 (  0%)
+
+```
+
+
+</details>
+
+
+
+<details>
+<summary><b>3회차 </b></summary>
+
+```
+---- Global Information --------------------------------------------------------
+> request count                                       3899 (OK=3899   KO=0     )
+> min response time                                      4 (OK=4      KO=-     )
+> max response time                                    290 (OK=290    KO=-     )
+> mean response time                                    24 (OK=24     KO=-     )
+> std deviation                                         30 (OK=30     KO=-     )
+> response time 50th percentile                         12 (OK=12     KO=-     )
+> response time 75th percentile                         28 (OK=28     KO=-     )
+> response time 95th percentile                         80 (OK=80     KO=-     )
+> response time 99th percentile                        164 (OK=164    KO=-     )
+> mean requests/sec                                 64.983 (OK=64.983 KO=-     )
+---- Response Time Distribution ------------------------------------------------
+> t < 800 ms                                          3899 (100%)
+> 800 ms <= t < 1200 ms                                  0 (  0%)
+> t >= 1200 ms                                           0 (  0%)
+> failed                                                 0 (  0%)
+```
+
+
+</details>
+
+
+
+#### 성능 지표 분석
+
+
+- **평균 요청 처리 속도**: 약 64.96 requests/sec
+- **평균 응답 시간**: 약 20.33ms
+- **50번째 백분위수 응답 시간**: 약 10.33ms
+- **95번째 백분위수 응답 시간**: 약 65.67ms
+- **최대 응답 시간**: 515ms (1회차 테스트 중 발생)
+
+이 성능 지표들은 시스템이 대부분의 요청을 매우 빠르게 처리할 수 있음을 보여줍니다. 특히, 응답 시간의 분포가 전반적으로 낮으며, 95번째 백분위수 응답 시간도 65ms 내외로 매우 양호합니다. 3회차 테스트에서 최대 응답 시간이 290ms로 상대적으로 낮아지는 등, 시스템이 고부하 상황에서도 안정적으로 작동하고 있음을 시사합니다. 모든 요청에서 실패 없이 200 OK 응답을 받았다는 점도 시스템의 신뢰성을 나타냅니다.
+
+
+
+
+
+
+### 개선 방향
+
+
+
+## 4. **`GET /api/availability/dates/{concertId}`: 예약 가능 날짜 조회**
+
+**목적**: 대규모의 유저가 동시에 예약 가능한 날짜 정보를 조회하는 상황을 시뮬레이션하여, 서버의 성능과 응답 속도를 평가하는 것입니다.
+
+**테스트 시나리오**:
+
+- **시나리오 이름**: 예약 가능 날짜 조회 시나리오
+- **테스트 흐름**:
+  1. 다수의 유저가 특정 콘서트의 예약 가능 날짜를 조회합니다.
+  2. 서버는 각 요청에 대해 200 OK 응답을 보내고, 날짜 정보를 반환합니다.
+  3. 응답 시간과 성능을 평가합니다.
+- **부하 조건**:
+  - 유저 수: 초당 10명에서 50명까지 증가
+  - 지속 시간: 1분, 최대 peak 20초간 일정한 부하를 유지
+  - **선정 이유**: 예약 가능한 날짜 조회 API는 대량의 데이터를 처리하며, 많은 유저가 동시에 요청할 때 시스템의 응답 시간이 길어질 수 있습니다. 이러한 상황을 시뮬레이션하기 위해 초당 10명에서 50명까지 유저 수를 증가시키는 부하 조건을 설정하여, 시스템의 성능을 평가합니다.
+  - **예상 트래픽**: 목표 TPS는 약 10~50 TPS로 설정되며, 초당 최대 50개의 날짜 조회 요청이 발생할 수 있는 상황을 평가하여 시스템의 데이터 처리 성능을 분석합니다.
+
+
+
+
+<details>
+<summary><b>코드 부분</b></summary>
+
+</details>
+
+
+
+### 수행 결과 분석
+
+#### Gatling 리포트
+
+
+<details>
+<summary><b>1회차 </b></summary>
+
+```
+---- Global Information --------------------------------------------------------
+> request count                                       3897 (OK=3897   KO=0     )
+> min response time                                      7 (OK=7      KO=-     )
+> max response time                                    542 (OK=542    KO=-     )
+> mean response time                                    28 (OK=28     KO=-     )
+> std deviation                                         41 (OK=41     KO=-     )
+> response time 50th percentile                         15 (OK=15     KO=-     )
+> response time 75th percentile                         28 (OK=28     KO=-     )
+> response time 95th percentile                         81 (OK=81     KO=-     )
+> response time 99th percentile                        226 (OK=226    KO=-     )
+> mean requests/sec                                  64.95 (OK=64.95  KO=-     )
+---- Response Time Distribution ------------------------------------------------
+> t < 800 ms                                          3897 (100%)
+> 800 ms <= t < 1200 ms                                  0 (  0%)
+> t >= 1200 ms                                           0 (  0%)
+> failed                                                 0 (  0%)
+```
+</details>
+
+
+
+<details>
+<summary><b>2회차 </b></summary>
+
+```
+---- Global Information --------------------------------------------------------
+> request count                                       3896 (OK=3896   KO=0     )
+> min response time                                      8 (OK=8      KO=-     )
+> max response time                                   1036 (OK=1036   KO=-     )
+> mean response time                                    55 (OK=55     KO=-     )
+> std deviation                                         70 (OK=70     KO=-     )
+> response time 50th percentile                         34 (OK=34     KO=-     )
+> response time 75th percentile                         68 (OK=68     KO=-     )
+> response time 95th percentile                        153 (OK=153    KO=-     )
+> response time 99th percentile                        318 (OK=318    KO=-     )
+> mean requests/sec                                 64.933 (OK=64.933 KO=-     )
+---- Response Time Distribution ------------------------------------------------
+> t < 800 ms                                          3888 (100%)
+> 800 ms <= t < 1200 ms                                  8 (  0%)
+> t >= 1200 ms                                           0 (  0%)
+> failed                                                 0 (  0%)
+```
+
+</details>
+
+
+<details>
+<summary><b>3회차 </b></summary>
+
+```
+---- Global Information --------------------------------------------------------
+> request count                                       3897 (OK=3897   KO=0     )
+> min response time                                      7 (OK=7      KO=-     )
+> max response time                                   1384 (OK=1384   KO=-     )
+> mean response time                                    54 (OK=54     KO=-     )
+> std deviation                                        111 (OK=111    KO=-     )
+> response time 50th percentile                         27 (OK=27     KO=-     )
+> response time 75th percentile                         47 (OK=47     KO=-     )
+> response time 95th percentile                        160 (OK=160    KO=-     )
+> response time 99th percentile                        667 (OK=667    KO=-     )
+> mean requests/sec                                  64.95 (OK=64.95  KO=-     )
+---- Response Time Distribution ------------------------------------------------
+> t < 800 ms                                          3867 ( 99%)
+> 800 ms <= t < 1200 ms                                 26 (  1%)
+> t >= 1200 ms                                           4 (  0%)
+> failed                                                 0 (  0%)
+```
+
+
+
+</details>
+
+
+
+#### 성능 지표 분석
+
+세 차례의 테스트에서 얻은 성능 지표는 다음과 같습니다.
+
+- **평균 요청 처리 속도**: 약 64.94 requests/sec
+- **평균 응답 시간**: 약 45.67ms
+- **50번째 백분위수 응답 시간**: 약 25.33ms
+- **95번째 백분위수 응답 시간**: 약 131.33ms
+- **최대 응답 시간**: 1384ms (3회차 테스트 중 발생)
+
+이 성능 지표는 시스템이 대부분의 요청을 신속하게 처리하고 있음을 보여줍니다. 평균 응답 시간은 비교적 낮고, 95%의 요청이 약 131ms 이내에 처리되었습니다. 그러나 2회차와 3회차 테스트에서 일부 요청이 800ms를 초과하며, 최대 1384ms의 응답 시간이 기록된 점은 주목할 필요가 있습니다. 이는 시스템이 특정 상황에서 부하가 증가하면 응답 시간이 길어질 수 있음을 시사합니다.
+
+
+
+
+
+# 가상 장애 대응 상황 설정 및 대응
+
+
+## API별 100배 부하 설정 가상 시나리오
+
+각 API에 대해 예상되는 최대 트래픽의 100배에 달하는 부하를 가정하여, 시스템의 극한 상황에서의 반응을 테스트합니다. 극단적인 고부하 상황에서 발생할 수 있는 병목 구간을 식별하고, 시스템의 안정성 및 성능 개선을 위한 인사이트를 얻습니다.
+
+
+
+### 1. `POST /api/waiting-queue-token`
+
+- **부하 조건**: 초당 5000명의 유저가 대기열 토큰을 생성하는 상황을 시뮬레이션합니다.
+- **병목 구간 설정**:
+  - **Redis의 성능 및 확장성**:
+    - 대기열 토큰 생성 요청을 처리하는 Redis는 대량의 쓰기 작업이 발생할 때 성능 저하가 발생할 수 있습니다. 특히, Redis 클러스터의 노드 간 데이터 분산과 네트워크 대역폭 사용이 병목 현상을 초래할 가능성이 있습니다.
+
+##### 개선 방향
+- **Redis 클러스터 확장**: Redis 클러스터의 노드 수를 확장하여 데이터 분산과 처리 능력을 향상시킵니다. 클러스터 내 데이터 분산 알고리즘을 재검토하여 부하를 균등하게 분산할 수 있도록 최적화합니다.
+- **쓰기 최적화**: Redis의 AOF(Append Only File) 옵션을 최적화하여 쓰기 성능을 향상시키고, 필요 없는 데이터를 주기적으로 삭제하여 메모리 사용량을 줄입니다.
+
+### 2. `GET /api/waiting-queue-token/{userId}`
+
+- **부하 조건**: 초당 20,000명의 유저가 자신의 대기열 상태를 조회하는 상황을 시뮬레이션합니다.
+- **병목 구간 식별**:
+  - **Redis의 읽기 성능 및 확장성**:
+    - 이 API는 대기열 상태를 조회할 때 Redis에서 유저의 위치 정보를 읽어옵니다. 초당 20,000건의 읽기 요청이 발생할 경우, Redis의 처리 능력이 병목이 될 수 있습니다. 읽기 전용 Redis 클러스터를 별도로 구성하거나, 슬레이브 노드 수를 증가시켜 읽기 부하를 분산하는 방안을 고려해야 합니다.
+
+##### 개선 방향
+- **읽기 전용 Redis 클러스터 구성**: 읽기 전용 Redis 클러스터를 별도로 구성하여 읽기 부하를 분산시킵니다. 이를 통해 읽기 요청 처리 능력을 향상시키고, 메인 Redis 클러스터의 쓰기 성능에 미치는 영향을 최소화합니다.
+- **슬레이브 노드 추가**: 슬레이브 노드를 추가하여 읽기 요청을 슬레이브 노드에서 처리하게 함으로써 Redis의 전반적인 부하를 분산합니다.
+
+### 3. `GET /api/availability/seats/{concertOptionId}/{requestAt}`
+
+- **부하 조건**: 초당 8000명의 유저가 특정 콘서트의 좌석 정보를 조회하는 상황을 시뮬레이션합니다.
+- **병목 구간 식별**:
+  - **데이터베이스 조회 및 인덱스 효율성**:
+    - 좌석 정보 조회 시 다수의 데이터베이스 조회 작업이 발생하며, 인덱스의 효율성이 중요한 역할을 합니다. 데이터베이스의 쿼리 처리 속도와 인덱스의 적절한 사용이 병목이 될 수 있습니다.
+
+##### 개선 방향
+- **인덱스 최적화**: 쿼리 성능을 향상시키기 위해 데이터베이스 인덱스를 최적화합니다. 빈번히 사용되는 쿼리에 대해 추가적인 인덱스를 생성하거나, 기존 인덱스를 재구성하여 조회 속도를 개선합니다.
+- **쿼리 튜닝**: 데이터베이스 쿼리를 튜닝하여 필요 없는 조인 및 서브쿼리를 줄이고, 효율적인 쿼리 경로를 사용할 수 있도록 합니다. 또한, 동일한 조회 요청이 반복적으로 발생하는 경우 캐시된 결과를 활용하는 쿼리 캐싱을 도입합니다.
+
+### 4. `GET /api/availability/dates/{concertId}`
+
+- **부하 조건**: 초당 5000명의 유저가 동시에 특정 콘서트의 예약 가능 날짜를 조회하는 상황을 시뮬레이션합니다.
+- **병목 구간 설정**:
+  - **로컬 캐시 문제**:
+    - 이 API는 로컬 캐시를 사용하여 예약 가능 날짜 정보를 캐싱합니다. 고부하 상황에서는 로컬 캐시가 빠르게 소진될 수 있으며, 캐시 재생성 과정에서 성능 저하가 발생할 수 있습니다. 캐시 TTL 설정 및 크기를 재검토하고, 필요 시 Redis와 같은 외부 캐시 시스템을 사용하는 글로벌 캐시로의 확장을 고려해야 합니다.
+
+##### 개선 방향
+- **캐시 TTL 및 크기 최적화**: 로컬 캐시의 TTL 설정을 재검토하여 캐시 갱신 빈도를 줄이고, 캐시 크기를 확장하여 고부하 상황에서도 충분한 데이터를 캐싱할 수 있도록 합니다.
+- **외부 캐시 시스템 도입**: 로컬 캐시의 한계를 보완하기 위해 Redis와 같은 외부 캐시 시스템으로 확장하여 캐시 미스로 인한 DB 부하를 줄이고, 전체적인 응답 속도를 향상시킵니다.
+- **캐시 갱신 전략 최적화**: 동일한 캐시 키에 대해 다수의 요청이 동시에 발생할 때 성능 저하를 방지하기 위해, 캐시 갱신 시점을 조정하고 데이터 일관성을 유지하면서도 성능을 높일 수 있는 갱신 전략을 도입합니다.
+
+
+
+
+
+
 
 
 </details>
